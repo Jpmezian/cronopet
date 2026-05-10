@@ -13,6 +13,7 @@ import { ChevronLeft, Trash2, Sun, Moon, Monitor } from 'lucide-react-native';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { signOut } from '@/services/AuthService';
 import { clearSupabaseAuthStorage } from '@/services/supabase';
+import { InsightsSettingsCard } from '@/components/medical/InsightsSettingsCard';
 
 // ─── Semântico fixo ───────────────────────────────────────────
 // Cores de status que não variam com o tema
@@ -291,6 +292,14 @@ export default function SettingsScreen() {
               </View>
             </View>
           </View>
+        </View>
+
+        {/* ── Avisos de saúde (insights) ───────────────── */}
+        <View>
+          <Text style={{ color: colors.textPrimary, fontFamily: 'Nunito_700Bold', fontSize: 16, marginBottom: 12 }}>
+            🩺 Avisos de saúde
+          </Text>
+          <InsightsSettingsCard />
         </View>
 
         {/* ── Privacidade e Dados ──────────────────────── */}
