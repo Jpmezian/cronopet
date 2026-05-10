@@ -162,6 +162,56 @@ export async function scheduleAppointmentReminder(
 }
 
 /**
+ * Agenda uma push notification de saúde inteligente — disparada quando o
+ * motor de insights detectou algo crítico que ainda não foi notificado.
+ *
+ * Diferenças vs `scheduleDailyReminder`:
+ *   • Trigger único (não recorre)
+ *   • Disparado pra horário sensato (manhã do próximo dia)
+ *   • Texto vem do `personalizeInsight` — humano, não genérico
+ *   • Canal de "consultas" (high importance) pra furar Modo Não Perturbe
+ *
+ * Retorna o ID da notification agendada (pra cancelar se o insight resolver).
+ *
+ * @param title    Título curto da notification (max ~30 chars)
+ * @param body     Corpo (max ~110 chars pra renderizar bem em iOS lock screen)
+ * @param fireAt   Quando disparar — default: amanhã 9h
+ */
+export async function scheduleSmartHealthAlert(
+  title: string,
+  body: string,
+  fireAt?: Date,
+): Promise<string> {
+  await ensureChannels();
+
+  const target = fireAt ?? nextMorning(9);
+
+  return Notifications.scheduleNotificationAsync({
+    content: {
+      title,
+      body,
+      sound: true,
+      ...(Platform.OS === 'android' && { channelId: CHANNEL_APPT_ID }),
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DATE,
+      date: target,
+    },
+  });
+}
+
+/** Próxima ocorrência da hora indicada — se já passou hoje, agenda pra amanhã */
+function nextMorning(hour: number): Date {
+  const now = new Date();
+  const target = new Date(now);
+  target.setHours(hour, 0, 0, 0);
+  if (target.getTime() <= now.getTime()) {
+    target.setDate(target.getDate() + 1);
+  }
+  return target;
+}
+
+/**
  * Cancela uma notificação específica pelo ID.
  */
 export async function cancelNotification(id: string): Promise<void> {
