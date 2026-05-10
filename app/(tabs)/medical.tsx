@@ -12,6 +12,7 @@ import { ScalePress } from '@/components/ui/ScalePress';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { WeightChart } from '@/components/medical/WeightChart';
 import { BreedHealthCard } from '@/components/medical/BreedHealthCard';
+import { AIHealthAnalysis } from '@/components/medical/AIHealthAnalysis';
 import { useMotion } from '@/hooks/useMotion';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { usePetStore } from '@/store/usePetStore';
@@ -270,6 +271,16 @@ export default function MedicalScreen() {
             <BreedHealthCard raca={pet.raca} tipo={pet.tipo} petNome={pet.nome || 'seu pet'} />
           </View>
         ) : null}
+
+        {/* ── Análise por IA ──────────────────────────── */}
+        <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+          <AIHealthAnalysis
+            pet={pet}
+            actionHistory={actionHistory}
+            weightHistory={weightHistory}
+            medicalEvents={medicalEvents}
+          />
+        </View>
 
         {/* ── Gerar Relatório PDF ──────────────────────── */}
         <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
