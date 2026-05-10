@@ -168,6 +168,11 @@ interface PetStore extends PetState {
   /** Limpa lista de dismiss (ex: após reset) */
   clearDismissedInsights: () => void;
 
+  /** Insights adiados temporariamente (id → timestamp em ms até quando ficar adiado) */
+  snoozedInsights: Record<string, number>;
+  /** Adia um insight por N horas (não volta a mostrar até o tempo passar) */
+  snoozeInsight: (id: string, hours: number) => void;
+
   // ── Premium ──────────────────────────────────────────────
   /**
    * Chamado quando o StoreKit/RevenueCat confirma assinatura.
@@ -224,6 +229,7 @@ export const usePetStore = create<PetStore>()(
       shownActivityMilestones: [],
       shownPremiumPrompts: [],
       dismissedInsightIds: [],
+      snoozedInsights: {},
       biometricLockEnabled: false,
       isPremium:        false,
       premiumPlan:      null,
@@ -574,6 +580,11 @@ export const usePetStore = create<PetStore>()(
       },
       clearDismissedInsights: () => set({ dismissedInsightIds: [] }),
 
+      snoozeInsight: (id, hours) => {
+        const until = Date.now() + hours * 60 * 60 * 1000;
+        set((s) => ({ snoozedInsights: { ...s.snoozedInsights, [id]: until } }));
+      },
+
       markPremiumPromptShown: (id) => {
         set((s) => ({
           shownPremiumPrompts: s.shownPremiumPrompts.includes(id)
@@ -677,6 +688,7 @@ export const usePetStore = create<PetStore>()(
           markPremiumPromptShown,
           dismissInsight,
           clearDismissedInsights,
+          snoozeInsight,
           setPremiumStatus,
           startTrial,
           recordFirstAppOpen,
