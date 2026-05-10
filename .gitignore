@@ -30,8 +30,15 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# local env files — nunca commitar chaves de API
+.env
+.env.dev
+.env.prod
 .env*.local
+# permitir commit dos templates
+!.env.example
+!.env.dev.example
+!.env.prod.example
 
 # typescript
 *.tsbuildinfo
@@ -39,3 +46,4 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+relatorio.md

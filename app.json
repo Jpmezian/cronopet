@@ -11,10 +11,11 @@
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#fafaf9"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.cronopet.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +23,8 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.cronopet.app"
     },
     "web": {
       "bundler": "metro",
@@ -30,7 +32,39 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Permita o acesso às fotos para escolher a imagem do seu pet.",
+          "cameraPermission": "Permita o acesso à câmera para tirar uma foto do seu pet."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Permita o acesso à localização para exibir o clima da sua região.",
+          "locationWhenInUsePermission": "Permita o acesso à localização para exibir o clima da sua região.",
+          "isIosBackgroundLocationEnabled": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#fafaf9",
+          "defaultChannel": "cronopet-daily",
+          "iosDisplayInForeground": true
+        }
+      ],
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "joao-pedro-mezian",
+          "project": "cronopet"
+        }
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true
