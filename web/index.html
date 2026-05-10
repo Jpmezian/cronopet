@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CronoPet — Cuide do seu pet com calma e clareza</title>
+  <meta name="description" content="O CronoPet ajuda você a registrar comida, água, passeios, vacinas e consultas do seu pet. Compartilhe a rotina com a família. Para iOS e Android." />
+  <meta name="theme-color" content="#fafaf9" />
+
+  <!-- Open Graph / social -->
+  <meta property="og:title" content="CronoPet — Cuide do seu pet com calma" />
+  <meta property="og:description" content="Registre a rotina do seu pet em segundos. Histórico, vacinas, peso e família compartilhada." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://cronopet.app" />
+  <meta property="og:image" content="https://cronopet.app/og.png" />
+
+  <link rel="icon" href="/favicon.ico" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+  <style>
+    /* Sistema de tokens — espelha o app */
+    :root {
+      --text-primary: #1c1917;
+      --text-secondary: #78716c;
+      --text-tertiary: #a8a29e;
+      --bg-screen: #fafaf9;
+      --bg-card: #ffffff;
+      --bg-input: #f5f5f4;
+      --border-light: #e7e5e4;
+      --comida: #b45309;
+      --comida-bg: #fffbeb;
+      --agua: #0369a1;
+      --agua-bg: #f0f9ff;
+      --passeio: #047857;
+      --passeio-bg: #f0fdf4;
+      --pro-gold: #fbbf24;
+      --shadow-soft: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --text-primary: #f5f5f4;
+        --text-secondary: #a8a29e;
+        --text-tertiary: #78716c;
+        --bg-screen: #1c1917;
+        --bg-card: #292524;
+        --border-light: #44403c;
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-screen);
+      color: var(--text-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+
+    /* Hero */
+    .hero {
+      padding: 80px 0 60px;
+      text-align: center;
+    }
+    .hero h1 {
+      font-size: clamp(36px, 5vw, 56px);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 20px;
+    }
+    .hero p {
+      font-size: clamp(16px, 2vw, 20px);
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto 36px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+    .badge .dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      background: var(--passeio);
+      border-radius: 50%;
+      margin-right: 6px;
+      vertical-align: middle;
+    }
+
+    .cta-row {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 22px;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 15px;
+      text-decoration: none;
+      transition: transform 0.15s ease;
+      border: none;
+      cursor: pointer;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary {
+      background: var(--text-primary);
+      color: var(--bg-screen);
+    }
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border-light);
+    }
+
+    /* Features */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      padding: 40px 0;
+    }
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: var(--shadow-soft);
+    }
+    .feature-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+      display: block;
+    }
+    .feature-card h3 {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .feature-card p {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    /* Pricing */
+    .pricing {
+      padding: 60px 0;
+      text-align: center;
+    }
+    .pricing h2 {
+      font-size: clamp(28px, 4vw, 40px);
+      margin-bottom: 12px;
+    }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      max-width: 700px;
+      margin: 32px auto 0;
+    }
+    .plan-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: 20px;
+      padding: 28px 24px;
+      text-align: left;
+      box-shadow: var(--shadow-soft);
+    }
+    .plan-card.featured {
+      border: 2px solid var(--pro-gold);
+      position: relative;
+    }
+    .plan-card.featured::before {
+      content: 'Recomendado';
+      position: absolute;
+      top: -12px;
+      right: 16px;
+      background: var(--pro-gold);
+      color: var(--text-primary);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+    }
+    .plan-card h3 { font-size: 20px; margin-bottom: 4px; }
+    .plan-card .price {
+      font-size: 32px;
+      font-weight: 800;
+      margin: 12px 0 4px;
+    }
+    .plan-card .price-sub {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+    .plan-card ul {
+      list-style: none;
+      padding: 0;
+    }
+    .plan-card li {
+      font-size: 14px;
+      padding: 6px 0;
+      color: var(--text-secondary);
+    }
+    .plan-card li::before {
+      content: '✓ ';
+      color: var(--passeio);
+      font-weight: 700;
+    }
+
+    /* Footer */
+    footer {
+      background: var(--bg-card);
+      border-top: 1px solid var(--border-light);
+      padding: 40px 0;
+      margin-top: 60px;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+    footer .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      justify-content: space-between;
+    }
+    footer a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      margin-right: 16px;
+    }
+    footer a:hover { color: var(--text-primary); }
+
+    /* Disclaimer */
+    .disclaimer {
+      font-size: 12px;
+      color: var(--text-tertiary);
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <div class="container">
+        <span class="badge"><span class="dot"></span>Lançamento em breve · iOS & Android</span>
+        <h1>Cuide do seu pet com calma e clareza.</h1>
+        <p>Registre comida, água, passeios, vacinas e peso em segundos. Veja o histórico, compartilhe com a família e nunca mais esqueça uma vacina.</p>
+        <div class="cta-row">
+          <a href="#planos" class="btn btn-primary">Ver planos</a>
+          <a href="#features" class="btn btn-secondary">Como funciona</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="features" class="container">
+      <div class="features">
+        <div class="feature-card">
+          <span class="feature-icon">🍖</span>
+          <h3>Rotina sem esforço</h3>
+          <p>Um toque registra cada ação. Sem formulários longos, sem fricção.</p>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">📊</span>
+          <h3>Histórico que ajuda</h3>
+          <p>Padrões de alimentação, peso e atividade — leve pro veterinário em PDF.</p>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">👨‍👩‍👦</span>
+          <h3>Família compartilhada</h3>
+          <p>Todos os tutores acompanham em tempo real. Cada um vê quem fez o quê.</p>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">💉</span>
+          <h3>Vacinas e consultas</h3>
+          <p>Lembretes automáticos. Calendário de saúde sempre em dia.</p>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">🔒</span>
+          <h3>Seguro de verdade</h3>
+          <p>Dados criptografados no aparelho (AES-256). Bloqueio com Face ID.</p>
+        </div>
+        <div class="feature-card">
+          <span class="feature-icon">☁️</span>
+          <h3>Backup na nuvem</h3>
+          <p>Trocou de celular? Faça login e tudo está lá. (Premium)</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="planos" class="pricing container">
+      <h2>Comece grátis. Premium quando fizer sentido.</h2>
+      <p style="color: var(--text-secondary)">Trial de 7 dias, sem cartão. Cancele quando quiser.</p>
+
+      <div class="pricing-grid">
+        <div class="plan-card">
+          <h3>Grátis</h3>
+          <div class="price">R$ 0</div>
+          <div class="price-sub">para sempre</div>
+          <ul>
+            <li>Registro ilimitado de ações</li>
+            <li>Vacinas e consultas</li>
+            <li>Histórico de 30 dias</li>
+            <li>1 pet, 1 dispositivo</li>
+          </ul>
+        </div>
+
+        <div class="plan-card featured">
+          <h3>Premium</h3>
+          <div class="price">R$ 14,90<span style="font-size: 16px; font-weight: 500; color: var(--text-secondary)">/mês</span></div>
+          <div class="price-sub">ou R$ 99/ano (R$ 8,25/mês) · trial de 7 dias</div>
+          <ul>
+            <li>Tudo do Grátis</li>
+            <li>Histórico ilimitado</li>
+            <li>Família compartilhada (até 5 tutores)</li>
+            <li>Backup automático na nuvem</li>
+            <li>Múltiplos pets</li>
+            <li>Relatórios em PDF para o veterinário</li>
+          </ul>
+        </div>
+      </div>
+
+      <p class="disclaimer">
+        Os preços podem variar de acordo com a App Store / Google Play. As compras são gerenciadas pela Apple ou Google.<br>
+        O CronoPet não substitui acompanhamento veterinário profissional.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    <div class="container">
+      <div>
+        <strong>CronoPet</strong> · Feito com carinho no Brasil
+      </div>
+      <div>
+        <a href="/privacy">Privacidade</a>
+        <a href="/terms">Termos</a>
+        <a href="mailto:contato@cronopet.app">Contato</a>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
