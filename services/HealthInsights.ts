@@ -26,6 +26,7 @@
 import type {
   ActionLog, WeightEntry, MedicalEvent, PetProfile,
 } from '@/types/pet';
+import { getBreedHealthProfile, type BreedHealthProfile } from '@/data/breed-conditions';
 
 // ─── Tipos públicos ────────────────────────────────────────────────────
 
@@ -37,7 +38,11 @@ export type InsightCategory =
   | 'hydration'
   | 'stool'
   | 'urine'
-  | 'medical';
+  | 'medical'
+  | 'breed'        // Predisposição racial detectada via sintomas
+  | 'exercise'     // Deficit/excesso de exercício vs recomendado
+  | 'grooming'     // Banho/tosa atrasados
+  | 'thermal';     // Risco térmico (calor/frio) por raça
 
 export interface HealthInsight {
   /** ID estável (mesmo conteúdo = mesmo ID, pra dismiss persistir) */
@@ -56,7 +61,7 @@ export interface HealthInsight {
 }
 
 interface AnalyzeInput {
-  pet: Pick<PetProfile, 'tipo' | 'idealWeightKg'>;
+  pet: Pick<PetProfile, 'tipo' | 'raca' | 'idealWeightKg'>;
   actionHistory: ActionLog[];
   weightHistory: WeightEntry[];
   medicalEvents: MedicalEvent[];
@@ -64,6 +69,8 @@ interface AnalyzeInput {
   now?: number;
   /** IDs já dismissados — não retorna eles */
   dismissedIds?: string[];
+  /** Temperatura ambiente atual em °C (do useWeather) — usado pra alerta térmico */
+  ambientTempC?: number | null;
 }
 
 // ─── API pública ───────────────────────────────────────────────────────
@@ -74,15 +81,22 @@ interface AnalyzeInput {
  */
 export function analyzeHealth(input: AnalyzeInput): HealthInsight[] {
   const now = input.now ?? Date.now();
+  const breedProfile = input.pet.raca
+    ? getBreedHealthProfile(input.pet.raca, input.pet.tipo)
+    : null;
+
   const ctx: Ctx = {
     now,
     pet: input.pet,
     logs: input.actionHistory,
     weights: input.weightHistory,
     events: input.medicalEvents,
+    breedProfile,
+    ambientTempC: input.ambientTempC ?? null,
   };
 
   const all: HealthInsight[] = [
+    // Detectores genéricos
     ...detectWeightVariation(ctx),
     ...detectWeightTrend(ctx),
     ...detectAppetiteDrop(ctx),
@@ -92,6 +106,11 @@ export function analyzeHealth(input: AnalyzeInput): HealthInsight[] {
     ...detectConstipation(ctx),
     ...detectAbnormalAppearance(ctx),
     ...detectRecurrentMedicalEvents(ctx),
+    // Detectores raça-específicos
+    ...detectBreedRiskMatch(ctx),
+    ...detectExerciseDeficit(ctx),
+    ...detectBathOverdue(ctx),
+    ...detectThermalStress(ctx),
   ];
 
   const dismissed = new Set(input.dismissedIds ?? []);
@@ -107,10 +126,12 @@ export function analyzeHealth(input: AnalyzeInput): HealthInsight[] {
 
 interface Ctx {
   now: number;
-  pet: Pick<PetProfile, 'tipo' | 'idealWeightKg'>;
+  pet: Pick<PetProfile, 'tipo' | 'raca' | 'idealWeightKg'>;
   logs: ActionLog[];
   weights: WeightEntry[];
   events: MedicalEvent[];
+  breedProfile: BreedHealthProfile | null;
+  ambientTempC: number | null;
 }
 
 const DAY_MS = 86_400_000;
@@ -515,4 +536,160 @@ function labelMedicalType(type: string): string {
     outro: 'sintoma',
   };
   return labels[type] ?? type;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// Detectores raça-específicos
+// ═══════════════════════════════════════════════════════════════════════
+
+// ─── 10. Sintoma + predisposição racial ──────────────────────────────
+//
+// Cruza eventos médicos registrados nos últimos 30 dias com as
+// predisposições conhecidas da raça. Se um sintoma observado bater com
+// algo que a raça é predisposta, sobe pra "warning" mesmo se aparece só 1x
+// (pq o risco-base é maior).
+
+function detectBreedRiskMatch(ctx: Ctx): HealthInsight[] {
+  if (!ctx.breedProfile || ctx.breedProfile.predispositions.length === 0) return [];
+
+  const cutoff = ctx.now - 30 * DAY_MS;
+  const recent = ctx.events.filter((e) => e.timestamp >= cutoff);
+  if (recent.length === 0) return [];
+
+  const out: HealthInsight[] = [];
+  const matched = new Set<string>(); // Evita duplicar a mesma predisposição
+
+  for (const pred of ctx.breedProfile.predispositions) {
+    if (matched.has(pred.condition)) continue;
+    if (pred.watchFor.length === 0) continue; // obesityProne etc não tem sintoma observável
+
+    // Procura algum evento médico registrado que bata com os sintomas-alvo
+    const hits = recent.filter((e) => pred.watchFor.includes(e.type));
+    if (hits.length === 0) continue;
+
+    matched.add(pred.condition);
+    const sev: InsightSeverity = pred.severity === 'serious' ? 'alert'
+      : pred.severity === 'common' ? 'warning' : 'info';
+
+    out.push({
+      id: `breed_match_${pred.condition.replace(/\s+/g, '_').toLowerCase()}_${dayKey(ctx.now)}`,
+      severity: sev,
+      category: 'breed',
+      title: `Sinal compatível com predisposição racial`,
+      message: `${ctx.breedProfile.displayName} tem predisposição a "${pred.condition}". Você registrou ${hits.length} ${hits.length === 1 ? 'evento' : 'eventos'} compatível${hits.length === 1 ? '' : 'eis'} nos últimos 30 dias.`,
+      suggestion: `${pred.brief} Mencione esse padrão ao veterinário.`,
+      detectedAt: ctx.now,
+      evidence: { breed: ctx.breedProfile.displayName, condition: pred.condition, hits: hits.length },
+    });
+  }
+
+  // Limita a 2 alertas raça-match por vez pra não saturar a UI
+  return out.slice(0, 2);
+}
+
+// ─── 11. Deficit de exercício (cachorros) ────────────────────────────
+//
+// Compara minutos de passeio dos últimos 7 dias com o recomendado pra raça.
+// Só dispara pra cachorro (gato exerciseMinPerDay = 0).
+
+function detectExerciseDeficit(ctx: Ctx): HealthInsight[] {
+  if (!ctx.breedProfile || ctx.breedProfile.exerciseMinPerDay === 0) return [];
+
+  const cutoff = ctx.now - 7 * DAY_MS;
+  const walks = ctx.logs.filter((l) => l.key === 'passeio' && l.timestamp >= cutoff);
+  if (walks.length === 0 && ctx.logs.length < 7) return []; // Não tem baseline
+
+  const totalMinutes = walks.reduce((sum, l) => sum + (l.duration ?? 30), 0);
+  const dailyAvg = totalMinutes / 7;
+  const recommended = ctx.breedProfile.exerciseMinPerDay;
+  const ratio = dailyAvg / recommended;
+
+  if (ratio >= 0.7) return []; // 70%+ do recomendado tá ok
+
+  const sev: InsightSeverity = ratio < 0.3 ? 'warning' : 'info';
+  return [{
+    id: `exercise_deficit_${dayKey(ctx.now)}`,
+    severity: sev,
+    category: 'exercise',
+    title: 'Pet está se exercitando menos que o ideal',
+    message: `Média de ${Math.round(dailyAvg)} min/dia nos últimos 7 dias. ${ctx.breedProfile.displayName} precisa de ~${recommended} min/dia.`,
+    suggestion: ratio < 0.3
+      ? 'Falta de exercício leva a obesidade, ansiedade e problemas comportamentais. Tente aumentar gradualmente.'
+      : 'Aumente um pouco o tempo dos passeios — faz diferença pro corpo e pra cabeça.',
+    detectedAt: ctx.now,
+    evidence: { dailyAvg, recommended, ratio },
+  }];
+}
+
+// ─── 12. Banho atrasado ──────────────────────────────────────────────
+//
+// Verifica se passou da frequência recomendada pela raça desde o último banho.
+// Se nunca registrou banho, ignora (não dá pra inferir).
+
+function detectBathOverdue(ctx: Ctx): HealthInsight[] {
+  if (!ctx.breedProfile || ctx.breedProfile.bathFrequencyDays === 0) return [];
+
+  const baths = ctx.logs.filter((l) => l.key === 'banho');
+  if (baths.length === 0) return []; // Sem registro pra comparar
+
+  const lastBath = baths.reduce((a, b) => (a.timestamp > b.timestamp ? a : b));
+  const daysSince = (ctx.now - lastBath.timestamp) / DAY_MS;
+  const recommended = ctx.breedProfile.bathFrequencyDays;
+  const overdueRatio = daysSince / recommended;
+
+  if (overdueRatio < 1.5) return []; // Menos de 50% atrasado, não alerta
+
+  const sev: InsightSeverity = overdueRatio > 2.5 ? 'warning' : 'info';
+  return [{
+    id: `bath_overdue_${dayKey(ctx.now)}`,
+    severity: sev,
+    category: 'grooming',
+    title: 'Banho atrasado',
+    message: `Último banho há ${Math.round(daysSince)} dias. ${ctx.breedProfile.displayName} costuma precisar a cada ~${recommended} dias.`,
+    suggestion: ctx.breedProfile.groomingNeeds === 'high'
+      ? 'Pelagem dessa raça pede manutenção frequente — nós e dermatites surgem rápido se ficar sem cuidado.'
+      : 'Banho mantém a pele saudável e ajuda a perceber caroços, parasitas ou ferimentos.',
+    detectedAt: ctx.now,
+    evidence: { daysSince: Math.round(daysSince), recommended, ratio: overdueRatio },
+  }];
+}
+
+// ─── 13. Estresse térmico (calor) ────────────────────────────────────
+//
+// Se a raça tem heatTolerance baixo (braquicefálicos, pelagem dupla)
+// e a temperatura ambiente passou de 28°C, alerta pra evitar passeios
+// nas horas quentes. Usa weather (passa-se ambientTempC do useWeather).
+
+function detectThermalStress(ctx: Ctx): HealthInsight[] {
+  if (!ctx.breedProfile || ctx.ambientTempC == null) return [];
+
+  // Calor: heatTolerance low + temp ≥ 28°C
+  if (ctx.breedProfile.heatTolerance === 'low' && ctx.ambientTempC >= 28) {
+    return [{
+      id: `heat_risk_${dayKey(ctx.now)}`,
+      severity: ctx.ambientTempC >= 32 ? 'alert' : 'warning',
+      category: 'thermal',
+      title: 'Risco térmico — temperatura alta',
+      message: `Hoje está ${ctx.ambientTempC}°C. ${ctx.breedProfile.displayName} tem baixa tolerância ao calor.`,
+      suggestion: 'Passeios só de manhã cedo ou após o pôr do sol. Hidratação reforçada. Sinais de hipertermia (ofegante intenso, gengiva escura): emergência.',
+      detectedAt: ctx.now,
+      evidence: { tempC: ctx.ambientTempC, tolerance: ctx.breedProfile.heatTolerance },
+    }];
+  }
+
+  // Frio: coldTolerance low + temp ≤ 12°C
+  if (ctx.breedProfile.coldTolerance === 'low' && ctx.ambientTempC <= 12) {
+    return [{
+      id: `cold_risk_${dayKey(ctx.now)}`,
+      severity: 'info',
+      category: 'thermal',
+      title: 'Frio — atenção pra raça sensível',
+      message: `Hoje está ${ctx.ambientTempC}°C. ${ctx.breedProfile.displayName} sente frio mais que outras raças.`,
+      suggestion: 'Roupinha em passeios curtos. Cama em local protegido de corrente de ar.',
+      detectedAt: ctx.now,
+      evidence: { tempC: ctx.ambientTempC, tolerance: ctx.breedProfile.coldTolerance },
+    }];
+  }
+
+  return [];
 }

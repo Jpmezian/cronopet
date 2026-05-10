@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { WeightChart } from '@/components/medical/WeightChart';
+import { BreedHealthCard } from '@/components/medical/BreedHealthCard';
 import { useMotion } from '@/hooks/useMotion';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { usePetStore } from '@/store/usePetStore';
@@ -262,6 +263,13 @@ export default function MedicalScreen() {
             organizar informações e facilitar o acompanhamento clínico profissional.
           </Text>
         </View>
+
+        {/* ── Perfil de saúde da raça ──────────────────── */}
+        {pet.raca ? (
+          <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
+            <BreedHealthCard raca={pet.raca} tipo={pet.tipo} petNome={pet.nome || 'seu pet'} />
+          </View>
+        ) : null}
 
         {/* ── Gerar Relatório PDF ──────────────────────── */}
         <View style={{ paddingHorizontal: 20, marginTop: 20 }}>

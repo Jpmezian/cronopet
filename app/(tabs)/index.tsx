@@ -169,16 +169,17 @@ export default function PetDashboard() {
   const dismissInsight      = usePetStore((s) => s.dismissInsight);
   const showToast           = useToastStore((s) => s.showToast);
 
-  // ── Health Insights (heurística de padrões clínicos) ──────
+  // ── Health Insights (heurística + raça-aware) ─────────────
   const healthInsights = useMemo(
     () => analyzeHealth({
-      pet: { tipo: pet.tipo, idealWeightKg: pet.idealWeightKg },
+      pet: { tipo: pet.tipo, raca: pet.raca, idealWeightKg: pet.idealWeightKg },
       actionHistory,
       weightHistory,
       medicalEvents,
       dismissedIds: dismissedInsightIds,
+      ambientTempC: weather.temp ?? null,
     }),
-    [pet.tipo, pet.idealWeightKg, actionHistory, weightHistory, medicalEvents, dismissedInsightIds],
+    [pet.tipo, pet.raca, pet.idealWeightKg, actionHistory, weightHistory, medicalEvents, dismissedInsightIds, weather.temp],
   );
 
   // ── Resumo Semanal ────────────────────────────────────────

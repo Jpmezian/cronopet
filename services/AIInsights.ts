@@ -32,6 +32,7 @@ import * as Sentry from '@sentry/react-native';
 import type {
   ActionLog, WeightEntry, MedicalEvent, PetProfile,
 } from '@/types/pet';
+import { getBreedHealthProfile } from '@/data/breed-conditions';
 
 // ─── Tipos públicos ────────────────────────────────────────────────────
 
@@ -189,6 +190,29 @@ function anonymizePayload(req: AnalyzeRequest) {
     medicalEventsByType[e.type] = (medicalEventsByType[e.type] ?? 0) + 1;
   }
 
+  // Perfil racial (predisposições conhecidas) — ajuda muito o LLM
+  // a interpretar os sintomas no contexto certo. Sem PII (só raça pública).
+  const breedProfile = req.pet.raca
+    ? getBreedHealthProfile(req.pet.raca, req.pet.tipo)
+    : null;
+
+  const breedContext = breedProfile ? {
+    displayName: breedProfile.displayName,
+    knownPredispositions: breedProfile.predispositions.map((p) => ({
+      condition: p.condition,
+      category: p.category,
+      severity: p.severity,
+      watchFor: p.watchFor,
+      ageOnsetYears: p.ageOnsetYears,
+    })),
+    weightRange: breedProfile.weightRange,
+    lifeExpectancyYears: breedProfile.lifeExpectancyYears,
+    exerciseMinPerDay: breedProfile.exerciseMinPerDay,
+    obesityRisk: breedProfile.obesityRisk,
+    heatTolerance: breedProfile.heatTolerance,
+    coldTolerance: breedProfile.coldTolerance,
+  } : null;
+
   return {
     pet: {
       tipo: req.pet.tipo,
@@ -205,6 +229,7 @@ function anonymizePayload(req: AnalyzeRequest) {
       medicalEventsByType,
     },
     weights,
+    breedContext, // null se raça não conhecida
   };
 }
 
