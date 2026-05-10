@@ -461,8 +461,20 @@ export function recommendFoods(params: {
   size:       PetSize;
   goal:       NutritionGoal;
   maxResults?: number;
+  /**
+   * Necessidades especiais por raça (vindo de breed-conditions.ts).
+   * Quando presente, ração com `purpose: 'sensitive'` ganha bônus se
+   * a raça é predisposta a alergias/dermatite/pancreatite.
+   */
+  breedHints?: {
+    sensitiveSkin?: boolean;       // Bulldog Francês, Shih Tzu, Pit, Lab, Golden, etc
+    sensitiveStomach?: boolean;    // Schnauzer (pancreatite), Pastor (EPI), Bengal
+    obesityProne?: boolean;        // Lab, Beagle, Cavalier, Pug, Dachshund
+    lowFatNeeded?: boolean;        // Schnauzer (hipertrigliceridemia)
+    urinaryCare?: boolean;         // Dálmata (uratos), gato com FLUTD
+  };
 }): FoodProduct[] {
-  const { species, lifeStage, size, goal, maxResults = 3 } = params;
+  const { species, lifeStage, size, goal, maxResults = 3, breedHints } = params;
 
   // Filtro duro
   let candidates = FOODS_DB.filter(
@@ -497,6 +509,24 @@ export function recommendFoods(params: {
     if (f.tier === 'premium')      score += 5;
     if (f.tier === 'superpremium') score += 3;
     if (f.tier === 'standard')     score += 4;  // valorizar opções acessíveis
+
+    // Boost por necessidade racial (override mais leve que objetivo principal)
+    if (breedHints) {
+      if ((breedHints.sensitiveSkin || breedHints.sensitiveStomach) && f.purposes.includes('sensitive')) {
+        score += 60; // grande boost — raça predisposta SEMPRE prefere sensible
+      }
+      if (breedHints.lowFatNeeded && f.kcalPer100g < 360) {
+        // Raças com pancreatite/hipertrigliceridemia: rações mais leves ganham
+        score += 30;
+      }
+      if (breedHints.obesityProne && goal !== 'gain' && f.purposes.includes('weight_loss')) {
+        score += 25; // mesmo se goal=manter, se a raça engorda fácil dá bônus pra weight_loss
+      }
+      if (breedHints.urinaryCare && f.tier === 'superpremium') {
+        // Rações superpremium têm formulação melhor pra trato urinário
+        score += 15;
+      }
+    }
 
     return { food: f, score };
   });

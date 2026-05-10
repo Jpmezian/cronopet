@@ -30,6 +30,9 @@ import {
   TIER_LABELS, TIER_TONE, FOOD_DISCLAIMER,
   type FoodProduct, type FoodTier,
 } from '@/data/foods';
+import {
+  getBreedHealthProfile, getBreedFoodHints,
+} from '@/data/breed-conditions';
 import { getBreedSize, PET_SIZE_LABELS, PET_SIZE_WEIGHT_RANGE } from '@/data/breed-meta';
 import type {
   NutritionGoal, BodyCondition, BaselineActivity, PetSize,
@@ -164,14 +167,16 @@ export default function NutritionScreen() {
   // ─── Rações recomendadas ───────────────────────────────────
 
   const recommendedFoods = useMemo(() => {
+    const breedProfile = getBreedHealthProfile(pet.raca, pet.tipo);
     return recommendFoods({
       species,
       lifeStage,
       size,
       goal,
       maxResults: 3,
+      breedHints: getBreedFoodHints(breedProfile),
     });
-  }, [species, lifeStage, size, goal]);
+  }, [species, lifeStage, size, goal, pet.raca, pet.tipo]);
 
   // ─── Salvar plano ──────────────────────────────────────────
 
