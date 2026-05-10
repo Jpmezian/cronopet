@@ -14,7 +14,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { usePetStore } from '@/store/usePetStore';
 import { useThemeColors } from '@/hooks/useThemeColors';
-import { breedsForType } from '@/data/breeds';
+import { breedsForType, fuzzyBreeds, canonicalizeBreed } from '@/data/breeds';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { IllustrationWelcome } from '@/components/onboarding/IllustrationWelcome';
 import { IllustrationRoutine } from '@/components/onboarding/IllustrationRoutine';
@@ -79,10 +79,9 @@ export default function OnboardingScreen() {
   const handleRacaChange = useCallback((text: string) => {
     setRaca(text);
     if (text.length < 2) { setRacaSuggestions([]); return; }
-    const filtered = breedsForType(tipo)
-      .filter((b) => b.toLowerCase().includes(text.toLowerCase()))
-      .slice(0, 5);
-    setRacaSuggestions(filtered);
+    // Fuzzy: tolerante a typo, acento, ordem de palavra
+    const matches = fuzzyBreeds(text, tipo, 5);
+    setRacaSuggestions(matches.map((m) => m.value));
   }, [tipo]);
 
   const handlePickPhoto = useCallback(async () => {
@@ -96,8 +95,13 @@ export default function OnboardingScreen() {
 
   const handleFinish = useCallback(async () => {
     if (!nome.trim()) return;
+    // Auto-corrige raça se tutor digitou algo próximo de uma raça conhecida
+    // Ex: "Lavrador" → "Labrador Retriever". Se nada bate, mantém como digitado.
+    const racaInput = raca.trim();
+    const canonical = racaInput ? canonicalizeBreed(racaInput, tipo) : null;
+    const racaFinal = canonical ?? racaInput ?? '';
     await completeOnboarding(
-      nome.trim(), tipo, raca.trim() || 'Sem raça definida',
+      nome.trim(), tipo, racaFinal || 'Sem raça definida',
       foto ?? DEFAULT_FOTO,
       nascimento.trim() || undefined,
     );

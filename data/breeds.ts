@@ -10,6 +10,7 @@ export const DOG_BREEDS: string[] = [
   'American Bully',
   'American Pit Bull Terrier',
   'American Staffordshire Terrier',
+  'Australian Shepherd',
   'Basset Hound',
   'Beagle',
   'Bernese Mountain Dog',
@@ -26,6 +27,7 @@ export const DOG_BREEDS: string[] = [
   'Chihuahua',
   'Chow-Chow',
   'Cocker Spaniel',
+  'Collie',
   'Dachshund',
   'Dálmata',
   'Dobermann',
@@ -45,6 +47,7 @@ export const DOG_BREEDS: string[] = [
   'Mastim Inglês',
   'Mastim Napolitano',
   'Mastim Tibetano',
+  'Pastor Belga Malinois',
   'Pinscher Miniatura',
   'Poodle',
   'Pug',
@@ -52,7 +55,9 @@ export const DOG_BREEDS: string[] = [
   'Samojeda',
   'São Bernardo',
   'Schnauzer',
+  'Setter Irlandês',
   'Shar-Pei',
+  'Shiba Inu',
   'Shih Tzu',
   'Spitz Alemão',
   'Staffordshire Bull Terrier',
@@ -61,6 +66,7 @@ export const DOG_BREEDS: string[] = [
   'Weimaraner',
   'Welsh Corgi Pembroke',
   'West Highland White Terrier',
+  'Whippet',
   'Yorkshire Terrier',
 ];
 
@@ -101,4 +107,41 @@ export function breedsForType(tipo: 'cachorro' | 'gato' | 'outro'): string[] {
 export function isKnownBreed(raca: string, tipo: 'cachorro' | 'gato' | 'outro'): boolean {
   const list = breedsForType(tipo);
   return list.some((b) => b.toLowerCase() === raca.trim().toLowerCase());
+}
+
+import { fuzzyMatch, bestMatch as fuzzyBest, type FuzzyMatch } from '@/lib/fuzzy';
+
+/**
+ * Sugestões inteligentes pra autocomplete — tolerante a typos, acentos,
+ * matches parciais e ordem de palavras.
+ *
+ * Substitui o `.includes()` simples do onboarding/edit-profile.
+ *
+ * @example
+ *   fuzzyBreeds("lavrador", "cachorro") → [{value: "Labrador Retriever", score: 50, matchType: "fuzzy"}]
+ *   fuzzyBreeds("york", "cachorro") → [{value: "Yorkshire Terrier", score: 91, matchType: "prefix"}]
+ *   fuzzyBreeds("siames", "gato") → [{value: "Siamês", score: 100, matchType: "exact"}]
+ */
+export function fuzzyBreeds(
+  query: string,
+  tipo: 'cachorro' | 'gato' | 'outro',
+  limit: number = 5,
+): FuzzyMatch[] {
+  return fuzzyMatch(query, breedsForType(tipo), { limit });
+}
+
+/**
+ * Tenta normalizar uma raça digitada errada para a forma canônica.
+ * Usado quando o tutor finaliza o input — se ele digitou "Lavrador",
+ * salva como "Labrador Retriever".
+ *
+ * Retorna null se nenhum match passou do threshold de confiança.
+ */
+export function canonicalizeBreed(
+  raca: string,
+  tipo: 'cachorro' | 'gato' | 'outro',
+): string | null {
+  if (!raca.trim()) return null;
+  const match = fuzzyBest(raca, breedsForType(tipo), 60);
+  return match ? match.value : null;
 }

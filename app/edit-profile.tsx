@@ -8,7 +8,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { usePetStore } from '@/store/usePetStore';
 import { useThemeColors } from '@/hooks/useThemeColors';
-import { breedsForType } from '@/data/breeds';
+import { breedsForType, fuzzyBreeds, canonicalizeBreed } from '@/data/breeds';
 import type { PetType } from '@/types/pet';
 import * as Haptics from 'expo-haptics';
 import { ChevronLeft, Camera } from 'lucide-react-native';
@@ -59,11 +59,9 @@ export default function EditProfileScreen() {
   const handleRacaChange = useCallback((text: string) => {
     setRaca(text);
     if (text.length < 2) { setRacaSuggestions([]); return; }
-    const list = breedsForType(tipo);
-    const filtered = list.filter((b) =>
-      b.toLowerCase().includes(text.toLowerCase())
-    ).slice(0, 5);
-    setRacaSuggestions(filtered);
+    // Fuzzy: tolerante a typo ("lavrador"), acento ("siames"), prefixo ("york")
+    const matches = fuzzyBreeds(text, tipo, 5);
+    setRacaSuggestions(matches.map((m) => m.value));
   }, [tipo]);
 
   const handlePickPhoto = useCallback(async () => {
@@ -80,7 +78,17 @@ export default function EditProfileScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setSaving(true);
     try {
-      await updatePetProfile(nome.trim(), tipo, raca.trim() || 'Sem raça definida', foto, nascimento.trim() || undefined);
+      // Auto-corrige typo se input bater com raça conhecida
+      const racaInput = raca.trim();
+      const canonical = racaInput ? canonicalizeBreed(racaInput, tipo) : null;
+      const racaFinal = canonical ?? racaInput ?? '';
+      await updatePetProfile(
+        nome.trim(),
+        tipo,
+        racaFinal || 'Sem raça definida',
+        foto,
+        nascimento.trim() || undefined,
+      );
       router.back();
     } finally {
       setSaving(false);
