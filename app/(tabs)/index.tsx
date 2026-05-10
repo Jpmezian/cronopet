@@ -25,6 +25,7 @@ import { usePremiumTriggers } from '@/hooks/usePremiumTriggers';
 import { WellnessCard } from '@/components/home/WellnessCard';
 import { NutritionEntryCard } from '@/components/home/NutritionEntryCard';
 import { HealthInsightsCard } from '@/components/home/HealthInsightsCard';
+import { CriticalInsightBanner } from '@/components/home/CriticalInsightBanner';
 import { analyzeHealth } from '@/services/HealthInsights';
 import { BirthdayCard } from '@/components/home/BirthdayCard';
 import { ActivityMilestoneCard } from '@/components/home/ActivityMilestoneCard';
@@ -167,19 +168,42 @@ export default function PetDashboard() {
   const medicalEvents       = usePetStore((s) => s.medicalEvents);
   const dismissedInsightIds = usePetStore((s) => s.dismissedInsightIds);
   const dismissInsight      = usePetStore((s) => s.dismissInsight);
+  const snoozedInsights     = usePetStore((s) => s.snoozedInsights);
   const showToast           = useToastStore((s) => s.showToast);
 
   // ── Health Insights (heurística + raça-aware) ─────────────
+  // Snooze ativo conta como dismiss temporário pra a lista do dashboard.
+  const effectiveDismissedIds = useMemo(() => {
+    const now = Date.now();
+    const active = Object.entries(snoozedInsights)
+      .filter(([_, until]) => until > now)
+      .map(([id]) => id);
+    return [...dismissedInsightIds, ...active];
+  }, [dismissedInsightIds, snoozedInsights]);
+
   const healthInsights = useMemo(
     () => analyzeHealth({
       pet: { tipo: pet.tipo, raca: pet.raca, idealWeightKg: pet.idealWeightKg },
       actionHistory,
       weightHistory,
       medicalEvents,
-      dismissedIds: dismissedInsightIds,
+      dismissedIds: effectiveDismissedIds,
       ambientTempC: weather.temp ?? null,
     }),
-    [pet.tipo, pet.raca, pet.idealWeightKg, actionHistory, weightHistory, medicalEvents, dismissedInsightIds, weather.temp],
+    [pet.tipo, pet.raca, pet.idealWeightKg, actionHistory, weightHistory, medicalEvents, effectiveDismissedIds, weather.temp],
+  );
+
+  // Insights brutos (sem dismiss/snooze) — usados pelo banner crítico,
+  // que tem suas próprias regras de snooze visualmente.
+  const allInsights = useMemo(
+    () => analyzeHealth({
+      pet: { tipo: pet.tipo, raca: pet.raca, idealWeightKg: pet.idealWeightKg },
+      actionHistory,
+      weightHistory,
+      medicalEvents,
+      ambientTempC: weather.temp ?? null,
+    }),
+    [pet.tipo, pet.raca, pet.idealWeightKg, actionHistory, weightHistory, medicalEvents, weather.temp],
   );
 
   // ── Resumo Semanal ────────────────────────────────────────
@@ -631,6 +655,9 @@ export default function PetDashboard() {
           idadeLabel={pet.nascimento ? getPetAge(pet.nascimento) : undefined}
           streak={streak}
         />
+
+        {/* Banner crítico — só aparece com insight severity=alert ativo */}
+        <CriticalInsightBanner insights={allInsights} pet={pet} />
 
         {/* Quick Stats Strip */}
         <QuickStats
