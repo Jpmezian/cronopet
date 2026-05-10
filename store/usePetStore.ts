@@ -173,6 +173,23 @@ interface PetStore extends PetState {
   /** Adia um insight por N horas (não volta a mostrar até o tempo passar) */
   snoozeInsight: (id: string, hours: number) => void;
 
+  /** Categorias de insight que o tutor desativou (não geram alerta nem aparecem) */
+  disabledInsightCategories: string[];
+  /** Liga/desliga uma categoria de insight */
+  toggleInsightCategory: (category: string, enabled: boolean) => void;
+
+  /** Quantidade de consultas marcadas a partir do banner de alerta */
+  alertsHandledCount: number;
+  /** Timestamp da última consulta marcada via banner — pra UI de "última ação" */
+  alertsHandledLastAt: number | null;
+  /** Incrementa contador (chamado pelo CriticalInsightBanner) */
+  registerAlertHandled: () => void;
+
+  /** IDs de insights que já viraram push notification — evita duplicar */
+  notifiedInsightIds: Record<string, number>;
+  /** Marca insight como notificado em determinado timestamp */
+  markInsightNotified: (id: string) => void;
+
   // ── Premium ──────────────────────────────────────────────
   /**
    * Chamado quando o StoreKit/RevenueCat confirma assinatura.
@@ -230,6 +247,10 @@ export const usePetStore = create<PetStore>()(
       shownPremiumPrompts: [],
       dismissedInsightIds: [],
       snoozedInsights: {},
+      disabledInsightCategories: [],
+      alertsHandledCount: 0,
+      alertsHandledLastAt: null,
+      notifiedInsightIds: {},
       biometricLockEnabled: false,
       isPremium:        false,
       premiumPlan:      null,
@@ -585,6 +606,28 @@ export const usePetStore = create<PetStore>()(
         set((s) => ({ snoozedInsights: { ...s.snoozedInsights, [id]: until } }));
       },
 
+      toggleInsightCategory: (category, enabled) => {
+        set((s) => {
+          const current = new Set(s.disabledInsightCategories);
+          if (enabled) current.delete(category);
+          else current.add(category);
+          return { disabledInsightCategories: Array.from(current) };
+        });
+      },
+
+      registerAlertHandled: () => {
+        set((s) => ({
+          alertsHandledCount: s.alertsHandledCount + 1,
+          alertsHandledLastAt: Date.now(),
+        }));
+      },
+
+      markInsightNotified: (id) => {
+        set((s) => ({
+          notifiedInsightIds: { ...s.notifiedInsightIds, [id]: Date.now() },
+        }));
+      },
+
       markPremiumPromptShown: (id) => {
         set((s) => ({
           shownPremiumPrompts: s.shownPremiumPrompts.includes(id)
@@ -689,6 +732,9 @@ export const usePetStore = create<PetStore>()(
           dismissInsight,
           clearDismissedInsights,
           snoozeInsight,
+          toggleInsightCategory,
+          registerAlertHandled,
+          markInsightNotified,
           setPremiumStatus,
           startTrial,
           recordFirstAppOpen,

@@ -71,6 +71,8 @@ interface AnalyzeInput {
   dismissedIds?: string[];
   /** Temperatura ambiente atual em °C (do useWeather) — usado pra alerta térmico */
   ambientTempC?: number | null;
+  /** Categorias de insight que o tutor desativou — não geram alerta */
+  disabledCategories?: string[];
 }
 
 // ─── API pública ───────────────────────────────────────────────────────
@@ -114,9 +116,10 @@ export function analyzeHealth(input: AnalyzeInput): HealthInsight[] {
   ];
 
   const dismissed = new Set(input.dismissedIds ?? []);
+  const disabledCats = new Set(input.disabledCategories ?? []);
 
   return all
-    .filter((i) => !dismissed.has(i.id))
+    .filter((i) => !dismissed.has(i.id) && !disabledCats.has(i.category))
     .sort(bySeverityDesc);
 }
 

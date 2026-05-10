@@ -54,6 +54,7 @@ export function CriticalInsightBanner({ insights, pet }: Props) {
   const snoozeInsight = usePetStore((s) => s.snoozeInsight);
   const snoozedInsights = usePetStore((s) => s.snoozedInsights);
   const addAppointment = usePetStore((s) => s.addAppointment);
+  const registerAlertHandled = usePetStore((s) => s.registerAlertHandled);
 
   // Filtra: só severity=alert, descartando os já adiados
   const critical = useMemo(() => {
@@ -78,8 +79,9 @@ export function CriticalInsightBanner({ insights, pet }: Props) {
       nota: 'Consulta sugerida pelo app a partir de sinais observados na rotina.',
     });
     if (critical) snoozeInsight(critical.id, 7 * 24);
+    registerAlertHandled();
     showToast('success', `Consulta marcada para ${formatBR(data)}. Edite na aba Saúde se precisar.`);
-  }, [copy, critical, addAppointment, snoozeInsight, showToast]);
+  }, [copy, critical, addAppointment, snoozeInsight, registerAlertHandled, showToast]);
 
   const handleSnooze = useCallback(() => {
     if (!critical) return;

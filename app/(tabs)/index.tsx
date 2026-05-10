@@ -27,6 +27,7 @@ import { NutritionEntryCard } from '@/components/home/NutritionEntryCard';
 import { HealthInsightsCard } from '@/components/home/HealthInsightsCard';
 import { CriticalInsightBanner } from '@/components/home/CriticalInsightBanner';
 import { analyzeHealth } from '@/services/HealthInsights';
+import { useSmartHealthNotifications } from '@/hooks/useSmartHealthNotifications';
 import { BirthdayCard } from '@/components/home/BirthdayCard';
 import { ActivityMilestoneCard } from '@/components/home/ActivityMilestoneCard';
 import { PetHero } from '@/components/home/PetHero';
@@ -169,6 +170,7 @@ export default function PetDashboard() {
   const dismissedInsightIds = usePetStore((s) => s.dismissedInsightIds);
   const dismissInsight      = usePetStore((s) => s.dismissInsight);
   const snoozedInsights     = usePetStore((s) => s.snoozedInsights);
+  const disabledInsightCategories = usePetStore((s) => s.disabledInsightCategories);
   const showToast           = useToastStore((s) => s.showToast);
 
   // ── Health Insights (heurística + raça-aware) ─────────────
@@ -189,12 +191,13 @@ export default function PetDashboard() {
       medicalEvents,
       dismissedIds: effectiveDismissedIds,
       ambientTempC: weather.temp ?? null,
+      disabledCategories: disabledInsightCategories,
     }),
-    [pet.tipo, pet.raca, pet.idealWeightKg, actionHistory, weightHistory, medicalEvents, effectiveDismissedIds, weather.temp],
+    [pet.tipo, pet.raca, pet.idealWeightKg, actionHistory, weightHistory, medicalEvents, effectiveDismissedIds, weather.temp, disabledInsightCategories],
   );
 
-  // Insights brutos (sem dismiss/snooze) — usados pelo banner crítico,
-  // que tem suas próprias regras de snooze visualmente.
+  // Insights brutos (sem dismiss/snooze, mas com categorias respeitadas) —
+  // usados pelo banner crítico que tem suas próprias regras de snooze.
   const allInsights = useMemo(
     () => analyzeHealth({
       pet: { tipo: pet.tipo, raca: pet.raca, idealWeightKg: pet.idealWeightKg },
@@ -202,9 +205,14 @@ export default function PetDashboard() {
       weightHistory,
       medicalEvents,
       ambientTempC: weather.temp ?? null,
+      disabledCategories: disabledInsightCategories,
     }),
-    [pet.tipo, pet.raca, pet.idealWeightKg, actionHistory, weightHistory, medicalEvents, weather.temp],
+    [pet.tipo, pet.raca, pet.idealWeightKg, actionHistory, weightHistory, medicalEvents, weather.temp, disabledInsightCategories],
   );
+
+  // Push notification inteligente — agenda alerta pra próxima manhã
+  // quando há insight crítico ainda não notificado.
+  useSmartHealthNotifications(allInsights, pet);
 
   // ── Resumo Semanal ────────────────────────────────────────
   const weeklyCardRef = useRef<View>(null);
