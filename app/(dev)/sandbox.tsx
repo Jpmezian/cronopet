@@ -29,6 +29,9 @@ import { SocialCardView } from '@/components/ui/SocialCardView';
 import { useToastStore } from '@/store/useToastStore';
 import { usePetStore } from '@/store/usePetStore';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { CriticalInsightBanner } from '@/components/home/CriticalInsightBanner';
+import { HealthInsightsCard } from '@/components/home/HealthInsightsCard';
+import type { HealthInsight } from '@/services/HealthInsights';
 import {
   seedActionLogs, seedWeightHistory, seedVaccines, seedAppointments,
 } from '@/data/demo-seed';
@@ -154,6 +157,41 @@ export default function SandboxScreen() {
         {/* ════════════════════════════════════════════════════
             1. ScalePress
             ════════════════════════════════════════════════════ */}
+        {/* ════════════════════════════════════════════════════
+            HEALTH INSIGHTS — banner crítico em 3 severidades + lista
+            ════════════════════════════════════════════════════ */}
+        <Section title="CriticalInsightBanner — alert">
+          <CriticalInsightBanner
+            insights={[mockInsight('alert', 'weight')]}
+            pet={{ nome: 'Bidu', raca: 'Labrador Retriever', tipo: 'cachorro' }}
+          />
+        </Section>
+
+        <Section title="CriticalInsightBanner — breed match">
+          <CriticalInsightBanner
+            insights={[mockInsight('alert', 'breed')]}
+            pet={{ nome: 'Mel', raca: 'Cavalier King Charles Spaniel', tipo: 'cachorro' }}
+          />
+        </Section>
+
+        <Section title="CriticalInsightBanner — appetite">
+          <CriticalInsightBanner
+            insights={[mockInsight('alert', 'appetite')]}
+            pet={{ nome: 'Tom', raca: 'Persa', tipo: 'gato' }}
+          />
+        </Section>
+
+        <Section title="HealthInsightsCard — lista (warning + info)">
+          <HealthInsightsCard
+            insights={[
+              mockInsight('warning', 'hydration'),
+              mockInsight('warning', 'stool'),
+              mockInsight('info', 'exercise'),
+            ]}
+            onDismiss={(id) => showToast('info', `Insight "${id}" descartado`)}
+          />
+        </Section>
+
         <Section title="ScalePress">
           <View style={{ flexDirection: 'row', gap: 12 }}>
             <ScalePress
@@ -661,4 +699,73 @@ function ShareCardsPreview() {
       </Text>
     </Section>
   );
+}
+
+// ─── Mocks pra showcase do HealthInsights ─────────────────────────────
+
+function mockInsight(
+  severity: 'info' | 'warning' | 'alert',
+  category: HealthInsight['category'],
+): HealthInsight {
+  const seed = `${severity}_${category}`;
+  switch (category) {
+    case 'weight':
+      return {
+        id: `mock_${seed}`, severity, category,
+        title: 'Possível perda de peso',
+        message: 'Variação de 7,2% nas últimas 2 semanas (12,5kg → 11,6kg).',
+        suggestion: 'Recomendamos marcar consulta com o veterinário.',
+        detectedAt: Date.now(),
+        evidence: { fromKg: 12.5, toKg: 11.6, days: 14, pct: -7.2 },
+      };
+    case 'breed':
+      return {
+        id: `mock_${seed}`, severity, category,
+        title: 'Sinal compatível com predisposição racial',
+        message: 'Cavalier King Charles tem alta predisposição a doença da valva mitral. Você registrou 2 episódios compatíveis nos últimos 30 dias.',
+        suggestion: 'Mencione esse padrão ao veterinário.',
+        detectedAt: Date.now(),
+        evidence: { breed: 'Cavalier King Charles Spaniel', condition: 'Doença da valva mitral', hits: 2 },
+      };
+    case 'appetite':
+      return {
+        id: `mock_${seed}`, severity, category,
+        title: 'Queda forte de apetite',
+        message: 'Nos últimos 3 dias o pet comeu cerca de 30% do habitual.',
+        suggestion: 'Recomendamos avaliação veterinária.',
+        detectedAt: Date.now(),
+      };
+    case 'hydration':
+      return {
+        id: `mock_${seed}`, severity, category,
+        title: 'Sem registro de água há mais de 24h',
+        message: 'Não há registro de hidratação nas últimas horas.',
+        suggestion: 'Confirme se o pet está bebendo água.',
+        detectedAt: Date.now(),
+      };
+    case 'stool':
+      return {
+        id: `mock_${seed}`, severity, category,
+        title: 'Possível diarreia',
+        message: '3 registros de fezes líquidas em 3 dias.',
+        suggestion: 'Mantenha hidratado e procure veterinário se persistir.',
+        detectedAt: Date.now(),
+      };
+    case 'exercise':
+      return {
+        id: `mock_${seed}`, severity, category,
+        title: 'Pet está se exercitando menos que o ideal',
+        message: 'Média de 25 min/dia nos últimos 7 dias. Border Collie precisa de ~120 min/dia.',
+        suggestion: 'Tente aumentar gradualmente o tempo dos passeios.',
+        detectedAt: Date.now(),
+      };
+    default:
+      return {
+        id: `mock_${seed}`, severity, category,
+        title: 'Insight de teste',
+        message: 'Mensagem de exemplo para o sandbox.',
+        suggestion: 'Sugestão de exemplo.',
+        detectedAt: Date.now(),
+      };
+  }
 }
