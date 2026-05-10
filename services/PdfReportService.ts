@@ -3,6 +3,8 @@ import * as Sharing from 'expo-sharing';
 import { File } from 'expo-file-system';
 import type { ActionLog, MedicalEvent, Vaccine, PetProfile, Appointment, WeightEntry } from '@/types/pet';
 import { escapeHtml } from '@/lib/security';
+import { getBreedHealthProfile, CATEGORY_LABELS, SEVERITY_LABELS } from '@/data/breed-conditions';
+import { analyzeHealth, type HealthInsight } from '@/services/HealthInsights';
 
 // ─── Alias local para deixar o template HTML mais legível ───
 const E = escapeHtml;
@@ -105,6 +107,15 @@ export async function generateVetReport(
 
   // Ocorrências com aparência alterada (últimos 30 dias)
   const abnormalCount = recentLogs.filter((l) => l.appearance === 'abnormal').length;
+
+  // Perfil da raça (educativo) e insights heurísticos detectados
+  const breedProfile = pet.raca ? getBreedHealthProfile(pet.raca, pet.tipo) : null;
+  const healthInsights = analyzeHealth({
+    pet: { tipo: pet.tipo, raca: pet.raca, idealWeightKg: pet.idealWeightKg },
+    actionHistory,
+    weightHistory,
+    medicalEvents,
+  });
 
   // Foto do pet
   const petPhotoSrc = pet.foto ? await toBase64(pet.foto) : null;
@@ -220,6 +231,10 @@ export async function generateVetReport(
     O CronoPet não se responsabiliza pela saúde do animal e não substitui a avaliação de um médico veterinário.
     As informações aqui contidas servem exclusivamente como apoio para facilitar o acompanhamento clínico profissional.
   </div>
+
+  ${renderHealthInsightsSection(healthInsights)}
+
+  ${renderBreedProfileSection(breedProfile)}
 
   <!-- Resumo (30 dias) -->
   <div class="section">
@@ -369,4 +384,103 @@ export async function generateVetReport(
       UTI: 'com.adobe.pdf',
     });
   }
+}
+
+// ─── Helpers de renderização das novas seções ───────────────────────
+
+/**
+ * Renderiza os insights heurísticos detectados no momento de gerar o PDF.
+ * Vai logo no topo (antes do resumo) pra que o veterinário veja primeiro
+ * o que está acontecendo agora.
+ */
+function renderHealthInsightsSection(insights: HealthInsight[]): string {
+  if (insights.length === 0) return '';
+
+  const sevColor = (s: 'info' | 'warning' | 'alert') =>
+    s === 'alert' ? { bg: '#fef2f2', border: '#fecaca', text: '#991b1b' }
+    : s === 'warning' ? { bg: '#fff7ed', border: '#fed7aa', text: '#9a3412' }
+    : { bg: '#eff6ff', border: '#bfdbfe', text: '#1e3a8a' };
+
+  const sevLabel = (s: 'info' | 'warning' | 'alert') =>
+    s === 'alert' ? 'IMPORTANTE' : s === 'warning' ? 'ATENÇÃO' : 'AVISO';
+
+  const items = insights.map((ins) => {
+    const c = sevColor(ins.severity);
+    return `
+    <div style="background:${c.bg};border:1px solid ${c.border};border-radius:10px;padding:12px 14px;margin-bottom:10px">
+      <div style="font-size:10px;font-weight:700;color:${c.text};letter-spacing:0.5px;margin-bottom:4px">${sevLabel(ins.severity)}</div>
+      <div style="font-size:14px;font-weight:700;color:${c.text};margin-bottom:4px">${E(ins.title)}</div>
+      <div style="font-size:12px;color:#374151;line-height:1.5;margin-bottom:4px">${E(ins.message)}</div>
+      <div style="font-size:11px;color:#6b7280;line-height:1.4">${E(ins.suggestion)}</div>
+    </div>`;
+  }).join('');
+
+  return `
+  <!-- Insights de saúde detectados pelo app -->
+  <div class="section">
+    <div class="section-title">🩺 Sinais detectados pelo app</div>
+    <p style="font-size:11px;color:#6b7280;margin-bottom:12px">
+      Padrões identificados automaticamente cruzando os registros do tutor com regras clínicas. Não são diagnóstico.
+    </p>
+    ${items}
+  </div>
+  `;
+}
+
+/**
+ * Renderiza o perfil da raça com predisposições conhecidas.
+ * Usado pelo veterinário pra contextualizar sintomas com risco genético.
+ */
+function renderBreedProfileSection(profile: ReturnType<typeof getBreedHealthProfile>): string {
+  if (!profile) return '';
+
+  const sevTone = (s: 'monitor' | 'common' | 'serious') =>
+    s === 'serious' ? { bg: '#fee2e2', text: '#991b1b' }
+    : s === 'common' ? { bg: '#fef3c7', text: '#92400e' }
+    : { bg: '#f5f5f4', text: '#57534e' };
+
+  const preds = profile.predispositions.length > 0 ? profile.predispositions.map((p) => {
+    const t = sevTone(p.severity);
+    const onset = p.ageOnsetYears != null ? `· tipicamente ~${p.ageOnsetYears} ano${p.ageOnsetYears === 1 ? '' : 's'}` : '';
+    return `
+    <div style="border-left:3px solid #e5e7eb;padding:8px 12px;margin-bottom:8px;background:#fafafa;border-radius:4px">
+      <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;margin-bottom:3px">
+        <div style="font-size:13px;font-weight:700;color:#111827;flex:1">${E(p.condition)}</div>
+        <span style="background:${t.bg};color:${t.text};padding:2px 7px;border-radius:8px;font-size:9px;font-weight:700;letter-spacing:0.3px;white-space:nowrap">${SEVERITY_LABELS[p.severity].toUpperCase()}</span>
+      </div>
+      <div style="font-size:10px;color:#6b7280;margin-bottom:3px">${E(CATEGORY_LABELS[p.category])} ${onset}</div>
+      <div style="font-size:11px;color:#374151;line-height:1.45">${E(p.brief)}</div>
+    </div>`;
+  }).join('') : '<p style="font-size:12px;color:#6b7280;font-style:italic">Sem predisposições raciais documentadas no banco do app.</p>';
+
+  return `
+  <!-- Perfil da raça -->
+  <div class="section">
+    <div class="section-title">🧬 Perfil da raça — ${E(profile.displayName)}</div>
+    <table style="margin-bottom:14px">
+      <tbody>
+        <tr><td style="width:35%"><strong>Peso ideal adulto</strong></td><td>${profile.weightRange.min}–${profile.weightRange.max} kg</td></tr>
+        <tr><td><strong>Expectativa de vida</strong></td><td>${profile.lifeExpectancyYears.min}–${profile.lifeExpectancyYears.max} anos</td></tr>
+        ${profile.exerciseMinPerDay > 0 ? `<tr><td><strong>Exercício recomendado</strong></td><td>~${profile.exerciseMinPerDay} min/dia</td></tr>` : ''}
+        ${profile.bathFrequencyDays > 0 ? `<tr><td><strong>Frequência de banho</strong></td><td>a cada ~${profile.bathFrequencyDays} dias</td></tr>` : ''}
+        <tr><td><strong>Tolerância ao calor</strong></td><td>${tolWord(profile.heatTolerance)}</td></tr>
+        <tr><td><strong>Risco de obesidade</strong></td><td>${riskWord(profile.obesityRisk)}</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px;color:#374151;margin-bottom:12px">${E(profile.ownerNote)}</p>
+
+    <h3 style="font-size:13px;font-weight:700;color:#111827;margin:14px 0 8px 0">Predisposições conhecidas da raça</h3>
+    ${preds}
+    <p style="font-size:10px;color:#9ca3af;margin-top:10px;font-style:italic">
+      Predisposição genética é probabilidade, não diagnóstico. Confirme sempre com avaliação clínica.
+    </p>
+  </div>
+  `;
+}
+
+function tolWord(t: 'low' | 'medium' | 'high'): string {
+  return t === 'low' ? 'baixa' : t === 'medium' ? 'média' : 'alta';
+}
+function riskWord(r: 'low' | 'medium' | 'high'): string {
+  return r === 'low' ? 'baixo' : r === 'medium' ? 'médio' : 'alto';
 }
