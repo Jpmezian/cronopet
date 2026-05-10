@@ -1,0 +1,692 @@
+import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { File, Paths } from 'expo-file-system';
+import * as ImageManipulator from 'expo-image-manipulator';
+import * as Sentry from '@sentry/react-native';
+import { zustandMMKVStorage } from './storage';
+import { sanitizeName, sanitizeNote, INPUT_LIMITS } from '@/lib/security';
+import { track } from '@/services/analytics';
+import {
+  scheduleDailyReminder,
+  scheduleStreakAtRiskReminder,
+  cancelAllReminders,
+} from '@/services/NotificationService';
+import type {
+  ActionKey, ActionLog, PetState, PetType, PetProfile,
+  MedicalEvent, MedicalEventType, Vaccine,
+  Appointment, WeightEntry,
+  Acceptance, Consistency, Appearance,
+} from '@/types/pet';
+import type { CronoPetUser } from '@/types/auth';
+
+// ─── Helpers ───────────────────────────────────────────────────
+
+function getTodayString(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function makeId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function daysBetween(fromDateStr: string, toDateStr: string): number {
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+  const [fy, fm, fd] = fromDateStr.split('-').map(Number);
+  const [ty, tm, td] = toDateStr.split('-').map(Number);
+  const from = new Date(fy, fm - 1, fd).getTime();
+  const to   = new Date(ty, tm - 1, td).getTime();
+  return Math.round((to - from) / MS_PER_DAY);
+}
+
+/**
+ * Copia URI para Documents + remove EXIF via expo-image-manipulator.
+ * Async porque o manipulator é assíncrono.
+ */
+async function persistAndStripPhoto(uri: string): Promise<string> {
+  if (!uri) return uri;
+  try {
+    // SECURITY: SEMPRE reencodar via ImageManipulator — remove EXIF
+    // incluindo GPS coordinates. Isso se aplica também a URLs remotas
+    // (Unsplash default do onboarding pode ter metadata).
+    // Se falhar (URL remota inacessível, ex), usamos a URL original.
+    const result = await ImageManipulator.manipulateAsync(
+      uri,
+      [], // sem transforms geométricos
+      { compress: 0.85, format: ImageManipulator.SaveFormat.JPEG }
+    );
+    const stripped = result.uri;
+
+    // Copiar para Documents (permanente)
+    const docDir = Paths.document;
+    if (stripped.startsWith(docDir.uri)) return stripped;
+    const dest = new File(Paths.document, `cronopet_photo_${Date.now()}.jpg`);
+    new File(stripped).copy(dest);
+    return dest.uri;
+  } catch {
+    // Fallback graciosamente — se reencode falhou, mantém URL original
+    // (cenário: URL remota offline, arquivo local corrompido)
+    return uri;
+  }
+}
+
+/** Um dia é completo quando tem ≥1 comida E ≥1 água */
+function isDayComplete(logs: ActionLog[], dateStr: string): boolean {
+  const day = logs.filter((l) => new Date(l.timestamp).toISOString().slice(0, 10) === dateStr);
+  return day.some((l) => l.key === 'comida') && day.some((l) => l.key === 'agua');
+}
+
+// ─── Interface da Store ────────────────────────────────────────
+
+interface PetStore extends PetState {
+  // Onboarding / Perfil
+  completeOnboarding: (nome: string, tipo: PetType, raca: string, foto: string, nascimento?: string) => Promise<void>;
+  updatePetProfile:   (nome: string, tipo: PetType, raca: string, foto: string, nascimento?: string) => Promise<void>;
+  setPetNutrition:    (fields: Partial<Pick<PetProfile,
+    'idealWeightKg' | 'nutritionGoal' | 'bodyCondition' |
+    'neutered' | 'baselineActivity' | 'petSize'
+  >>) => void;
+
+  // Ações diárias
+  addActionLog:    (key: ActionKey, photo?: string, note?: string, extra?: {
+    quantity?:   number;
+    duration?:   number;
+    subActions?: ActionKey[];
+    volumeMl?:   number;
+    acceptance?: Acceptance;
+    consistency?: Consistency;
+    appearance?: Appearance;
+  }) => Promise<void>;
+  removeActionLog: (id: string) => void;
+  updateActionLog: (id: string, updates: {
+    note?:        string;
+    timestamp?:   number;
+    quantity?:    number;
+    duration?:    number;
+    volumeMl?:    number;
+    acceptance?:  Acceptance;
+    consistency?: Consistency;
+    appearance?:  Appearance;
+  }) => void;
+
+  // Dia / streak
+  checkAndResetDay: () => void;
+  useStreakShield:  () => void;
+
+  // Configurações de notificação
+  setNotificationTime: (hour: number, minute: number) => void;
+
+  // Saúde — eventos
+  addMedicalEvent:    (type: MedicalEventType, note?: string, photo?: string) => Promise<void>;
+  removeMedicalEvent: (id: string) => void;
+
+  // Vacinas
+  addVaccine:    (data: Omit<Vaccine, 'id'>) => void;
+  updateVaccine: (id: string, data: Partial<Omit<Vaccine, 'id'>>) => void;
+  removeVaccine: (id: string) => void;
+
+  // Consultas
+  addAppointment:    (data: Omit<Appointment, 'id' | 'notificacaoId'>) => Promise<void>;
+  removeAppointment: (id: string) => void;
+
+  // Peso
+  addWeightEntry:    (peso: number, data: string, nota?: string) => void;
+  removeWeightEntry: (id: string) => void;
+
+  // Sync helpers
+  hydrateFromCloud: (data: {
+    actionLogs:    ActionLog[];
+    vaccines:      Vaccine[];
+    appointments:  Appointment[];
+    weightHistory: WeightEntry[];
+  }) => void;
+  appendRemoteLog: (log: ActionLog) => void;
+
+  resetStore: () => void;
+
+  // ── Dev only: seed demo data ───────────────────────────────
+  /** SÓ usar em dev/sandbox. Popula histórico com 14 dias simulados. */
+  seedDemoData: (data: {
+    actionHistory?: ActionLog[];
+    weightHistory?: WeightEntry[];
+    vaccines?: Vaccine[];
+    appointments?: Appointment[];
+  }) => void;
+
+  // ── Milestones de streak ────────────────────────────────────
+  markMilestoneShown: (days: number) => void;
+
+  /** Marca um marco de atividade como celebrado (ex: "passeio-100") */
+  markActivityMilestoneShown: (id: string) => void;
+
+  /** Marca um gatilho Premium como mostrado (não voltar a mostrar) */
+  markPremiumPromptShown: (id: string) => void;
+
+  /** IDs de health insights dismissados pelo tutor */
+  dismissedInsightIds: string[];
+  /** Dispensa um insight da seção de saúde (não volta a mostrar) */
+  dismissInsight: (id: string) => void;
+  /** Limpa lista de dismiss (ex: após reset) */
+  clearDismissedInsights: () => void;
+
+  // ── Premium ──────────────────────────────────────────────
+  /**
+   * Chamado quando o StoreKit/RevenueCat confirma assinatura.
+   * Para testes em dev, pode ser chamado via Sandbox toggle.
+   */
+  setPremiumStatus: (params: {
+    isPremium:        boolean;
+    plan?:            'monthly' | 'annual' | null;
+    expiresAt?:       number | null;
+  }) => void;
+
+  /** Marca início de trial (seta `trialStartedAt = now`) */
+  startTrial: () => void;
+
+  /** Seta `firstAppOpenAt` se ainda não existir (chamado no layout root) */
+  recordFirstAppOpen: () => void;
+
+  /** Ativa/desativa o biometric lock (Face ID / Touch ID) */
+  setBiometricLock: (enabled: boolean) => void;
+
+  // ── Auth / Premium ─────────────────────────────────────────
+  user:           CronoPetUser | null;
+  familyGroupId:  string | null;
+  syncStatus:     'idle' | 'syncing' | 'error' | 'synced';
+  setUser:           (user: CronoPetUser | null) => void;
+  setFamilyGroupId:  (id: string | null) => void;
+  setSyncStatus:     (s: 'idle' | 'syncing' | 'error' | 'synced') => void;
+
+  themeMode: 'system' | 'light' | 'dark';
+  setThemeMode: (mode: 'system' | 'light' | 'dark') => void;
+
+  _hasHydrated: boolean;
+  setHasHydrated: (v: boolean) => void;
+}
+
+// ─── Store ─────────────────────────────────────────────────────
+
+export const usePetStore = create<PetStore>()(
+  persist(
+    (set, get) => ({
+      hasOnboarded:      false,
+      pet:               { nome: '', tipo: 'cachorro', raca: '', foto: '' },
+      streak:            0,
+      streakShieldCount: 0,
+      todayDate:         getTodayString(),
+      actionHistory:     [],
+      medicalEvents:     [],
+      vaccines:          [],
+      appointments:      [],
+      weightHistory:     [],
+      notificationHour:  20,
+      notificationMinute: 0,
+      shownMilestones:   [],
+      shownActivityMilestones: [],
+      shownPremiumPrompts: [],
+      dismissedInsightIds: [],
+      biometricLockEnabled: false,
+      isPremium:        false,
+      premiumPlan:      null,
+      premiumExpiresAt: null,
+      trialStartedAt:   null,
+      firstAppOpenAt:   null,
+      user:          null,
+      familyGroupId: null,
+      syncStatus:    'idle',
+      themeMode: 'system',
+      _hasHydrated:  false,
+
+      setThemeMode: (mode) => set({ themeMode: mode }),
+      setHasHydrated:   (v) => set({ _hasHydrated: v }),
+      setUser:          (user)   => set({ user }),
+      setFamilyGroupId: (id)     => set({ familyGroupId: id }),
+      setSyncStatus:    (status) => set({ syncStatus: status }),
+
+      // ── Onboarding ─────────────────────────────────────────
+      completeOnboarding: async (nome, tipo, raca, foto, nascimento) => {
+        const fotoFinal = await persistAndStripPhoto(foto);
+        set({
+          hasOnboarded:      true,
+          pet:               {
+            nome: sanitizeName(nome, INPUT_LIMITS.PET_NAME_MAX),
+            tipo,
+            raca: sanitizeName(raca, INPUT_LIMITS.BREED_MAX),
+            foto: fotoFinal,
+            nascimento,
+          },
+          streak:            0,
+          streakShieldCount: 0,
+          todayDate:         getTodayString(),
+          actionHistory:     [],
+          medicalEvents:     [],
+          vaccines:          [],
+          appointments:      [],
+          weightHistory:     [],
+        });
+        track({
+          name: 'onboarding_completed',
+          props: {
+            petType: tipo,
+            hasPhoto: !!fotoFinal,
+            hasBirthdate: !!nascimento,
+          },
+        });
+      },
+
+      // ── Edição de perfil ───────────────────────────────────
+      updatePetProfile: async (nome, tipo, raca, foto, nascimento) => {
+        const fotoFinal = await persistAndStripPhoto(foto);
+        set((s) => ({
+          pet: {
+            ...s.pet,
+            nome: sanitizeName(nome, INPUT_LIMITS.PET_NAME_MAX),
+            tipo,
+            raca: sanitizeName(raca, INPUT_LIMITS.BREED_MAX),
+            foto: fotoFinal,
+            nascimento,
+          },
+        }));
+      },
+
+      // ── Preferências nutricionais ──────────────────────────
+      setPetNutrition: (fields) => {
+        set((s) => ({ pet: { ...s.pet, ...fields } }));
+        // SECURITY: só logar quais CAMPOS foram atualizados, não os valores.
+        Sentry.addBreadcrumb({
+          category: 'nutrition',
+          message: 'setPetNutrition',
+          level: 'info',
+          data: {
+            fieldsUpdated: Object.keys(fields).filter((k) => (fields as any)[k] !== undefined),
+          },
+        });
+      },
+
+      // ── Registro de ação ───────────────────────────────────
+      addActionLog: async (key, photo, note, extra) => {
+        const current = get();
+        const photoFinal = photo ? await persistAndStripPhoto(photo) : undefined;
+
+        const newLog: ActionLog = {
+          id: makeId(),
+          key,
+          timestamp: Date.now(),
+          ...(photoFinal ? { photo: photoFinal } : {}),
+          ...(sanitizeNote(note ?? '') ? { note: sanitizeNote(note ?? '') } : {}),
+          ...(extra?.quantity != null ? { quantity: extra.quantity } : {}),
+          ...(extra?.duration != null ? { duration: extra.duration } : {}),
+          ...(extra?.subActions?.length ? { subActions: extra.subActions } : {}),
+          ...(extra?.volumeMl != null ? { volumeMl: extra.volumeMl } : {}),
+          ...(extra?.acceptance ? { acceptance: extra.acceptance } : {}),
+          ...(extra?.consistency ? { consistency: extra.consistency } : {}),
+          ...(extra?.appearance ? { appearance: extra.appearance } : {}),
+        };
+        const newHistory = [...current.actionHistory, newLog];
+        const today = getTodayString();
+
+        const wasComplete = isDayComplete(current.actionHistory, today);
+        const isCompleteNow = isDayComplete(newHistory, today);
+        const newStreak = isCompleteNow && !wasComplete
+          ? current.streak + 1
+          : current.streak;
+
+        set({ actionHistory: newHistory, streak: newStreak });
+
+        track({
+          name: 'action_logged',
+          props: {
+            actionKey: key,
+            hasNote: !!sanitizeNote(note ?? ''),
+            hasQuantity: extra?.quantity != null,
+          },
+        });
+        if (current.actionHistory.length === 0) {
+          const firstOpenMs = current.firstAppOpenAt;
+          const days = firstOpenMs ? Math.floor((Date.now() - firstOpenMs) / 86400000) : 0;
+          track({ name: 'first_action_logged', props: { actionKey: key, daysSinceOnboarding: days } });
+        }
+        if (isCompleteNow && !wasComplete) {
+          track({
+            name: 'daily_goals_completed',
+            props: { streak: newStreak, petType: current.pet.tipo },
+          });
+        }
+
+        // SECURITY: Nunca incluir dados clínicos (quantity, consistency,
+        // appearance, volumeMl, etc) em breadcrumbs — são dados de saúde.
+        // LGPD/GDPR: dados sensíveis não devem ir pra servidor de 3rd party.
+        Sentry.addBreadcrumb({
+          category: 'action',
+          message: `addActionLog: ${key}`,
+          level: 'info',
+          data: {
+            key,
+            hasQuantity:   extra?.quantity != null,
+            hasDuration:   extra?.duration != null,
+            hasVolume:     extra?.volumeMl != null,
+            hasSubActions: (extra?.subActions?.length ?? 0) > 0,
+            dayCompleted:  isCompleteNow && !wasComplete,
+          },
+        });
+
+        // Sync para nuvem (fire-and-forget) se membro de um grupo
+        const { familyGroupId, user } = current;
+        if (familyGroupId && user) {
+          import('@/services/SyncService')
+            .then(({ pushActionLog }) => pushActionLog(familyGroupId, user.id, newLog))
+            .catch((err) => {
+              Sentry.captureException(err, { tags: { op: 'pushActionLog' } });
+            });
+        }
+
+        // Notificações fire-and-forget
+        const { notificationHour, notificationMinute, pet } = current;
+        if (isCompleteNow) {
+          cancelAllReminders().catch((err) => {
+            Sentry.captureException(err, { tags: { op: 'cancelAllReminders' } });
+          });
+        } else {
+          cancelAllReminders()
+            .then(() => scheduleDailyReminder(pet.nome, newStreak, notificationHour, notificationMinute))
+            .then(() => scheduleStreakAtRiskReminder(pet.nome, newStreak))
+            .catch((err) => {
+              Sentry.captureException(err, { tags: { op: 'rescheduleNotifications' } });
+            });
+        }
+      },
+
+      removeActionLog: (id) => {
+        set((s) => ({ actionHistory: s.actionHistory.filter((l) => l.id !== id) }));
+      },
+
+      updateActionLog: (id, updates) => {
+        set((s) => ({
+          actionHistory: s.actionHistory.map((l) =>
+            l.id === id ? { ...l, ...updates } : l
+          ),
+        }));
+      },
+
+      // ── Virada de dia ──────────────────────────────────────
+      checkAndResetDay: () => {
+        const today = getTodayString();
+        const current = get();
+        if (current.todayDate === today) return;
+
+        const diff = daysBetween(current.todayDate, today);
+        const lastDayWasComplete = isDayComplete(current.actionHistory, current.todayDate);
+
+        let newStreak = current.streak;
+        let newShieldCount = current.streakShieldCount;
+
+        if (diff === 1 && lastDayWasComplete) {
+          // Ontem completo → mantém streak
+        } else if (diff === 1 && !lastDayWasComplete && newShieldCount > 0) {
+          // Ontem incompleto mas tem escudo → usa o escudo, mantém streak
+          newShieldCount -= 1;
+        } else {
+          // Qualquer outra situação → zera streak
+          newStreak = 0;
+        }
+
+        set({ todayDate: today, streak: newStreak, streakShieldCount: newShieldCount });
+      },
+
+      // ── Escudo de streak ───────────────────────────────────
+      useStreakShield: () => {
+        const { streakShieldCount } = get();
+        if (streakShieldCount > 0) set({ streakShieldCount: streakShieldCount - 1 });
+      },
+
+      // ── Configuração de notificação ────────────────────────
+      setNotificationTime: (hour, minute) => {
+        set({ notificationHour: hour, notificationMinute: minute });
+        // Reagendar com novo horário se houver ações incompletas hoje
+        const { actionHistory, pet, streak } = get();
+        const today = getTodayString();
+        if (!isDayComplete(actionHistory, today)) {
+          cancelAllReminders()
+            .then(() => scheduleDailyReminder(pet.nome, streak, hour, minute))
+            .then(() => scheduleStreakAtRiskReminder(pet.nome, streak))
+            .catch((err) => {
+              Sentry.captureException(err, { tags: { op: 'setNotificationTime' } });
+            });
+        }
+      },
+
+      // ── Eventos médicos ────────────────────────────────────
+      addMedicalEvent: async (type, note, photo) => {
+        const photoFinal = photo ? await persistAndStripPhoto(photo) : undefined;
+        const event: MedicalEvent = {
+          id: makeId(), type, timestamp: Date.now(),
+          ...(photoFinal ? { photo: photoFinal } : {}),
+          ...(sanitizeNote(note ?? '') ? { note: sanitizeNote(note ?? '') } : {}),
+        };
+        set((s) => ({ medicalEvents: [event, ...s.medicalEvents] }));
+      },
+
+      removeMedicalEvent: (id) => {
+        set((s) => ({ medicalEvents: s.medicalEvents.filter((e) => e.id !== id) }));
+      },
+
+      // ── Vacinas ────────────────────────────────────────────
+      addVaccine: (data) => {
+        set((s) => ({ vaccines: [{ id: makeId(), ...data }, ...s.vaccines] }));
+      },
+      updateVaccine: (id, data) => {
+        set((s) => ({ vaccines: s.vaccines.map((v) => v.id === id ? { ...v, ...data } : v) }));
+      },
+      removeVaccine: (id) => {
+        set((s) => ({ vaccines: s.vaccines.filter((v) => v.id !== id) }));
+      },
+
+      // ── Consultas ──────────────────────────────────────────
+      addAppointment: async (data) => {
+        const { scheduleAppointmentReminder } = await import('@/services/NotificationService');
+        const notifId = await scheduleAppointmentReminder(
+          data.titulo,
+          data.data,
+          data.hora,
+        ).catch(() => undefined);
+        const appt: Appointment = { id: makeId(), ...data, ...(notifId ? { notificacaoId: notifId } : {}) };
+        set((s) => ({ appointments: [appt, ...s.appointments] }));
+      },
+
+      removeAppointment: (id) => {
+        const appt = get().appointments.find((a) => a.id === id);
+        if (appt?.notificacaoId) {
+          import('@/services/NotificationService')
+            .then(({ cancelNotification }) => cancelNotification(appt.notificacaoId!))
+            .catch((err) => {
+              Sentry.captureException(err, { tags: { op: 'cancelAppointmentNotification' } });
+            });
+        }
+        set((s) => ({ appointments: s.appointments.filter((a) => a.id !== id) }));
+      },
+
+      // ── Sync helpers ──────────────────────────────────────────
+      hydrateFromCloud: ({ actionLogs, vaccines, appointments, weightHistory }) => {
+        set((s) => {
+          const mergeById = <T extends { id: string }>(local: T[], remote: T[]): T[] => {
+            const map = new Map<string, T>();
+            // remote primeiro; local sobrescreve (prioridade local)
+            [...remote, ...local].forEach((item) => map.set(item.id, item));
+            return Array.from(map.values());
+          };
+          return {
+            actionHistory: mergeById(s.actionHistory, actionLogs)
+              .sort((a, b) => b.timestamp - a.timestamp),
+            vaccines:      mergeById(s.vaccines,      vaccines),
+            appointments:  mergeById(s.appointments,  appointments),
+            weightHistory: mergeById(s.weightHistory, weightHistory)
+              .sort((a, b) => (a.data < b.data ? 1 : -1)),
+          };
+        });
+      },
+
+      appendRemoteLog: (log) => {
+        set((s) => {
+          // Ignora se já existe (proteção contra duplicatas de realtime)
+          if (s.actionHistory.some((l) => l.id === log.id)) return s;
+          return { actionHistory: [...s.actionHistory, log] };
+        });
+      },
+
+      // ── Reset completo ────────────────────────────────────
+      resetStore: () => {
+        cancelAllReminders().catch((err) => {
+          Sentry.captureException(err, { tags: { op: 'resetStore.cancelReminders' } });
+        });
+        set({
+          hasOnboarded:       false,
+          pet:                { nome: '', tipo: 'cachorro', raca: '', foto: '' },
+          streak:             0,
+          streakShieldCount:  0,
+          todayDate:          getTodayString(),
+          actionHistory:      [],
+          medicalEvents:      [],
+          vaccines:           [],
+          appointments:       [],
+          weightHistory:      [],
+          notificationHour:   20,
+          notificationMinute: 0,
+        });
+      },
+
+      // ── Milestones ─────────────────────────────────────────
+      markMilestoneShown: (days) => {
+        set((s) => ({ shownMilestones: [...s.shownMilestones, days] }));
+      },
+      markActivityMilestoneShown: (id) => {
+        set((s) => ({
+          shownActivityMilestones: s.shownActivityMilestones.includes(id)
+            ? s.shownActivityMilestones
+            : [...s.shownActivityMilestones, id],
+        }));
+      },
+
+      dismissInsight: (id) => {
+        set((s) => ({
+          dismissedInsightIds: s.dismissedInsightIds.includes(id)
+            ? s.dismissedInsightIds
+            : [...s.dismissedInsightIds, id],
+        }));
+      },
+      clearDismissedInsights: () => set({ dismissedInsightIds: [] }),
+
+      markPremiumPromptShown: (id) => {
+        set((s) => ({
+          shownPremiumPrompts: s.shownPremiumPrompts.includes(id)
+            ? s.shownPremiumPrompts
+            : [...s.shownPremiumPrompts, id],
+        }));
+      },
+
+      // ── Premium ──────────────────────────────────────────
+      setPremiumStatus: ({ isPremium, plan = null, expiresAt = null }) => {
+        const wasPremium = get().isPremium;
+        set({
+          isPremium,
+          premiumPlan:      plan,
+          premiumExpiresAt: expiresAt,
+        });
+        // SECURITY: sem expiresAt exato (informação potencialmente identificável)
+        Sentry.addBreadcrumb({
+          category: 'premium',
+          message: isPremium ? 'Subscription activated' : 'Subscription deactivated',
+          level: 'info',
+          data: { plan: plan ?? 'none' },
+        });
+        // Track só na transição (não em re-renders)
+        if (isPremium && !wasPremium && plan) {
+          // Store usa 'annual' mas analytics canonical é 'yearly'
+          const trackPlan = plan === 'annual' ? 'yearly' : plan === 'monthly' ? 'monthly' : null;
+          if (trackPlan) {
+            track({ name: 'premium_purchase_completed', props: { plan: trackPlan } });
+          }
+        }
+      },
+
+      startTrial: () => {
+        set((s) => s.trialStartedAt ? s : { trialStartedAt: Date.now() });
+        Sentry.addBreadcrumb({
+          category: 'premium',
+          message: 'Trial started',
+          level: 'info',
+        });
+      },
+
+      recordFirstAppOpen: () => {
+        set((s) => s.firstAppOpenAt ? s : { firstAppOpenAt: Date.now() });
+      },
+
+      setBiometricLock: (enabled) => {
+        set({ biometricLockEnabled: enabled });
+        Sentry.addBreadcrumb({
+          category: 'security',
+          message: `biometric lock ${enabled ? 'enabled' : 'disabled'}`,
+          level: 'info',
+        });
+      },
+
+      // ── Dev only: seed demo data ───────────────────────────
+      seedDemoData: (data) => {
+        set((s) => ({
+          actionHistory: data.actionHistory ?? s.actionHistory,
+          weightHistory: data.weightHistory ?? s.weightHistory,
+          vaccines:      data.vaccines      ?? s.vaccines,
+          appointments:  data.appointments  ?? s.appointments,
+        }));
+      },
+
+      // ── Peso ───────────────────────────────────────────────
+      addWeightEntry: (peso, data, nota) => {
+        const entry: WeightEntry = { id: makeId(), peso, data, ...(nota?.trim() ? { nota: nota.trim() } : {}) };
+        set((s) => ({ weightHistory: [entry, ...s.weightHistory] }));
+        // SECURITY: peso é dado de saúde — logar só o ato, não o valor
+        Sentry.addBreadcrumb({
+          category: 'health',
+          message: 'addWeightEntry',
+          level: 'info',
+        });
+      },
+      removeWeightEntry: (id) => {
+        set((s) => ({ weightHistory: s.weightHistory.filter((w) => w.id !== id) }));
+      },
+    }),
+    {
+      name: 'cronopet-pet-store',
+      storage: createJSONStorage(() => zustandMMKVStorage),
+      onRehydrateStorage: () => (state) => { state?.setHasHydrated(true); },
+      partialize: (state) => {
+        const {
+          _hasHydrated, setHasHydrated,
+          completeOnboarding, updatePetProfile,
+          addActionLog, removeActionLog, checkAndResetDay, useStreakShield,
+          setNotificationTime,
+          addMedicalEvent, removeMedicalEvent,
+          addVaccine, updateVaccine, removeVaccine,
+          addAppointment, removeAppointment,
+          addWeightEntry, removeWeightEntry,
+          hydrateFromCloud, appendRemoteLog,
+          resetStore,
+          setUser, setFamilyGroupId, setSyncStatus,
+          setThemeMode,
+          markMilestoneShown,
+          markActivityMilestoneShown,
+          markPremiumPromptShown,
+          dismissInsight,
+          clearDismissedInsights,
+          setPremiumStatus,
+          startTrial,
+          recordFirstAppOpen,
+          setBiometricLock,
+          setPetNutrition,
+          seedDemoData,
+          ...rest
+        } = state;
+        return rest;
+      },
+    }
+  )
+);
