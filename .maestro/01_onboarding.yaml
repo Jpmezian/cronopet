@@ -1,0 +1,35 @@
+# Fluxo: primeiro abrir do app → criar pet → cair na home.
+# Pré-condição: state limpo (chama clearState).
+appId: com.cronopet.app.dev
+---
+- clearState
+- launchApp
+- assertVisible: ".*[Bb]em-?vindo.*"
+- tapOn: ".*[Cc]omeçar.*"
+
+# Step 1 — escolher tipo de pet
+- assertVisible: ".*tipo.*"
+- tapOn:
+    text: ".*[Cc]achorro.*"
+- tapOn: ".*[Pp]róximo.*|.*[Cc]ontinuar.*"
+
+# Step 2 — nome
+- assertVisible: ".*nome.*"
+- tapOn:
+    id: "input-pet-name"
+    optional: true
+- inputText: "Bidu Test"
+- tapOn: ".*[Pp]róximo.*|.*[Cc]ontinuar.*"
+
+# Step 3 — raça (pode pular)
+- runFlow:
+    when:
+      visible: ".*[Pp]ular.*"
+    commands:
+      - tapOn: ".*[Pp]ular.*"
+
+# Step 4 — finalização
+- tapOn: ".*[Ff]inalizar.*|.*[Cc]riar.*|.*[Cc]oncluir.*"
+
+# Verificação: chegamos na home com o nome do pet
+- assertVisible: ".*Bidu Test.*"

@@ -1,0 +1,36 @@
+# Fluxo: abrir paywall via Settings → Premium, conferir CTAs e fechar.
+# NÃO faz compra real — só valida que a tela renderiza e fecha.
+appId: com.cronopet.app.dev
+---
+- launchApp
+
+# Abre Settings (geralmente um ícone de engrenagem na home)
+- tapOn:
+    id: "settings-button"
+    optional: true
+- runFlow:
+    when:
+      notVisible: ".*[Pp]remium.*"
+    commands:
+      - tapOn:
+          text: ".*[Cc]onfigurações.*|.*[Aa]justes.*"
+
+# Toca em Premium / Assinar
+- tapOn:
+    text: ".*[Pp]remium.*|.*[Aa]ssinar.*|.*[Aa]ssinatura.*"
+
+# Paywall deve mostrar planos
+- assertVisible: ".*[Mm]ensal.*|R\\$ 14.*"
+- assertVisible: ".*[Aa]nual.*|R\\$ 99.*"
+
+# Fecha sem comprar (botão de X / fechar)
+- tapOn:
+    id: "close-paywall"
+    optional: true
+- runFlow:
+    when:
+      visible: "✕|×|.*[Ff]echar.*|.*[Vv]oltar.*"
+    commands:
+      - tapOn: "✕|×|.*[Ff]echar.*|.*[Vv]oltar.*"
+
+- waitForAnimationToEnd

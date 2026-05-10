@@ -1,0 +1,19 @@
+# Fluxo: navegar entre as 3 tabs e voltar — sanity check de routing.
+appId: com.cronopet.app.dev
+---
+- launchApp
+
+# Histórico
+- tapOn:
+    text: ".*[Hh]istórico.*"
+- assertVisible: ".*[Hh]istórico.*|.*[Tt]imeline.*|.*[Aa]tividade.*"
+
+# Saúde / Médico
+- tapOn:
+    text: ".*[Ss]aúde.*|.*[Mm]édico.*"
+- assertVisible: ".*[Vv]acin.*|.*[Cc]onsulta.*|.*[Pp]eso.*"
+
+# Volta pra Home
+- tapOn:
+    text: ".*[Hh]ome.*|.*[Hh]oje.*"
+- assertVisible: ".*[Hh]oje.*|.*🐾.*"

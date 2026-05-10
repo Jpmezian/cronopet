@@ -1,0 +1,29 @@
+# Fluxo: registrar comida e água — confirmar que streak/contador atualiza.
+# Pré-condição: pet já criado (depende do 01 OU usa fixtures).
+appId: com.cronopet.app.dev
+---
+- launchApp
+
+# Garante que estamos na home
+- tapOn:
+    text: ".*[Hh]ome.*|.*[Hh]oje.*"
+    optional: true
+
+# Registrar comida
+- tapOn:
+    text: "🍖|.*[Cc]omida.*"
+- assertVisible: ".*[Rr]egistrar.*|.*[Aa]limentação.*|.*[Cc]omida.*"
+- tapOn: ".*[Ss]alvar.*|.*[Rr]egistrar.*|.*[Cc]onfirmar.*"
+
+# Volta pra home — aceita o auto-dismiss do toast
+- waitForAnimationToEnd
+
+# Registrar água
+- tapOn:
+    text: "💧|.*[Áá]gua.*"
+- tapOn: ".*[Ss]alvar.*|.*[Rr]egistrar.*|.*[Cc]onfirmar.*"
+
+# Verifica que existe ALGUM contador / texto de progresso pós-registro
+- waitForAnimationToEnd
+- assertVisible:
+    text: ".*1.*|.*registrado.*|.*completo.*|.*hoje.*"

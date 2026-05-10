@@ -1,0 +1,9 @@
+# Configuração compartilhada por todos os flows Maestro.
+# IMPORTANTE: appId precisa bater com o variant que você está testando.
+# Para a variant "development" (npm run ios:dev), use: com.cronopet.app.dev
+# Para a variant "production", use: com.cronopet.app
+
+appId: com.cronopet.app.dev
+
+# Preserva storage entre testes pra performance (use clearState quando precisar reset).
+# clearState é chamado explicitamente em testes que precisam de fresh install.

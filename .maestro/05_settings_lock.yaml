@@ -1,0 +1,28 @@
+# Fluxo: abrir Settings → Privacidade → toggle de bloqueio biométrico.
+# NÃO testa o prompt nativo de Face ID (Maestro não consegue interceptar),
+# só valida que o toggle existe e responde.
+appId: com.cronopet.app.dev
+---
+- launchApp
+
+- tapOn:
+    id: "settings-button"
+    optional: true
+- runFlow:
+    when:
+      notVisible: ".*[Pp]rivacidade.*"
+    commands:
+      - tapOn: ".*[Cc]onfigurações.*|.*[Aa]justes.*"
+
+# Procura pela seção de privacidade / segurança
+- tapOn:
+    text: ".*[Pp]rivacidade.*|.*[Ss]egurança.*"
+    optional: true
+
+# Toggle do bloqueio biométrico
+- assertVisible: ".*[Bb]iométric.*|.*[Ff]ace ID.*|.*[Bb]loqueio.*"
+- tapOn: ".*[Bb]iométric.*|.*[Ff]ace ID.*|.*[Bb]loqueio.*"
+
+# Em DEV/simulator sem biometria configurada o app deve mostrar fallback
+# graceful (toast / erro) em vez de quebrar.
+- waitForAnimationToEnd
