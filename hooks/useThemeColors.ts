@@ -1,103 +1,115 @@
+// ═══════════════════════════════════════════════════════════════
+// ═══ Hook de tokens visuais — paleta oficial CronoPet        ═══
+// ═══════════════════════════════════════════════════════════════
+//
+// Light e dark mode espelham a paleta da marca (Celadon, Verdigris,
+// Beige, Ash Brown, Graphite). Neutros seguem a escala terra-quente
+// definida em `constants/colors.ts` — não usamos stone/zinc/slate.
+//
+// Ações do pet (comida/água/passeio/etc) mantêm a paleta funcional
+// auditada WCAG, intencionalmente independente da marca: são códigos
+// visuais que o tutor aprende a associar a cada ação.
+
 import { useColorScheme } from 'react-native';
 import { usePetStore } from '@/store/usePetStore';
+import {
+  brand, neutral, neutralDark, card, cardDark, verdigrisDeep,
+} from '@/constants/colors';
 
-// ─── Paleta neutra ────────────────────────────────────────────
+// ─── Tokens neutros (light) ────────────────────────────────────
 
 const light = {
-  // Backgrounds
-  bgScreen:  '#fafaf9',
-  bgCard:    '#ffffff',
-  bgInput:   '#f5f5f4',
-  bgMuted:   '#e7e5e4',
+  bgScreen:  neutral[50],     // #FBFDF3 — Beige whitewashed
+  bgCard:    card,            // #FFFEF8 — off-white quente
+  bgInput:   neutral[100],    // #F2F4DC — Beige diluído
+  bgMuted:   neutral[200],    // #E0D9C4
 
-  // Texto
-  textPrimary:   '#1c1917',
-  textSecondary: '#78716c',
-  textTertiary:  '#a8a29e',
-  textDisabled:  '#d6d3d1',
+  textPrimary:   neutral[900], // Graphite
+  textSecondary: neutral[500], // Ash Brown clareado
+  textTertiary:  neutral[400],
+  textDisabled:  neutral[300],
 
-  // Borda
-  border: '#e7e5e4',
+  border: neutral[200],
 
-  // Tab bar / navegação
-  tabActive:   '#1c1917',
-  tabInactive: '#a8a29e',
-  tabBar:      '#ffffff',
+  // Primária da marca como cor ativa (era preto puro antes)
+  tabActive:   brand.verdigris,
+  tabInactive: neutral[400],
+  tabBar:      card,
 } as const;
+
+// ─── Tokens neutros (dark) ─────────────────────────────────────
 
 const dark = {
-  // Backgrounds
-  bgScreen:  '#0c0a09',   // stone-950
-  bgCard:    '#1c1917',   // stone-900
-  bgInput:   '#292524',   // stone-800
-  bgMuted:   '#44403c',   // stone-700
+  bgScreen:  neutralDark[50],
+  bgCard:    cardDark,
+  bgInput:   neutralDark[100],
+  bgMuted:   neutralDark[200],
 
-  // Texto (invertido)
-  textPrimary:   '#fafaf9',   // stone-50
-  textSecondary: '#d6d3d1',   // stone-300
-  textTertiary:  '#a8a29e',   // stone-400
-  textDisabled:  '#78716c',   // stone-500
+  textPrimary:   neutralDark[900],
+  textSecondary: neutralDark[500],
+  textTertiary:  neutralDark[400],
+  textDisabled:  neutralDark[300],
 
-  // Borda
-  border: '#44403c',   // stone-700
+  border: neutralDark[200],
 
-  // Tab bar / navegação
-  tabActive:   '#fafaf9',
-  tabInactive: '#78716c',
-  tabBar:      '#1c1917',
+  // No dark, Celadon brilha mais que Verdigris — vira tab active
+  tabActive:   brand.celadon,
+  tabInactive: neutralDark[400],
+  tabBar:      cardDark,
 } as const;
 
-// ─── Ações do pet — dark mode ─────────────────────────────────
-// Em dark mode os fundos pastéis ficam brilhantes demais.
-// Usamos a cor primária com 15% de opacidade.
+// ─── Ações do pet (paleta funcional intocada) ──────────────────
 
 const actionsDark = {
-  comida:  { primary: '#fbbf24', bg: 'rgba(180, 83,  9,  0.18)', border: 'rgba(180, 83,  9,  0.35)' },
-  agua:    { primary: '#38bdf8', bg: 'rgba( 3, 105,161,  0.18)', border: 'rgba( 3, 105,161,  0.35)' },
-  passeio: { primary: '#34d399', bg: 'rgba( 4, 120, 87,  0.18)', border: 'rgba( 4, 120, 87,  0.35)' },
-  xixi:    { primary: '#a78bfa', bg: 'rgba(124, 58,237,  0.18)', border: 'rgba(124, 58,237,  0.35)' },
-  coco:    { primary: '#d97706', bg: 'rgba(146, 64, 14,  0.18)', border: 'rgba(146, 64, 14,  0.35)' },
-  banho:   { primary: '#38bdf8', bg: 'rgba( 3, 105,161,  0.18)', border: 'rgba( 3, 105,161,  0.35)' },
+  comida:  { primary: '#FBBF24', bg: 'rgba(180, 83,  9,  0.22)', border: 'rgba(180, 83,  9,  0.40)' },
+  agua:    { primary: '#38BDF8', bg: 'rgba( 3, 105,161,  0.22)', border: 'rgba( 3, 105,161,  0.40)' },
+  passeio: { primary: '#34D399', bg: 'rgba( 4, 120, 87,  0.22)', border: 'rgba( 4, 120, 87,  0.40)' },
+  xixi:    { primary: '#A78BFA', bg: 'rgba(124, 58,237,  0.22)', border: 'rgba(124, 58,237,  0.40)' },
+  coco:    { primary: '#D97706', bg: 'rgba(146, 64, 14,  0.22)', border: 'rgba(146, 64, 14,  0.40)' },
+  banho:   { primary: '#38BDF8', bg: 'rgba( 3, 105,161,  0.22)', border: 'rgba( 3, 105,161,  0.40)' },
 } as const;
 
 const actionsLight = {
-  comida:  { primary: '#b45309', bg: '#fffbeb', border: '#fde68a' },
-  agua:    { primary: '#0369a1', bg: '#f0f9ff', border: '#bae6fd' },
-  passeio: { primary: '#047857', bg: '#f0fdf4', border: '#bbf7d0' },
-  xixi:    { primary: '#7c3aed', bg: '#faf5ff', border: '#e9d5ff' },
-  coco:    { primary: '#92400e', bg: '#fef3c7', border: '#fde68a' },
-  banho:   { primary: '#0369a1', bg: '#f0f9ff', border: '#bae6fd' },
+  comida:  { primary: '#B45309', bg: '#FFFBEB', border: '#FDE68A' },
+  agua:    { primary: '#0369A1', bg: '#F0F9FF', border: '#BAE6FD' },
+  passeio: { primary: '#047857', bg: '#F0FDF4', border: '#BBF7D0' },
+  xixi:    { primary: '#7C3AED', bg: '#FAF5FF', border: '#E9D5FF' },
+  coco:    { primary: '#92400E', bg: '#FEF3C7', border: '#FDE68A' },
+  banho:   { primary: '#0369A1', bg: '#F0F9FF', border: '#BAE6FD' },
 } as const;
 
-// ─── Hook ─────────────────────────────────────────────────────
+// ─── Brand tokens (independentes de tema) ──────────────────────
+// Para uso direto quando o componente expressa identidade da marca
+// (CTA principal, logo, badge Premium, etc).
+
+const brandTokens = {
+  primary:     brand.verdigris,
+  primaryDeep: verdigrisDeep,
+  accent:      brand.celadon,
+  warmBg:      brand.beige,
+  textWarm:    brand.ashBrown,
+  textBlack:   brand.graphite,
+} as const;
+
+// ─── Hook ──────────────────────────────────────────────────────
 
 export type ThemeColors = typeof light;
 export type ActionTheme = typeof actionsLight;
+export type BrandTokens = typeof brandTokens;
 
-/**
- * Retorna as cores do tema atual (light/dark) e as cores semânticas
- * das ações do pet adaptadas para o modo ativo.
- *
- * Uso:
- *   const { colors, actionTheme, isDark } = useThemeColors();
- *   <View style={{ backgroundColor: colors.bgCard }}>
- *
- * NOTA: O app está fixo em light mode hoje (StatusBar style="dark").
- * Este hook já está pronto para quando o dark mode for ativado —
- * basta remover a linha `return light` abaixo.
- */
 export function useThemeColors() {
-  const scheme      = useColorScheme();
-  const themeMode   = usePetStore((s) => s.themeMode);
+  const scheme    = useColorScheme();
+  const themeMode = usePetStore((s) => s.themeMode);
 
   const isDark =
-    themeMode === 'dark'   ? true  :
-    themeMode === 'light'  ? false :
-    scheme === 'dark';             // 'system' → segue o OS
+    themeMode === 'dark'  ? true
+    : themeMode === 'light' ? false
+    : scheme === 'dark';
 
   return {
-    colors:      isDark ? dark  : light,
+    colors:      isDark ? dark : light,
     actionTheme: isDark ? actionsDark : actionsLight,
+    brand:       brandTokens,
     isDark,
     scheme,
   } as const;
