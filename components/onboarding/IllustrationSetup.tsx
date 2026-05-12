@@ -7,11 +7,11 @@ import Animated, {
   useReducedMotion,
 } from 'react-native-reanimated';
 
-const BRAND_GOLD  = '#fbbf24';
+const BRAND_PRIMARY  = '#04A29B';
 const CROWN_SHADE = '#f59e0b';
 const JEWEL_RED   = '#ef4444';
 const JEWEL_BLUE  = '#3b82f6';
-const JEWEL_GREEN = '#22c55e';
+const JEWEL_GREEN = '#04A29B';
 
 export function IllustrationSetup() {
   const scale     = useSharedValue(1);
@@ -45,7 +45,7 @@ export function IllustrationSetup() {
           {/* Crown body */}
           <Polygon
             points="10,62 20,20 42,46 55,10 68,46 90,20 100,62"
-            fill={BRAND_GOLD}
+            fill={BRAND_PRIMARY}
           />
           {/* Crown outlines */}
           <Polygon

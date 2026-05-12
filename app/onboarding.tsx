@@ -22,7 +22,7 @@ import { IllustrationSetup } from '@/components/onboarding/IllustrationSetup';
 import type { PetType } from '@/types/pet';
 
 // ─── Constantes ───────────────────────────────────────────────
-const BRAND_GOLD  = '#fbbf24';
+const BRAND_PRIMARY  = '#04A29B';
 const DEFAULT_FOTO = 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600&q=80';
 type Step = 0 | 1 | 2;
 
@@ -421,7 +421,7 @@ function StepPetProfile({
           />
           <View style={{
             position: 'absolute', bottom: 0, right: 0,
-            backgroundColor: BRAND_GOLD, width: 32, height: 32,
+            backgroundColor: BRAND_PRIMARY, width: 32, height: 32,
             borderRadius: 16, alignItems: 'center', justifyContent: 'center',
             borderWidth: 2, borderColor: colors.bgScreen,
           }}>

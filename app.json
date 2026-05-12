@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#fafaf9"
+      "backgroundColor": "#FBFDF3"
     },
     "ios": {
       "supportsTablet": true,
@@ -20,7 +20,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#E9F1CF"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
@@ -52,7 +52,7 @@
         "expo-notifications",
         {
           "icon": "./assets/images/icon.png",
-          "color": "#fafaf9",
+          "color": "#04A29B",
           "defaultChannel": "cronopet-daily",
           "iosDisplayInForeground": true
         }

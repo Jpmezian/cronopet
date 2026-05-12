@@ -682,7 +682,7 @@ export default function PetDashboard() {
             },
             latestWeight !== null
               ? { emoji: '⚖️', value: `${latestWeight.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}kg`, label: 'peso atual' }
-              : { emoji: '⚡', value: `${totalDone}/${actions.length}`, label: 'hoje' },
+              : { emoji: '📈', value: `${totalDone}/${actions.length}`, label: 'metas de hoje' },
           ]}
         />
 
@@ -928,7 +928,7 @@ export default function PetDashboard() {
             flexDirection: 'row', alignItems: 'center',
           }}>
             <View style={{
-              backgroundColor: '#fbbf24', borderRadius: 12,
+              backgroundColor: '#04A29B', borderRadius: 12,
               width: 40, height: 40,
               alignItems: 'center', justifyContent: 'center',
               marginRight: 12,
@@ -939,7 +939,7 @@ export default function PetDashboard() {
               <Text style={{ color: colors.bgScreen, fontFamily: 'Nunito_700Bold', fontSize: 13 }}>Compartilhe a rotina do {pet.nome}</Text>
               <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>Toda a família acompanha em tempo real</Text>
             </View>
-            <View style={{ backgroundColor: '#fbbf24', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
+            <View style={{ backgroundColor: '#04A29B', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 }}>
               <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: 11 }}>PRO</Text>
             </View>
           </View>
@@ -1331,14 +1331,14 @@ export default function PetDashboard() {
               backgroundColor: '#fef3c7',
               alignItems: 'center', justifyContent: 'center',
             }}>
-              <Plus size={20} strokeWidth={2.5} color="#fbbf24" />
+              <Plus size={20} strokeWidth={2.5} color="#04A29B" />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ fontWeight: '700', fontSize: 15, color: colors.textPrimary }}>
                 Adicionar novo pet
               </Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                <Crown size={11} strokeWidth={2} color="#fbbf24" />
+                <Crown size={11} strokeWidth={2} color="#04A29B" />
                 <Text style={{ fontSize: 12, color: colors.textSecondary }}>
                   Requer Premium
                 </Text>

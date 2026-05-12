@@ -18,7 +18,7 @@ function TabIcon({
     <View style={{ alignItems: 'center', justifyContent: 'center', paddingTop: 4 }}>
       <Icon
         size={22}
-        color={focused ? '#1c1917' : '#a8a29e'}
+        color={focused ? '#2C2B27' : '#A09684'}
         strokeWidth={focused ? 2.5 : 2}
       />
       <Text
@@ -26,7 +26,7 @@ function TabIcon({
           fontSize: 10,
           fontWeight: '600',
           marginTop: 3,
-          color: focused ? '#1c1917' : '#a8a29e',
+          color: focused ? '#2C2B27' : '#A09684',
         }}
       >
         {label}
@@ -55,7 +55,7 @@ export default function TabLayout() {
         name="index"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon Icon={Home} label="Início" focused={focused} color="#1c1917" />
+            <TabIcon Icon={Home} label="Início" focused={focused} color="#2C2B27" />
           ),
         }}
       />
@@ -63,7 +63,7 @@ export default function TabLayout() {
         name="history"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon Icon={BarChart2} label="Histórico" focused={focused} color="#1c1917" />
+            <TabIcon Icon={BarChart2} label="Histórico" focused={focused} color="#2C2B27" />
           ),
         }}
       />
@@ -71,7 +71,7 @@ export default function TabLayout() {
         name="medical"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon Icon={HeartPulse} label="Saúde" focused={focused} color="#1c1917" />
+            <TabIcon Icon={HeartPulse} label="Saúde" focused={focused} color="#2C2B27" />
           ),
         }}
       />

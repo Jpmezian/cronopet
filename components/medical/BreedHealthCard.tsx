@@ -40,7 +40,7 @@ interface Props {
 }
 
 export function BreedHealthCard({ raca, tipo, petNome }: Props) {
-  const { colors, isDark } = useThemeColors();
+  const { colors, isDark, brand } = useThemeColors();
   const { reducedMotion } = useMotion();
   const [expanded, setExpanded] = useState(false);
 
@@ -75,10 +75,10 @@ export function BreedHealthCard({ raca, tipo, petNome }: Props) {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={{
             width: 40, height: 40, borderRadius: 12,
-            backgroundColor: isDark ? 'rgba(124, 58, 237, 0.18)' : '#faf5ff',
+            backgroundColor: isDark ? 'rgba(155, 228, 198, 0.18)' : brand.warmBg,
             alignItems: 'center', justifyContent: 'center',
           }}>
-            <Dna size={20} color={isDark ? '#a78bfa' : '#7c3aed'} strokeWidth={2.2} />
+            <Dna size={20} color={isDark ? brand.accent : brand.primary} strokeWidth={2.2} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary }}>
@@ -130,11 +130,11 @@ export function BreedHealthCard({ raca, tipo, petNome }: Props) {
 
         {/* Owner note (destaque) */}
         <View style={{
-          backgroundColor: isDark ? 'rgba(124, 58, 237, 0.10)' : '#faf5ff',
+          backgroundColor: isDark ? 'rgba(155, 228, 198, 0.10)' : brand.warmBg,
           borderRadius: 12,
           padding: 12,
           borderLeftWidth: 3,
-          borderLeftColor: isDark ? '#a78bfa' : '#7c3aed',
+          borderLeftColor: isDark ? brand.accent : brand.primary,
         }}>
           <Text style={{ fontSize: 13, color: colors.textPrimary, lineHeight: 18 }}>
             <Text style={{ fontWeight: '700' }}>Dica para {petNome}: </Text>
@@ -258,11 +258,11 @@ function PredItem({
     ? (isDark ? 'rgba(220, 38, 38, 0.20)' : '#fee2e2')
     : pred.severity === 'common'
       ? (isDark ? 'rgba(217, 119, 6, 0.18)' : '#fef3c7')
-      : (isDark ? 'rgba(120, 113, 108, 0.20)' : '#f5f5f4');
+      : (isDark ? 'rgba(122, 111, 95, 0.20)' : '#F2F4DC');
   const sevText = pred.severity === 'serious'
     ? (isDark ? '#fca5a5' : '#991b1b')
     : pred.severity === 'common'
-      ? (isDark ? '#fbbf24' : '#92400e')
+      ? (isDark ? '#04A29B' : '#92400e')
       : colors.textSecondary;
 
   return (

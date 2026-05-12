@@ -14,7 +14,7 @@ const C = {
   gradTop:    '#10b981',  // emerald-500
   gradMid:    '#047857',  // emerald-700
   gradBottom: '#064e3b',  // emerald-900
-  gold:       '#fbbf24',  // amber-400
+  gold:       '#04A29B',  // amber-400
   goldDark:   '#f59e0b',  // amber-500
   white:      '#ffffff',
   whiteSoft:  'rgba(255,255,255,0.88)',
@@ -68,7 +68,7 @@ function StatCard({ emoji, value, label, delta }: { emoji: string; value: string
   const deltaColor = isEqual
     ? 'rgba(255,255,255,0.55)'
     : isPositive
-    ? '#86efac'  // green-300
+    ? '#9BE4C6'  // green-300
     : isNegative
     ? '#fca5a5'  // red-300
     : 'rgba(255,255,255,0.55)';
@@ -310,13 +310,13 @@ export const WeeklyReportCard = forwardRef<View, WeeklyReportCardProps>(
             <Text style={{ fontSize: 18, marginRight: 8 }}>🐾</Text>
             <View>
               <Text style={{
-                color: '#1c1917', fontFamily: 'Nunito_800ExtraBold',
+                color: '#2C2B27', fontFamily: 'Nunito_800ExtraBold',
                 fontSize: 14, fontWeight: '800', letterSpacing: 0.3,
               }}>
                 CronoPet
               </Text>
               <Text style={{
-                color: '#1c1917', fontSize: 9, fontWeight: '700', opacity: 0.72,
+                color: '#2C2B27', fontSize: 9, fontWeight: '700', opacity: 0.72,
               }}>
                 cronopet.app
               </Text>

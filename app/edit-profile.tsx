@@ -16,7 +16,7 @@ import { ScalePress } from '@/components/ui/ScalePress';
 
 // ─── Constantes de marca ─────────────────────────────────────
 // Cores fixas de identidade visual que não variam com o tema
-const BRAND_GOLD = '#fbbf24';  // amarelo-âmbar — botão de câmera
+const BRAND_PRIMARY = '#04A29B';  // amarelo-âmbar — botão de câmera
 
 const PET_TYPE_OPTIONS: { tipo: PetType; emoji: string; label: string }[] = [
   { tipo: 'cachorro', emoji: '🐶', label: 'Cachorro' },
@@ -164,7 +164,7 @@ export default function EditProfileScreen() {
             />
             <View style={{
               position: 'absolute', bottom: 0, right: 0,
-              backgroundColor: BRAND_GOLD, borderRadius: 20, width: 40, height: 40,
+              backgroundColor: BRAND_PRIMARY, borderRadius: 20, width: 40, height: 40,
               alignItems: 'center', justifyContent: 'center',
               ...(Platform.OS === 'android' ? { elevation: 3 } : {
                 shadowColor: '#000', shadowOffset: { width: 0, height: 2 },

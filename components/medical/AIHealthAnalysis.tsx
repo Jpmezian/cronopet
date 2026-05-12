@@ -20,7 +20,7 @@ import { View, Text, ActivityIndicator, Platform } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as Sentry from '@sentry/react-native';
-import { Sparkles, AlertCircle, RefreshCw, Clock } from 'lucide-react-native';
+import { Stethoscope, AlertCircle, RefreshCw, Clock } from 'lucide-react-native';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { useToastStore } from '@/store/useToastStore';
@@ -46,21 +46,21 @@ type State =
   | { status: 'error'; reason: string };
 
 const SEVERITY_TONE = {
-  low:    { bg: '#f0fdf4', text: '#14532d', label: 'Tudo dentro do esperado' },
-  medium: { bg: '#fff7ed', text: '#9a3412', label: 'Vale acompanhar' },
-  high:   { bg: '#fef2f2', text: '#991b1b', label: 'Considere procurar veterinário' },
+  low:    { bg: '#EAFAF1', text: '#024A47', label: 'Tudo dentro do esperado' },
+  medium: { bg: '#FFF7ED', text: '#9A3412', label: 'Vale acompanhar' },
+  high:   { bg: '#FEF2F2', text: '#991B1B', label: 'Considere procurar veterinário' },
 } as const;
 
 const SEVERITY_TONE_DARK = {
-  low:    { bg: 'rgba(4, 120, 87, 0.18)', text: '#86efac', label: 'Tudo dentro do esperado' },
-  medium: { bg: 'rgba(180, 83, 9, 0.18)', text: '#fbbf24', label: 'Vale acompanhar' },
-  high:   { bg: 'rgba(220, 38, 38, 0.18)', text: '#fca5a5', label: 'Considere procurar veterinário' },
+  low:    { bg: 'rgba(4, 162, 155, 0.22)', text: '#9BE4C6', label: 'Tudo dentro do esperado' },
+  medium: { bg: 'rgba(180, 83, 9, 0.22)',  text: '#FBBF24', label: 'Vale acompanhar' },
+  high:   { bg: 'rgba(220, 38, 38, 0.22)', text: '#FCA5A5', label: 'Considere procurar veterinário' },
 } as const;
 
 export function AIHealthAnalysis({
   pet, actionHistory, weightHistory, medicalEvents,
 }: Props) {
-  const { colors, isDark } = useThemeColors();
+  const { colors, isDark, brand } = useThemeColors();
   const showToast = useToastStore((s) => s.showToast);
   const [state, setState] = useState<State>({ status: 'idle' });
 
@@ -108,7 +108,7 @@ export function AIHealthAnalysis({
         padding: 16,
       }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <Sparkles size={18} color={colors.textTertiary} strokeWidth={2} />
+          <Stethoscope size={18} color={colors.textTertiary} strokeWidth={2} />
           <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textSecondary, flex: 1 }}>
             Análise por IA
           </Text>
@@ -137,10 +137,10 @@ export function AIHealthAnalysis({
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
         <View style={{
           width: 40, height: 40, borderRadius: 12,
-          backgroundColor: isDark ? 'rgba(251, 191, 36, 0.18)' : '#fffbeb',
+          backgroundColor: isDark ? 'rgba(4, 162, 155, 0.18)' : brand.warmBg,
           alignItems: 'center', justifyContent: 'center',
         }}>
-          <Sparkles size={20} color={isDark ? '#fbbf24' : '#b45309'} strokeWidth={2.2} />
+          <Stethoscope size={20} color={isDark ? brand.accent : brand.primary} strokeWidth={2.2} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={{ fontSize: 16, fontWeight: '700', color: colors.textPrimary }}>
@@ -163,7 +163,7 @@ export function AIHealthAnalysis({
             accessibilityLabel="Iniciar análise por IA"
             onPress={runAnalysis}
             style={{
-              backgroundColor: isDark ? '#fbbf24' : '#b45309',
+              backgroundColor: brand.primary,
               paddingVertical: 12,
               borderRadius: 14,
               alignItems: 'center',
@@ -172,9 +172,9 @@ export function AIHealthAnalysis({
               gap: 8,
             }}
           >
-            <Sparkles size={16} color={isDark ? '#1c1917' : '#ffffff'} strokeWidth={2.4} />
+            <Stethoscope size={16} color={brand.warmBg} strokeWidth={2.4} />
             <Text style={{
-              color: isDark ? '#1c1917' : '#ffffff',
+              color: brand.warmBg,
               fontWeight: '700',
               fontSize: 14,
             }}>

@@ -7,9 +7,9 @@ import Animated, {
   useReducedMotion,
 } from 'react-native-reanimated';
 
-const BRAND_GOLD = '#fbbf24';
+const BRAND_PRIMARY = '#04A29B';
 const DOG_DARK   = '#d97706';
-const DOG_FEAT   = '#1c1917';
+const DOG_FEAT   = '#2C2B27';
 const TONGUE     = '#ef4444';
 const TAIL_H     = 52;
 const TAIL_W     = 32;
@@ -44,9 +44,9 @@ export function IllustrationWelcome() {
       {/* Static dog body */}
       <Svg width={160} height={160} viewBox="0 0 160 160">
         {/* Body */}
-        <Ellipse cx={78} cy={112} rx={38} ry={28} fill={BRAND_GOLD} />
+        <Ellipse cx={78} cy={112} rx={38} ry={28} fill={BRAND_PRIMARY} />
         {/* Head */}
-        <Circle cx={78} cy={67} r={28} fill={BRAND_GOLD} />
+        <Circle cx={78} cy={67} r={28} fill={BRAND_PRIMARY} />
         {/* Left ear */}
         <Ellipse cx={57} cy={49} rx={11} ry={15} fill={DOG_DARK}
           transform="rotate(-15, 57, 49)" />
@@ -67,8 +67,8 @@ export function IllustrationWelcome() {
         {/* Tongue */}
         <Path d="M 74 84 Q 78 91 82 84" fill={TONGUE} />
         {/* Front paws */}
-        <Ellipse cx={63} cy={135} rx={11} ry={8} fill={BRAND_GOLD} />
-        <Ellipse cx={93} cy={135} rx={11} ry={8} fill={BRAND_GOLD} />
+        <Ellipse cx={63} cy={135} rx={11} ry={8} fill={BRAND_PRIMARY} />
+        <Ellipse cx={93} cy={135} rx={11} ry={8} fill={BRAND_PRIMARY} />
         {/* Paw toes */}
         <Circle cx={57} cy={134} r={3} fill={DOG_DARK} />
         <Circle cx={63} cy={131} r={3} fill={DOG_DARK} />

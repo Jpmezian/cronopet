@@ -79,7 +79,7 @@ export function PremiumTriggerSheet({ trigger, onDismiss }: PremiumTriggerSheetP
               <View style={{
                 width: 72, height: 72, borderRadius: 20,
                 backgroundColor: 'rgba(251,191,36,0.15)',
-                borderWidth: 2, borderColor: '#fbbf24',
+                borderWidth: 2, borderColor: '#04A29B',
                 alignItems: 'center', justifyContent: 'center',
                 alignSelf: 'center',
                 marginTop: 4, marginBottom: 20,

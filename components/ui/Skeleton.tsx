@@ -81,8 +81,8 @@ export function SkeletonPremiumDashboard() {
 
   // Cartão dark intencional (PRO card)
   const darkCardBg   = isDark ? colors.bgCard  : colors.textPrimary;
-  const darkLinePrimary = isDark ? colors.bgMuted : '#44403c';   // stone-700 / bgMuted
-  const darkLineSecondary = isDark ? colors.bgInput : '#292524'; // stone-800 / bgInput
+  const darkLinePrimary = isDark ? colors.bgMuted : '#5C493D';   // stone-700 / bgMuted
+  const darkLineSecondary = isDark ? colors.bgInput : '#3A3833'; // stone-800 / bgInput
 
   return (
     <View style={{ paddingHorizontal: 20, gap: 20, paddingTop: 4 }}>

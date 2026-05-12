@@ -7,7 +7,7 @@ import { Pencil } from 'lucide-react-native';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { ScalePress } from '@/components/ui/ScalePress';
 
-const BRAND_GOLD = '#fbbf24';
+const BRAND_PRIMARY = '#04A29B';
 
 interface PetHeroProps {
   nome:       string;
@@ -71,7 +71,7 @@ export function PetHero({ nome, foto, raca, idadeLabel, streak }: PetHeroProps) 
       }}>
         <Text style={{ fontSize: 15, marginRight: 4 }}>🔥</Text>
         <Text style={{
-          color: BRAND_GOLD,
+          color: BRAND_PRIMARY,
           fontFamily: 'Nunito_800ExtraBold',
           fontSize: 14, fontWeight: '800',
         }}>
@@ -133,9 +133,9 @@ export function PetHero({ nome, foto, raca, idadeLabel, streak }: PetHeroProps) 
           flexDirection: 'row', alignItems: 'center',
         }}
       >
-        <Pencil size={12} color="#1c1917" strokeWidth={2.5} />
+        <Pencil size={12} color="#2C2B27" strokeWidth={2.5} />
         <Text style={{
-          color: '#1c1917', fontWeight: '700',
+          color: '#2C2B27', fontWeight: '700',
           fontSize: 12, marginLeft: 4,
         }}>
           Editar

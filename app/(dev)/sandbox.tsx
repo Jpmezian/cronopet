@@ -606,13 +606,13 @@ function DevToolsSection() {
             accessible accessibilityRole="switch"
             accessibilityState={{ checked: isPremium }}
             style={{
-              backgroundColor: isPremium ? '#fbbf24' : colors.bgInput,
+              backgroundColor: isPremium ? '#04A29B' : colors.bgInput,
               borderRadius: 18,
               paddingHorizontal: 16, paddingVertical: 8,
             }}
           >
             <Text style={{
-              color: isPremium ? '#1c1917' : colors.textSecondary,
+              color: isPremium ? '#2C2B27' : colors.textSecondary,
               fontFamily: 'Nunito_700Bold',
               fontSize: 12, fontWeight: '700',
             }}>

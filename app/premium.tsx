@@ -308,7 +308,7 @@ export default function PremiumScreen() {
         <View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Text style={{ color: colors.textPrimary, fontSize: 22, fontWeight: '700', fontFamily: 'Nunito_700Bold' }}>CronoPet</Text>
-            <View style={{ backgroundColor: '#fbbf24', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
+            <View style={{ backgroundColor: '#04A29B', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
               <Text style={{ color: colors.textPrimary, fontWeight: '800', fontSize: 11 }}>PRO</Text>
             </View>
           </View>
@@ -396,7 +396,7 @@ function ViewAuth({
       <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 8, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
         {/* Benefícios */}
         <View style={{ backgroundColor: darkCardBg, borderRadius: 20, padding: 20, marginBottom: 24, gap: 12 }}>
-          <Text style={{ color: '#fbbf24', fontWeight: '800', fontSize: 16, fontFamily: 'Nunito_800ExtraBold', marginBottom: 4 }}>
+          <Text style={{ color: '#04A29B', fontWeight: '800', fontSize: 16, fontFamily: 'Nunito_800ExtraBold', marginBottom: 4 }}>
             🏆 Compartilhamento Familiar
           </Text>
           {[
@@ -596,7 +596,7 @@ function ViewDashboard({
   const { colors, actionTheme, isDark } = useThemeColors();
   const darkCardBg = isDark ? colors.bgCard : colors.textPrimary;
 
-  const syncColor = syncStatus === 'synced' ? '#16a34a' : syncStatus === 'syncing' ? '#d97706' : syncStatus === 'error' ? '#dc2626' : colors.textTertiary;
+  const syncColor = syncStatus === 'synced' ? '#036E69' : syncStatus === 'syncing' ? '#d97706' : syncStatus === 'error' ? '#dc2626' : colors.textTertiary;
   const syncLabel = syncStatus === 'synced' ? '✅ Sincronizado' : syncStatus === 'syncing' ? '🔄 Sincronizando...' : syncStatus === 'error' ? '⚠️ Erro na sync' : '◦ Aguardando';
 
   return (
@@ -607,7 +607,7 @@ function ViewDashboard({
         ...(Platform.OS === 'android' ? { elevation: 3 } : {}),
       }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Text style={{ color: '#fbbf24', fontWeight: '800', fontSize: 16, fontFamily: 'Nunito_700Bold' }}>{group.nome}</Text>
+          <Text style={{ color: '#04A29B', fontWeight: '800', fontSize: 16, fontFamily: 'Nunito_700Bold' }}>{group.nome}</Text>
           <Text style={{ color: syncColor, fontSize: 12, fontWeight: '600' }}>{syncLabel}</Text>
         </View>
         <Text style={{ color: colors.textSecondary, fontSize: 13 }}>
@@ -671,7 +671,7 @@ function ViewDashboard({
             }}>
               <View style={{
                 width: 40, height: 40, borderRadius: 20,
-                backgroundColor: m.role === 'owner' ? '#fbbf24' : colors.bgMuted,
+                backgroundColor: m.role === 'owner' ? '#04A29B' : colors.bgMuted,
                 alignItems: 'center', justifyContent: 'center',
               }}>
                 <Text style={{ fontSize: 18 }}>{m.role === 'owner' ? '👑' : '👤'}</Text>
@@ -785,7 +785,7 @@ function ViewPitch({ petNome, onStartTrial }: { petNome: string; onStartTrial: (
         alignItems: 'center',
       }}>
         <View style={{
-          backgroundColor: '#fbbf24',
+          backgroundColor: '#04A29B',
           width: 72, height: 72, borderRadius: 20,
           alignItems: 'center', justifyContent: 'center',
           marginBottom: 16,
@@ -817,7 +817,7 @@ function ViewPitch({ petNome, onStartTrial }: { petNome: string; onStartTrial: (
         {/* Trial badge */}
         <View style={{
           backgroundColor: 'rgba(251,191,36,0.18)',
-          borderWidth: 1.5, borderColor: '#fbbf24',
+          borderWidth: 1.5, borderColor: '#04A29B',
           borderRadius: 100,
           paddingHorizontal: 16, paddingVertical: 7,
           marginTop: 16,
@@ -825,7 +825,7 @@ function ViewPitch({ petNome, onStartTrial }: { petNome: string; onStartTrial: (
         }}>
           <Text style={{ fontSize: 14, marginRight: 6 }}>🎁</Text>
           <Text style={{
-            color: '#fbbf24',
+            color: '#04A29B',
             fontFamily: 'Nunito_800ExtraBold',
             fontSize: 12, fontWeight: '800',
             letterSpacing: 0.5,
@@ -840,7 +840,7 @@ function ViewPitch({ petNome, onStartTrial }: { petNome: string; onStartTrial: (
           fontSize: 11, marginTop: 10,
           textAlign: 'center',
         }}>
-          <Text style={{ color: '#fbbf24', fontWeight: '800' }}>Acesso antecipado</Text> · seja um dos primeiros tutores
+          <Text style={{ color: '#04A29B', fontWeight: '800' }}>Acesso antecipado</Text> · seja um dos primeiros tutores
         </Text>
       </View>
 
@@ -951,11 +951,11 @@ function ViewPitch({ petNome, onStartTrial }: { petNome: string; onStartTrial: (
             </View>
             <View style={{ width: 72, alignItems: 'center' }}>
               {typeof r.pro === 'boolean' ? (
-                <Text style={{ fontSize: 16, color: '#fbbf24', fontWeight: '800' }}>
+                <Text style={{ fontSize: 16, color: '#04A29B', fontWeight: '800' }}>
                   {r.pro ? '✓' : '—'}
                 </Text>
               ) : (
-                <Text style={{ fontSize: 11, color: '#fbbf24', fontWeight: '800' }}>
+                <Text style={{ fontSize: 11, color: '#04A29B', fontWeight: '800' }}>
                   {r.pro}
                 </Text>
               )}
@@ -971,7 +971,7 @@ function ViewPitch({ petNome, onStartTrial }: { petNome: string; onStartTrial: (
           <Text style={{ width: 60, textAlign: 'center', fontSize: 10, color: colors.textTertiary, fontWeight: '700', letterSpacing: 0.5 }}>
             FREE
           </Text>
-          <Text style={{ width: 72, textAlign: 'center', fontSize: 10, color: '#fbbf24', fontWeight: '800', letterSpacing: 0.5 }}>
+          <Text style={{ width: 72, textAlign: 'center', fontSize: 10, color: '#04A29B', fontWeight: '800', letterSpacing: 0.5 }}>
             PRO
           </Text>
         </View>
@@ -1005,7 +1005,7 @@ function ViewPitch({ petNome, onStartTrial }: { petNome: string; onStartTrial: (
                 borderRadius: 16,
                 padding: 16,
                 borderWidth: 2,
-                borderColor: active ? '#fbbf24' : colors.border,
+                borderColor: active ? '#04A29B' : colors.border,
                 flexDirection: 'row',
                 alignItems: 'center',
               }}
@@ -1013,14 +1013,14 @@ function ViewPitch({ petNome, onStartTrial }: { petNome: string; onStartTrial: (
               {/* Radio */}
               <View style={{
                 width: 22, height: 22, borderRadius: 11,
-                borderWidth: 2, borderColor: active ? '#fbbf24' : colors.border,
+                borderWidth: 2, borderColor: active ? '#04A29B' : colors.border,
                 alignItems: 'center', justifyContent: 'center',
                 marginRight: 14,
               }}>
                 {active && (
                   <View style={{
                     width: 10, height: 10, borderRadius: 5,
-                    backgroundColor: '#fbbf24',
+                    backgroundColor: '#04A29B',
                   }} />
                 )}
               </View>
@@ -1036,7 +1036,7 @@ function ViewPitch({ petNome, onStartTrial }: { petNome: string; onStartTrial: (
                   </Text>
                   {plan.badge && (
                     <View style={{
-                      backgroundColor: '#fbbf24',
+                      backgroundColor: '#04A29B',
                       borderRadius: 6,
                       paddingHorizontal: 6, paddingVertical: 2,
                       marginLeft: 8,
@@ -1092,7 +1092,7 @@ function ViewPitch({ petNome, onStartTrial }: { petNome: string; onStartTrial: (
               flexDirection: 'row',
               alignItems: 'flex-start',
               borderLeftWidth: 3,
-              borderLeftColor: '#fbbf24',
+              borderLeftColor: '#04A29B',
             }}
           >
             <Text style={{ fontSize: 22, marginRight: 12 }}>{h.icon}</Text>
@@ -1125,7 +1125,7 @@ function ViewPitch({ petNome, onStartTrial }: { petNome: string; onStartTrial: (
         accessible accessibilityRole="button"
         accessibilityLabel={`Iniciar teste grátis de 7 dias — plano ${selectedPlan === 'annual' ? 'anual' : 'mensal'}`}
         style={{
-          backgroundColor: '#fbbf24',
+          backgroundColor: '#04A29B',
           borderRadius: 16, height: 58,
           alignItems: 'center', justifyContent: 'center',
           marginBottom: 10,

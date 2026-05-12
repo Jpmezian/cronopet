@@ -182,11 +182,11 @@ export function InsightsSettingsCard() {
                   value={enabled}
                   onValueChange={() => onToggle(cat.key, enabled)}
                   trackColor={{
-                    false: isDark ? '#3f3f46' : '#e7e5e4',
+                    false: isDark ? '#48433D' : '#E0D9C4',
                     true:  actionTheme.passeio.primary,
                   }}
-                  thumbColor={Platform.OS === 'android' ? (enabled ? '#ffffff' : '#a8a29e') : undefined}
-                  ios_backgroundColor={isDark ? '#3f3f46' : '#e7e5e4'}
+                  thumbColor={Platform.OS === 'android' ? (enabled ? '#ffffff' : '#A09684') : undefined}
+                  ios_backgroundColor={isDark ? '#48433D' : '#E0D9C4'}
                 />
               </View>
             );

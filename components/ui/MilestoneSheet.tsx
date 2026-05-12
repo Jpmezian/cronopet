@@ -17,7 +17,7 @@ import { SocialCardView } from '@/components/ui/SocialCardView';
 import { useToastStore } from '@/store/useToastStore';
 
 // ─── Constantes ───────────────────────────────────────────────
-const BRAND_GOLD = '#fbbf24';
+const BRAND_PRIMARY = '#04A29B';
 
 const MILESTONE_DATA: Record<number, { emoji: string; title: string; subtitle: string }> = {
   7:   {
@@ -142,7 +142,7 @@ export function MilestoneSheet({ milestone, petNome, petFoto, streak, onClose }:
             <Animated.View style={[{
               width: 100, height: 100, borderRadius: 50,
               backgroundColor: isDark ? 'rgba(251,191,36,0.14)' : '#fffbeb',
-              borderWidth: 2, borderColor: BRAND_GOLD,
+              borderWidth: 2, borderColor: BRAND_PRIMARY,
               alignItems: 'center', justifyContent: 'center',
             }, badgeStyle]}>
               <Text style={{ fontSize: 48 }}>{data.emoji}</Text>
@@ -196,17 +196,17 @@ export function MilestoneSheet({ milestone, petNome, petFoto, streak, onClose }:
             accessibilityHint="Gera uma imagem comemorativa para compartilhar"
             style={{
               backgroundColor: isDark ? 'rgba(251,191,36,0.12)' : '#fffbeb',
-              borderWidth: 1.5, borderColor: BRAND_GOLD,
+              borderWidth: 1.5, borderColor: BRAND_PRIMARY,
               borderRadius: 16, height: 56,
               flexDirection: 'row', alignItems: 'center',
               justifyContent: 'center', gap: 8,
               marginBottom: 12,
             }}
           >
-            <Share2 size={20} color={BRAND_GOLD} strokeWidth={2} />
+            <Share2 size={20} color={BRAND_PRIMARY} strokeWidth={2} />
             <Text style={{
               fontFamily: 'Nunito_700Bold', fontWeight: '700',
-              fontSize: 16, color: BRAND_GOLD,
+              fontSize: 16, color: BRAND_PRIMARY,
             }}>
               {sharing ? 'Gerando...' : 'Compartilhar Conquista'}
             </Text>

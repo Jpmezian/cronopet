@@ -69,7 +69,7 @@ export const SocialCardView = forwardRef<View, SocialCardViewProps>(
           {/* Foto circular do pet */}
           <View style={{
             width: 148, height: 148, borderRadius: 74,
-            borderWidth: 4, borderColor: '#fbbf24',
+            borderWidth: 4, borderColor: '#04A29B',
             overflow: 'hidden', marginBottom: 24,
             backgroundColor: '#047857',
           }}>
@@ -112,20 +112,20 @@ export const SocialCardView = forwardRef<View, SocialCardViewProps>(
         }}>
           <View style={{
             flexDirection: 'row', alignItems: 'center',
-            backgroundColor: '#fbbf24',
+            backgroundColor: '#04A29B',
             borderRadius: 26,
             paddingHorizontal: 22, paddingVertical: 12,
           }}>
             <Text style={{ fontSize: 20, marginRight: 8 }}>🐾</Text>
             <View>
               <Text style={{
-                color: '#1c1917', fontFamily: 'Nunito_800ExtraBold',
+                color: '#2C2B27', fontFamily: 'Nunito_800ExtraBold',
                 fontSize: 15, fontWeight: '800',
               }}>
                 CronoPet
               </Text>
               <Text style={{
-                color: '#1c1917', fontSize: 10, fontWeight: '700', opacity: 0.75,
+                color: '#2C2B27', fontSize: 10, fontWeight: '700', opacity: 0.75,
               }}>
                 cronopet.app
               </Text>

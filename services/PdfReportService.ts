@@ -156,54 +156,54 @@ export async function generateVetReport(
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; color: #1c1917; background: #fff; font-size: 13px; }
+    body { font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; color: #2C2B27; background: #fff; font-size: 13px; }
     .page { max-width: 680px; margin: 0 auto; padding: 32px 28px; }
 
-    .header { display: flex; align-items: center; gap: 20px; border-bottom: 3px solid #1c1917; padding-bottom: 20px; margin-bottom: 24px; }
-    .pet-photo { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #e7e5e4; }
-    .pet-photo-placeholder { width: 80px; height: 80px; border-radius: 50%; background: #f5f5f4; display: flex; align-items: center; justify-content: center; font-size: 36px; }
+    .header { display: flex; align-items: center; gap: 20px; border-bottom: 3px solid #2C2B27; padding-bottom: 20px; margin-bottom: 24px; }
+    .pet-photo { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #E0D9C4; }
+    .pet-photo-placeholder { width: 80px; height: 80px; border-radius: 50%; background: #F2F4DC; display: flex; align-items: center; justify-content: center; font-size: 36px; }
     .header-info h1 { font-size: 26px; font-weight: 700; }
-    .header-info p { color: #78716c; font-size: 13px; margin-top: 4px; }
-    .badge { display: inline-block; background: #1c1917; color: #fff; border-radius: 8px; padding: 4px 12px; font-size: 11px; font-weight: 600; margin-top: 6px; }
+    .header-info p { color: #7A6F5F; font-size: 13px; margin-top: 4px; }
+    .badge { display: inline-block; background: #2C2B27; color: #fff; border-radius: 8px; padding: 4px 12px; font-size: 11px; font-weight: 600; margin-top: 6px; }
 
     .disclaimer { background: #fef3c7; border: 1px solid #fde68a; border-radius: 12px; padding: 12px 16px; margin-bottom: 24px; font-size: 12px; color: #92400e; line-height: 1.6; }
 
     .section { margin-bottom: 28px; }
-    .section-title { font-size: 16px; font-weight: 700; border-left: 4px solid #1c1917; padding-left: 12px; margin-bottom: 14px; }
+    .section-title { font-size: 16px; font-weight: 700; border-left: 4px solid #2C2B27; padding-left: 12px; margin-bottom: 14px; }
 
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th { background: #f5f5f4; padding: 8px 12px; text-align: left; font-weight: 600; color: #44403c; }
-    td { padding: 8px 12px; border-bottom: 1px solid #f5f5f4; }
+    th { background: #F2F4DC; padding: 8px 12px; text-align: left; font-weight: 600; color: #5C493D; }
+    td { padding: 8px 12px; border-bottom: 1px solid #F2F4DC; }
     tr:last-child td { border-bottom: none; }
 
     .day-block { margin-bottom: 16px; }
-    .day-title { font-size: 13px; font-weight: 700; color: #44403c; margin-bottom: 6px; background: #f5f5f4; padding: 6px 10px; border-radius: 8px; }
-    .log-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f9f9f9; }
+    .day-title { font-size: 13px; font-weight: 700; color: #5C493D; margin-bottom: 6px; background: #F2F4DC; padding: 6px 10px; border-radius: 8px; }
+    .log-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #F4F7E5; }
     .log-label { font-weight: 600; font-size: 13px; min-width: 90px; }
-    .log-time { color: #a8a29e; font-size: 12px; }
-    .log-note { color: #78716c; font-size: 12px; font-style: italic; margin-top: 2px; }
+    .log-time { color: #A09684; font-size: 12px; }
+    .log-note { color: #7A6F5F; font-size: 12px; font-style: italic; margin-top: 2px; }
     .log-photo { width: 120px; height: 80px; object-fit: cover; border-radius: 8px; margin-top: 6px; }
 
-    .vaccine-card { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
-    .vaccine-name { font-weight: 700; font-size: 14px; color: #14532d; }
-    .vaccine-detail { font-size: 12px; color: #16a34a; margin-top: 4px; line-height: 1.7; }
+    .vaccine-card { background: #EAFAF1; border: 1px solid #9BE4C6; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+    .vaccine-name { font-weight: 700; font-size: 14px; color: #024A47; }
+    .vaccine-detail { font-size: 12px; color: #036E69; margin-top: 4px; line-height: 1.7; }
 
     .appt-card { border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
-    .appt-future { background: #eff6ff; border: 1px solid #bfdbfe; }
-    .appt-past { background: #f9fafb; border: 1px solid #e5e7eb; }
-    .appt-name { font-weight: 700; font-size: 14px; color: #1d4ed8; }
-    .appt-past .appt-name { color: #374151; }
-    .appt-detail { font-size: 12px; color: #6b7280; margin-top: 4px; line-height: 1.7; }
+    .appt-future { background: #F0FAF8; border: 1px solid #B3E5DD; }
+    .appt-past { background: #F2F4DC; border: 1px solid #E0D9C4; }
+    .appt-name { font-weight: 700; font-size: 14px; color: #036E69; }
+    .appt-past .appt-name { color: #5C493D; }
+    .appt-detail { font-size: 12px; color: #7A6F5F; margin-top: 4px; line-height: 1.7; }
 
-    .weight-row { display: flex; gap: 16px; padding: 8px 0; border-bottom: 1px solid #f5f5f4; align-items: center; }
-    .weight-val { font-size: 16px; font-weight: 700; color: #7c3aed; min-width: 70px; }
-    .weight-meta { font-size: 12px; color: #78716c; }
+    .weight-row { display: flex; gap: 16px; padding: 8px 0; border-bottom: 1px solid #F2F4DC; align-items: center; }
+    .weight-val { font-size: 16px; font-weight: 700; color: #04A29B; min-width: 70px; }
+    .weight-meta { font-size: 12px; color: #7A6F5F; }
 
     .medical-card { background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
     .medical-type { font-weight: 700; font-size: 14px; color: #991b1b; }
     .medical-detail { font-size: 12px; color: #dc2626; margin-top: 4px; line-height: 1.7; }
 
-    .footer { border-top: 1px solid #e7e5e4; padding-top: 16px; margin-top: 32px; text-align: center; color: #a8a29e; font-size: 11px; }
+    .footer { border-top: 1px solid #E0D9C4; padding-top: 16px; margin-top: 32px; text-align: center; color: #A09684; font-size: 11px; }
   </style>
 </head>
 <body>
@@ -287,7 +287,7 @@ export async function generateVetReport(
       const isFuture = appt.data >= today;
       return `
         <div class="appt-card ${isFuture ? 'appt-future' : 'appt-past'}">
-          <div class="appt-name">${E(appt.titulo)}${isFuture ? ' <span style="font-size:11px;font-weight:400;color:#3b82f6">(futuro)</span>' : ''}</div>
+          <div class="appt-name">${E(appt.titulo)}${isFuture ? ' <span style="font-size:11px;font-weight:400;color:#04A29B">(futuro)</span>' : ''}</div>
           <div class="appt-detail">
             📅 ${fmtISO(E(appt.data))}${appt.hora ? ` às ${E(appt.hora)}` : ''}
             ${appt.veterinario ? `<br/>👨‍⚕️ ${E(appt.veterinario)}` : ''}
@@ -303,7 +303,7 @@ export async function generateVetReport(
   <div class="section">
     <div class="section-title">💉 Carteira de Vacinação</div>
     ${vaccines.length === 0
-      ? '<p style="color:#a8a29e">Nenhuma vacina registrada.</p>'
+      ? '<p style="color:#A09684">Nenhuma vacina registrada.</p>'
       : vaccines.sort((a, b) => b.data.localeCompare(a.data)).map((v) => `
         <div class="vaccine-card">
           <div class="vaccine-name">${E(v.nome)}</div>
@@ -322,7 +322,7 @@ export async function generateVetReport(
   <div class="section">
     <div class="section-title">🩺 Ocorrências de Saúde</div>
     ${medicalEvents.length === 0
-      ? '<p style="color:#a8a29e">Nenhuma ocorrência registrada.</p>'
+      ? '<p style="color:#A09684">Nenhuma ocorrência registrada.</p>'
       : medicalEvents.sort((a, b) => b.timestamp - a.timestamp).map((e) => `
         <div class="medical-card">
           <div class="medical-type">${MEDICAL_LABELS[e.type] ?? E(e.type)}</div>
@@ -338,7 +338,7 @@ export async function generateVetReport(
   <div class="section">
     <div class="section-title">📋 Registros detalhados (últimos 30 dias)</div>
     ${Object.keys(byDay).length === 0
-      ? '<p style="color:#a8a29e">Nenhum registro no período.</p>'
+      ? '<p style="color:#A09684">Nenhum registro no período.</p>'
       : Object.entries(byDay).sort(([a], [b]) => b.localeCompare(a)).map(([date, logs]) => `
         <div class="day-block">
           <div class="day-title">${date}</div>
@@ -399,7 +399,7 @@ function renderHealthInsightsSection(insights: HealthInsight[]): string {
   const sevColor = (s: 'info' | 'warning' | 'alert') =>
     s === 'alert' ? { bg: '#fef2f2', border: '#fecaca', text: '#991b1b' }
     : s === 'warning' ? { bg: '#fff7ed', border: '#fed7aa', text: '#9a3412' }
-    : { bg: '#eff6ff', border: '#bfdbfe', text: '#1e3a8a' };
+    : { bg: '#EAFAF1', border: '#9BE4C6', text: '#024A47' };
 
   const sevLabel = (s: 'info' | 'warning' | 'alert') =>
     s === 'alert' ? 'IMPORTANTE' : s === 'warning' ? 'ATENÇÃO' : 'AVISO';
@@ -437,7 +437,7 @@ function renderBreedProfileSection(profile: ReturnType<typeof getBreedHealthProf
   const sevTone = (s: 'monitor' | 'common' | 'serious') =>
     s === 'serious' ? { bg: '#fee2e2', text: '#991b1b' }
     : s === 'common' ? { bg: '#fef3c7', text: '#92400e' }
-    : { bg: '#f5f5f4', text: '#57534e' };
+    : { bg: '#F2F4DC', text: '#57534e' };
 
   const preds = profile.predispositions.length > 0 ? profile.predispositions.map((p) => {
     const t = sevTone(p.severity);

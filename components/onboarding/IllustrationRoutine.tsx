@@ -63,7 +63,7 @@ export function IllustrationRoutine() {
       {/* Clock face */}
       <Svg width={100} height={100} viewBox="0 0 100 100">
         {/* Clock body */}
-        <Circle cx={50} cy={50} r={CLOCK_R} fill="white" stroke="#e7e5e4" strokeWidth={3} />
+        <Circle cx={50} cy={50} r={CLOCK_R} fill="white" stroke="#E0D9C4" strokeWidth={3} />
         {/* Hour markers */}
         {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((i) => {
           const angle = (i / 12) * TWO_PI - Math.PI / 2;
@@ -76,18 +76,18 @@ export function IllustrationRoutine() {
               y1={50 + inner * Math.sin(angle)}
               x2={50 + outer * Math.cos(angle)}
               y2={50 + outer * Math.sin(angle)}
-              stroke={i % 3 === 0 ? '#1c1917' : '#a8a29e'}
+              stroke={i % 3 === 0 ? '#2C2B27' : '#A09684'}
               strokeWidth={i % 3 === 0 ? 2.5 : 1.5}
               strokeLinecap="round"
             />
           );
         })}
         {/* Hour hand (pointing ~10 o'clock) */}
-        <Path d="M 50 50 L 36 30" stroke="#1c1917" strokeWidth={3} strokeLinecap="round" />
+        <Path d="M 50 50 L 36 30" stroke="#2C2B27" strokeWidth={3} strokeLinecap="round" />
         {/* Minute hand (pointing ~2 o'clock) */}
-        <Path d="M 50 50 L 63 27" stroke="#1c1917" strokeWidth={2} strokeLinecap="round" />
+        <Path d="M 50 50 L 63 27" stroke="#2C2B27" strokeWidth={2} strokeLinecap="round" />
         {/* Center dot */}
-        <Circle cx={50} cy={50} r={3.5} fill="#1c1917" />
+        <Circle cx={50} cy={50} r={3.5} fill="#2C2B27" />
       </Svg>
 
       {/* Orbiting emojis */}
