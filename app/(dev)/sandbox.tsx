@@ -26,6 +26,7 @@ import type { ChipOption } from '@/components/ui/ChipGroup';
 import { WeeklyReportCard } from '@/components/ui/WeeklyReportCard';
 import type { DayData } from '@/components/ui/WeeklyReportCard';
 import { SocialCardView } from '@/components/ui/SocialCardView';
+import { MILESTONE_DATA } from '@/components/ui/MilestoneSheet';
 import { useToastStore } from '@/store/useToastStore';
 import { usePetStore } from '@/store/usePetStore';
 import { useThemeColors } from '@/hooks/useThemeColors';
@@ -697,6 +698,46 @@ function ShareCardsPreview() {
       <Text style={{ color: colors.textTertiary, fontSize: 11, marginTop: 8 }}>
         Estes cards são renderizados off-screen e exportados como imagem JPEG para compartilhamento no Instagram/WhatsApp.
       </Text>
+
+      {/* ── Streak milestones — todos os marcos catalogados ─────── */}
+      <View style={{
+        backgroundColor: colors.bgInput,
+        borderRadius: 20, padding: 16, marginTop: 12,
+      }}>
+        <Text style={{
+          color: colors.textTertiary, fontSize: 11, fontWeight: '600',
+          marginBottom: 12,
+        }}>
+          STREAK MILESTONES — TODOS OS COPYS
+        </Text>
+        {Object.entries(MILESTONE_DATA).map(([days, info]) => (
+          <View
+            key={days}
+            style={{
+              flexDirection: 'row', alignItems: 'flex-start', gap: 12,
+              paddingVertical: 8,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.border,
+            }}
+          >
+            <Text style={{ fontSize: 24 }}>{info.emoji}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={{
+                color: colors.textPrimary, fontWeight: '700',
+                fontFamily: 'Nunito_700Bold', fontSize: 14,
+              }}>
+                {days} dias · {info.title}
+              </Text>
+              <Text style={{
+                color: colors.textSecondary, fontSize: 12,
+                marginTop: 2, lineHeight: 17,
+              }}>
+                {info.subtitle}
+              </Text>
+            </View>
+          </View>
+        ))}
+      </View>
     </Section>
   );
 }

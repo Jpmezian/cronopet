@@ -17,29 +17,56 @@ import { SocialCardView } from '@/components/ui/SocialCardView';
 import { useToastStore } from '@/store/useToastStore';
 
 // ─── Constantes ───────────────────────────────────────────────
-const BRAND_PRIMARY = '#04A29B';
+//
+// Milestones de streak. Distribuição em curva de retenção:
+//   - 7   primeira semana (forma de hábito)
+//   - 14  segunda semana (validação do hábito)
+//   - 30  primeiro mês (vínculo emocional)
+//   - 60  dois meses (rotina internalizada)
+//   - 100 três meses e meio (super-usuário)
+//   - 365 um ano (lifelong commitment)
+//
+// 14 e 60 fecham o gap antes existente (30→100 era 70 dias sem celebração,
+// momento crítico de potencial churn). 365 é o teto aspiracional.
+//
+// Mantido sincronizado com STREAK_MILESTONES em app/(tabs)/index.tsx.
 
-const MILESTONE_DATA: Record<number, { emoji: string; title: string; subtitle: string }> = {
+export const MILESTONE_DATA: Record<number, { emoji: string; title: string; subtitle: string }> = {
   7:   {
     emoji:    '🏆',
     title:    'Semana Perfeita!',
     subtitle: 'Você e seu pet estão pegando o ritmo. O hábito do cuidado está criado!',
+  },
+  14:  {
+    emoji:    '✨',
+    title:    'Duas Semanas Firmes!',
+    subtitle: '14 dias seguidos. Não é mais sorte de iniciante — é dedicação real.',
   },
   30:  {
     emoji:    '🌟',
     title:    'Um Mês de Dedicação!',
     subtitle: '30 dias ininterruptos de carinho e registros. Que marco incrível!',
   },
+  60:  {
+    emoji:    '💎',
+    title:    'Dois Meses de Vínculo!',
+    subtitle: '60 dias mostrando que o cuidado virou parte da sua rotina. Raríssimo.',
+  },
   100: {
     emoji:    '👑',
     title:    'Guardião Supremo!',
     subtitle: '100 dias ininterruptos! O vínculo de vocês é uma inspiração.',
   },
+  365: {
+    emoji:    '🏅',
+    title:    'Um Ano Inteiro!',
+    subtitle: '365 dias seguidos cuidando do seu pet. Você entrou pra um clube minúsculo.',
+  },
 };
 
 // ─── Props ────────────────────────────────────────────────────
 interface MilestoneSheetProps {
-  milestone: number | null; // 7, 30, 100 ou null = oculto
+  milestone: number | null; // valor presente em MILESTONE_DATA, ou null = oculto
   petNome:   string;
   petFoto:   string;
   streak:    number;
@@ -48,7 +75,7 @@ interface MilestoneSheetProps {
 
 // ─── Componente ───────────────────────────────────────────────
 export function MilestoneSheet({ milestone, petNome, petFoto, streak, onClose }: MilestoneSheetProps) {
-  const { colors, actionTheme, isDark } = useThemeColors();
+  const { colors, actionTheme, brand, isDark } = useThemeColors();
   const showToast  = useToastStore((s) => s.showToast);
   const isReduced  = useReducedMotion();
 
@@ -137,12 +164,12 @@ export function MilestoneSheet({ milestone, petNome, petFoto, streak, onClose }:
             <View style={{ width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2 }} />
           </View>
 
-          {/* Badge animado */}
+          {/* Badge animado — borda em verdigris (marca), miolo em amber soft */}
           <View style={{ alignItems: 'center', marginTop: 4, marginBottom: 20 }}>
             <Animated.View style={[{
               width: 100, height: 100, borderRadius: 50,
-              backgroundColor: isDark ? 'rgba(251,191,36,0.14)' : '#fffbeb',
-              borderWidth: 2, borderColor: BRAND_PRIMARY,
+              backgroundColor: actionTheme.comida.bg,
+              borderWidth: 2, borderColor: brand.primary,
               alignItems: 'center', justifyContent: 'center',
             }, badgeStyle]}>
               <Text style={{ fontSize: 48 }}>{data.emoji}</Text>
@@ -195,18 +222,18 @@ export function MilestoneSheet({ milestone, petNome, petFoto, streak, onClose }:
             accessibilityLabel="Compartilhar conquista"
             accessibilityHint="Gera uma imagem comemorativa para compartilhar"
             style={{
-              backgroundColor: isDark ? 'rgba(251,191,36,0.12)' : '#fffbeb',
-              borderWidth: 1.5, borderColor: BRAND_PRIMARY,
+              backgroundColor: actionTheme.comida.bg,
+              borderWidth: 1.5, borderColor: brand.primary,
               borderRadius: 16, height: 56,
               flexDirection: 'row', alignItems: 'center',
               justifyContent: 'center', gap: 8,
               marginBottom: 12,
             }}
           >
-            <Share2 size={20} color={BRAND_PRIMARY} strokeWidth={2} />
+            <Share2 size={20} color={brand.primary} strokeWidth={2} />
             <Text style={{
               fontFamily: 'Nunito_700Bold', fontWeight: '700',
-              fontSize: 16, color: BRAND_PRIMARY,
+              fontSize: 16, color: brand.primary,
             }}>
               {sharing ? 'Gerando...' : 'Compartilhar Conquista'}
             </Text>

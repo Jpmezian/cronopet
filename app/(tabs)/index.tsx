@@ -45,7 +45,10 @@ import { Share2 } from 'lucide-react-native';
 import { useToastStore } from '@/store/useToastStore';
 import type { ActionKey, PetType, Acceptance, Consistency, Appearance } from '@/types/pet';
 
-const STREAK_MILESTONES = [7, 30, 100] as const;
+// Milestones de streak que disparam MilestoneSheet. Mantido sincronizado
+// com MILESTONE_DATA em components/ui/MilestoneSheet.tsx — adicionar aqui
+// e lá pra novo marco aparecer.
+const STREAK_MILESTONES = [7, 14, 30, 60, 100, 365] as const;
 
 // ─── Opções dos chips (escopo do módulo) ─────────────────────
 
