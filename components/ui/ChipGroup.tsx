@@ -1,11 +1,20 @@
-import React from 'react';
+import React, { type ComponentType } from 'react';
 import { View, Text } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { ScalePress } from '@/components/ui/ScalePress';
 
+interface ChipIconProps {
+  size?: number;
+  color?: string;
+  strokeWidth?: number;
+}
+
 export interface ChipOption<T extends string> {
   value: T;
+  /** Ícone Lucide (preferido). Substitui emoji legado. */
+  Icon?: ComponentType<ChipIconProps>;
+  /** @deprecated use Icon. Mantido temporariamente pra retrocompat. */
   emoji?: string;
   label: string;
 }
@@ -60,11 +69,19 @@ export function ChipGroup<T extends string>({
                 borderColor:  active ? accentBorder : colors.border,
               }}
             >
-              {opt.emoji && (
+              {opt.Icon ? (
+                <View style={{ marginRight: 6 }}>
+                  <opt.Icon
+                    size={compact ? 14 : 16}
+                    strokeWidth={2.2}
+                    color={active ? accentColor : colors.textSecondary}
+                  />
+                </View>
+              ) : opt.emoji ? (
                 <Text style={{ fontSize: compact ? 14 : 15, marginRight: 5 }}>
                   {opt.emoji}
                 </Text>
-              )}
+              ) : null}
               <Text style={{
                 fontSize: compact ? 12 : 13,
                 fontWeight: active ? '700' : '500',

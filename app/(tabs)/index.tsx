@@ -17,7 +17,12 @@ import { ScalePress } from '@/components/ui/ScalePress';
 import { DailyProgress } from '@/components/home/DailyProgress';
 import { ActionButton } from '@/components/home/ActionButton';
 import type { ActionConfig } from '@/components/home/ActionButton';
-import { Settings, Check, ChevronDown, Plus, Crown } from 'lucide-react-native';
+import {
+  Settings, Check, ChevronDown, Plus, Crown,
+  Utensils, Droplet, Footprints, Droplets, Sprout, Bath,
+  CheckCircle2, MinusCircle, XCircle, Waves, Square,
+  Trophy, CalendarDays, Scale, TrendingUp,
+} from 'lucide-react-native';
 import { NotificationAskSheet } from '@/components/ui/NotificationAskSheet';
 import { MilestoneSheet } from '@/components/ui/MilestoneSheet';
 import { PremiumTriggerSheet } from '@/components/ui/PremiumTriggerSheet';
@@ -53,27 +58,27 @@ const STREAK_MILESTONES = [7, 14, 30, 60, 100, 365] as const;
 // ─── Opções dos chips (escopo do módulo) ─────────────────────
 
 const ACCEPTANCE_OPTS: ChipOption<Acceptance>[] = [
-  { value: 'full',    emoji: '😋', label: 'Comeu tudo' },
-  { value: 'partial', emoji: '🥄', label: 'Parcial' },
-  { value: 'refused', emoji: '🙅', label: 'Recusou' },
+  { value: 'full',    Icon: CheckCircle2, label: 'Comeu tudo' },
+  { value: 'partial', Icon: MinusCircle,  label: 'Parcial' },
+  { value: 'refused', Icon: XCircle,      label: 'Recusou' },
 ];
 
 const WATER_ACCEPTANCE_OPTS: ChipOption<Acceptance>[] = [
-  { value: 'full',    emoji: '💧', label: 'Bebeu bem' },
-  { value: 'partial', emoji: '🥄', label: 'Pouca' },
-  { value: 'refused', emoji: '🙅', label: 'Recusou' },
+  { value: 'full',    Icon: CheckCircle2, label: 'Bebeu bem' },
+  { value: 'partial', Icon: MinusCircle,  label: 'Pouca' },
+  { value: 'refused', Icon: XCircle,      label: 'Recusou' },
 ];
 
 const CONSISTENCY_OPTS: ChipOption<Consistency>[] = [
-  { value: 'normal', emoji: '✅', label: 'Normal' },
-  { value: 'soft',   emoji: '〰️', label: 'Mole' },
-  { value: 'liquid', emoji: '💧', label: 'Líquida' },
-  { value: 'hard',   emoji: '⬛', label: 'Dura' },
+  { value: 'normal', Icon: CheckCircle2, label: 'Normal' },
+  { value: 'soft',   Icon: Waves,        label: 'Mole' },
+  { value: 'liquid', Icon: Droplet,      label: 'Líquida' },
+  { value: 'hard',   Icon: Square,       label: 'Dura' },
 ];
 
 const APPEARANCE_OPTS: ChipOption<Appearance>[] = [
-  { value: 'normal',   emoji: '✅', label: 'Normal' },
-  { value: 'abnormal', emoji: '⚠️', label: 'Alterada' },
+  { value: 'normal',   Icon: CheckCircle2, label: 'Normal' },
+  { value: 'abnormal', Icon: MinusCircle,  label: 'Alterada' },
 ];
 
 // ─── Helpers de UI ───────────────────────────────────────────
@@ -132,13 +137,17 @@ export default function PetDashboard() {
   const modalOverlay = isDark ? 'rgba(0,0,0,0.55)'    : 'rgba(28,25,23,0.35)';
 
   // ── Ações do pet — dinâmicas via actionTheme ─────────────────
+  // Migração 2026-05-15: emojis removidos. Cada ação usa um ícone Lucide
+  // com semântica clara (Utensils=comida, Droplet=água, Footprints=passeio,
+  // Droplets=xixi (gota dupla, distinto da água), Sprout=cocô (broto enrolado
+  // — abstrato e fofo, evita pictograma vulgar), Bath=banho).
   const ALL_ACTIONS = useMemo<ActionConfig[]>(() => [
-    { key: 'comida',  emoji: '🍖', label: 'Comida',  color: actionTheme.comida.primary,  bg: actionTheme.comida.bg,  border: actionTheme.comida.border  },
-    { key: 'agua',    emoji: '💧', label: 'Água',    color: actionTheme.agua.primary,    bg: actionTheme.agua.bg,    border: actionTheme.agua.border    },
-    { key: 'passeio', emoji: '🐾', label: 'Passeio', color: actionTheme.passeio.primary, bg: actionTheme.passeio.bg, border: actionTheme.passeio.border },
-    { key: 'xixi',    emoji: '🪣', label: 'Xixi',    color: actionTheme.xixi.primary,    bg: actionTheme.xixi.bg,    border: actionTheme.xixi.border    },
-    { key: 'coco',    emoji: '💩', label: 'Cocô',    color: actionTheme.coco.primary,    bg: actionTheme.coco.bg,    border: actionTheme.coco.border    },
-    { key: 'banho',   emoji: '🛁', label: 'Banho',   color: actionTheme.banho.primary,   bg: actionTheme.banho.bg,   border: actionTheme.banho.border   },
+    { key: 'comida',  Icon: Utensils,   label: 'Comida',  color: actionTheme.comida.primary,  bg: actionTheme.comida.bg,  border: actionTheme.comida.border  },
+    { key: 'agua',    Icon: Droplet,    label: 'Água',    color: actionTheme.agua.primary,    bg: actionTheme.agua.bg,    border: actionTheme.agua.border    },
+    { key: 'passeio', Icon: Footprints, label: 'Passeio', color: actionTheme.passeio.primary, bg: actionTheme.passeio.bg, border: actionTheme.passeio.border },
+    { key: 'xixi',    Icon: Droplets,   label: 'Xixi',    color: actionTheme.xixi.primary,    bg: actionTheme.xixi.bg,    border: actionTheme.xixi.border    },
+    { key: 'coco',    Icon: Sprout,     label: 'Cocô',    color: actionTheme.coco.primary,    bg: actionTheme.coco.bg,    border: actionTheme.coco.border    },
+    { key: 'banho',   Icon: Bath,       label: 'Banho',   color: actionTheme.banho.primary,   bg: actionTheme.banho.bg,   border: actionTheme.banho.border   },
   ], [actionTheme]);
 
   // ── Store ────────────────────────────────────────────────────
@@ -188,7 +197,7 @@ export default function PetDashboard() {
 
   const healthInsights = useMemo(
     () => analyzeHealth({
-      pet: { tipo: pet.tipo, raca: pet.raca, idealWeightKg: pet.idealWeightKg },
+      pet: { tipo: pet.tipo, raca: pet.raca, idealWeightKg: pet.idealWeightKg, nascimento: pet.nascimento },
       actionHistory,
       weightHistory,
       medicalEvents,
@@ -196,21 +205,21 @@ export default function PetDashboard() {
       ambientTempC: weather.temp ?? null,
       disabledCategories: disabledInsightCategories,
     }),
-    [pet.tipo, pet.raca, pet.idealWeightKg, actionHistory, weightHistory, medicalEvents, effectiveDismissedIds, weather.temp, disabledInsightCategories],
+    [pet.tipo, pet.raca, pet.idealWeightKg, pet.nascimento, actionHistory, weightHistory, medicalEvents, effectiveDismissedIds, weather.temp, disabledInsightCategories],
   );
 
   // Insights brutos (sem dismiss/snooze, mas com categorias respeitadas) —
   // usados pelo banner crítico que tem suas próprias regras de snooze.
   const allInsights = useMemo(
     () => analyzeHealth({
-      pet: { tipo: pet.tipo, raca: pet.raca, idealWeightKg: pet.idealWeightKg },
+      pet: { tipo: pet.tipo, raca: pet.raca, idealWeightKg: pet.idealWeightKg, nascimento: pet.nascimento },
       actionHistory,
       weightHistory,
       medicalEvents,
       ambientTempC: weather.temp ?? null,
       disabledCategories: disabledInsightCategories,
     }),
-    [pet.tipo, pet.raca, pet.idealWeightKg, actionHistory, weightHistory, medicalEvents, weather.temp, disabledInsightCategories],
+    [pet.tipo, pet.raca, pet.idealWeightKg, pet.nascimento, actionHistory, weightHistory, medicalEvents, weather.temp, disabledInsightCategories],
   );
 
   // Push notification inteligente — agenda alerta pra próxima manhã
@@ -269,7 +278,10 @@ export default function PetDashboard() {
   }, [actionHistory, shownActivityMilestones, markActivityMilestoneShown]);
 
   // ── Premium trigger (prompt contextual) ─────────────────
-  const { pendingTrigger, dismissTrigger } = usePremiumTriggers();
+  // DEV NOTE 2026-05-15: temporariamente desabilitado pra screenshot da home.
+  // Reabilitar removendo o `false &&` quando o modal for redesenhado.
+  const { pendingTrigger: _pt, dismissTrigger } = usePremiumTriggers();
+  const pendingTrigger = false ? _pt : null;
   const [activeTrigger, setActiveTrigger] = useState<typeof pendingTrigger>(null);
 
   useEffect(() => {
@@ -670,22 +682,22 @@ export default function PetDashboard() {
         {/* Banner crítico — só aparece com insight severity=alert ativo */}
         <CriticalInsightBanner insights={allInsights} pet={pet} />
 
-        {/* Quick Stats Strip */}
+        {/* Quick Stats Strip — sem emoji, ícones Lucide */}
         <QuickStats
           stats={[
             {
-              emoji: '🏆',
+              Icon: Trophy,
               value: String(daysComplete),
               label: daysComplete === 1 ? 'dia completo' : 'dias completos',
             },
             {
-              emoji: '📅',
+              Icon: CalendarDays,
               value: String(daysActive),
               label: daysActive === 1 ? 'dia ativo' : 'dias ativos',
             },
             latestWeight !== null
-              ? { emoji: '⚖️', value: `${latestWeight.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}kg`, label: 'peso atual' }
-              : { emoji: '📈', value: `${totalDone}/${actions.length}`, label: 'metas de hoje' },
+              ? { Icon: Scale, value: `${latestWeight.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}kg`, label: 'peso atual' }
+              : { Icon: TrendingUp, value: `${totalDone}/${actions.length}`, label: 'metas de hoje' },
           ]}
         />
 
@@ -978,7 +990,16 @@ export default function PetDashboard() {
               flexDirection: 'row', alignItems: 'center',
               paddingHorizontal: 24, marginBottom: 16,
             }}>
-              <Text style={{ fontSize: 32, marginRight: 12 }}>{modalAction?.emoji}</Text>
+              {modalAction && (
+                <View style={{
+                  width: 48, height: 48, borderRadius: 14,
+                  backgroundColor: modalAction.color,
+                  alignItems: 'center', justifyContent: 'center',
+                  marginRight: 12,
+                }}>
+                  <modalAction.Icon size={24} strokeWidth={2.2} color="#FFFEF8" />
+                </View>
+              )}
               <View style={{ flex: 1 }}>
                 <Text style={{ color: colors.textPrimary, fontFamily: 'Nunito_800ExtraBold', fontSize: 20, fontWeight: '800' }}>
                   {modalAction?.label}

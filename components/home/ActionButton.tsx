@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, type ComponentType } from 'react';
 import { View, Text, Platform } from 'react-native';
 import Animated, {
   useSharedValue, useAnimatedStyle,
@@ -10,10 +10,19 @@ import { useThemeColors } from '@/hooks/useThemeColors';
 import type { ActionKey } from '@/types/pet';
 
 // ─── Tipo compartilhado ───────────────────────────────────────
+//
+// Migração 2026-05-15: emojis substituídos por ícones Lucide.
+// CLAUDE.md atualizado — emoji nunca mais em UI interativa.
+
+interface LucideIconProps {
+  size?: number;
+  color?: string;
+  strokeWidth?: number;
+}
 
 export interface ActionConfig {
   key: ActionKey;
-  emoji: string;
+  Icon: ComponentType<LucideIconProps>;
   label: string;
   color: string;
   bg: string;
@@ -36,6 +45,7 @@ export function ActionButton({ action, count, isUrgent, onPress, progressLabel }
   const { colors } = useThemeColors();
   const isReducedMotion = useReducedMotion();
   const done = count > 0;
+  const Icon = action.Icon;
 
   // ── Animação de urgência ──────────────────────────────────
   // Anel pulsante sobre o botão quando a ação está atrasada
@@ -91,17 +101,30 @@ export function ActionButton({ action, count, isUrgent, onPress, progressLabel }
               }),
         }}
       >
-        <View style={{ position: 'relative' }}>
-          <Text style={{ fontSize: 28 }}>{action.emoji}</Text>
+        {/* Ícone Lucide com badge de contagem */}
+        <View style={{
+          position: 'relative',
+          width: 44, height: 44,
+          alignItems: 'center', justifyContent: 'center',
+          marginBottom: 2,
+        }}>
+          <View style={{
+            width: 40, height: 40, borderRadius: 12,
+            backgroundColor: done ? action.color : colors.bgInput,
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Icon size={22} strokeWidth={2.2} color={done ? '#FFFEF8' : action.color} />
+          </View>
           {count > 0 && (
             <View style={{
-              position: 'absolute', top: -6, right: -10,
-              backgroundColor: action.color, borderRadius: 10,
-              minWidth: 20, height: 20,
+              position: 'absolute', top: -4, right: -6,
+              backgroundColor: colors.bgCard,
+              borderWidth: 2, borderColor: action.color,
+              borderRadius: 11, minWidth: 22, height: 22,
               alignItems: 'center', justifyContent: 'center',
-              paddingHorizontal: 4,
+              paddingHorizontal: 5,
             }}>
-              <Text style={{ color: '#ffffff', fontSize: 11, fontWeight: '700' }}>{count}</Text>
+              <Text style={{ color: action.color, fontSize: 11, fontWeight: '800', fontFamily: 'Nunito_800ExtraBold' }}>{count}</Text>
             </View>
           )}
         </View>

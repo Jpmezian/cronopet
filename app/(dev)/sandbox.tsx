@@ -13,6 +13,7 @@ import { ChevronLeft } from 'lucide-react-native';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { ActionButton } from '@/components/home/ActionButton';
 import type { ActionConfig } from '@/components/home/ActionButton';
+import { ACTION_ICON, ACTION_LABEL } from '@/constants/actionIcons';
 import { DailyProgress } from '@/components/home/DailyProgress';
 import { EmptyState } from '@/components/ui/EmptyState';
 import {
@@ -106,14 +107,15 @@ export default function SandboxScreen() {
   };
 
   // ── ActionConfigs via actionTheme (sem hardcode) ──────────
-  const allActions: ActionConfig[] = [
-    { key: 'comida',  emoji: '🍖', label: 'Comida',  color: actionTheme.comida.primary,  bg: actionTheme.comida.bg,  border: actionTheme.comida.border  },
-    { key: 'agua',    emoji: '💧', label: 'Água',    color: actionTheme.agua.primary,    bg: actionTheme.agua.bg,    border: actionTheme.agua.border    },
-    { key: 'passeio', emoji: '🐾', label: 'Passeio', color: actionTheme.passeio.primary, bg: actionTheme.passeio.bg, border: actionTheme.passeio.border },
-    { key: 'xixi',    emoji: '🪣', label: 'Xixi',    color: actionTheme.xixi.primary,    bg: actionTheme.xixi.bg,    border: actionTheme.xixi.border    },
-    { key: 'coco',    emoji: '💩', label: 'Cocô',    color: actionTheme.coco.primary,    bg: actionTheme.coco.bg,    border: actionTheme.coco.border    },
-    { key: 'banho',   emoji: '🛁', label: 'Banho',   color: actionTheme.banho.primary,   bg: actionTheme.banho.bg,   border: actionTheme.banho.border   },
-  ];
+  // Migração 2026-05-15: ícones Lucide via constants/actionIcons.
+  const allActions: ActionConfig[] = (['comida','agua','passeio','xixi','coco','banho'] as const).map((k) => ({
+    key: k,
+    Icon: ACTION_ICON[k],
+    label: ACTION_LABEL[k],
+    color: actionTheme[k].primary,
+    bg: actionTheme[k].bg,
+    border: actionTheme[k].border,
+  }));
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgScreen }}>

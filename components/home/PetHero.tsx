@@ -3,7 +3,7 @@ import { View, Text, Image, Platform, StyleSheet } from 'react-native';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { Pencil } from 'lucide-react-native';
+import { Pencil, Flame } from 'lucide-react-native';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { ScalePress } from '@/components/ui/ScalePress';
 
@@ -60,27 +60,29 @@ export function PetHero({ nome, foto, raca, idadeLabel, streak }: PetHeroProps) 
         </Svg>
       </View>
 
-      {/* Streak badge (top-right) */}
+      {/* Streak badge (top-right) — ícone Lucide Flame em coral, sem emoji */}
       <View style={{
         position: 'absolute', top: 14, right: 14,
-        backgroundColor: 'rgba(0,0,0,0.55)',
-        borderWidth: 1, borderColor: 'rgba(251,191,36,0.4)',
-        borderRadius: 18,
-        paddingHorizontal: 12, paddingVertical: 6,
+        backgroundColor: 'rgba(28,25,23,0.72)',
+        borderWidth: 1, borderColor: 'rgba(231,139,115,0.55)',
+        borderRadius: 999,
+        paddingHorizontal: 11, paddingVertical: 6,
         flexDirection: 'row', alignItems: 'center',
+        gap: 5,
       }}>
-        <Text style={{ fontSize: 15, marginRight: 4 }}>🔥</Text>
+        <Flame size={14} strokeWidth={2.4} color="#E78B73" fill="rgba(231,139,115,0.35)" />
         <Text style={{
-          color: BRAND_PRIMARY,
+          color: '#FFFEF8',
           fontFamily: 'Nunito_800ExtraBold',
-          fontSize: 14, fontWeight: '800',
+          fontSize: 13, fontWeight: '800',
         }}>
           {streak}
         </Text>
         <Text style={{
-          color: 'rgba(255,255,255,0.88)',
+          color: 'rgba(255,254,248,0.7)',
           fontSize: 11, fontWeight: '600',
-          marginLeft: 3,
+          textTransform: 'uppercase',
+          letterSpacing: 0.4,
         }}>
           {streak === 1 ? 'dia' : 'dias'}
         </Text>

@@ -1,18 +1,23 @@
-import React from 'react';
+import React, { type ComponentType } from 'react';
 import { View, Text, Platform } from 'react-native';
 import { ScalePress } from './ScalePress';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import * as Haptics from 'expo-haptics';
 
+interface IconProps { size?: number; color?: string; strokeWidth?: number }
+
 interface EmptyStateProps {
-  emoji: string;
+  /** Ícone Lucide. Migração 2026-05-15 — emojis fora. */
+  Icon?: ComponentType<IconProps>;
+  /** @deprecated use Icon. */
+  emoji?: string;
   title: string;
   subtitle: string;
   ctaLabel?: string;
   onCta?: () => void;
   /** Cor primária do CTA e ícone — padrão: actionTheme.passeio.primary */
   accentColor?: string;
-  /** Fundo da bolha do emoji — padrão: actionTheme.passeio.bg */
+  /** Fundo do chip do ícone — padrão: actionTheme.passeio.bg */
   accentBg?: string;
 }
 
@@ -21,6 +26,7 @@ interface EmptyStateProps {
  * Usar em todas as listas/abas sem dados.
  */
 export function EmptyState({
+  Icon,
   emoji,
   title,
   subtitle,
@@ -58,11 +64,11 @@ export function EmptyState({
             }),
       }}
     >
-      {/* Emoji dentro de bolha pastel */}
+      {/* Ícone dentro de bolha — Lucide ou fallback emoji legado */}
       <View
         style={{
           backgroundColor: resolvedAccentBg,
-          borderRadius: 28,
+          borderRadius: 24,
           width: 72,
           height: 72,
           alignItems: 'center',
@@ -70,7 +76,11 @@ export function EmptyState({
           marginBottom: 16,
         }}
       >
-        <Text style={{ fontSize: 32 }}>{emoji}</Text>
+        {Icon ? (
+          <Icon size={32} strokeWidth={2} color={resolvedAccentColor} />
+        ) : emoji ? (
+          <Text style={{ fontSize: 32 }}>{emoji}</Text>
+        ) : null}
       </View>
 
       <Text

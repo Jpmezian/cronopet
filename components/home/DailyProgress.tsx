@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, type ComponentType } from 'react';
 import { View, Text, Platform } from 'react-native';
 import Animated, {
   useSharedValue, useAnimatedStyle,
@@ -6,6 +6,9 @@ import Animated, {
   useReducedMotion,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import {
+  Utensils, Droplet, Footprints, Droplets, Sprout, Bath, Check,
+} from 'lucide-react-native';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import type { ActionKey, PetType } from '@/types/pet';
 
@@ -14,13 +17,15 @@ import type { ActionKey, PetType } from '@/types/pet';
 const GOALS_CACHORRO: ActionKey[] = ['comida', 'agua', 'passeio'];
 const GOALS_GATO: ActionKey[]     = ['comida', 'agua'];
 
-const GOAL_META: Record<ActionKey, { emoji: string; label: string }> = {
-  comida:  { emoji: '🍖', label: 'Comida'  },
-  agua:    { emoji: '💧', label: 'Água'    },
-  passeio: { emoji: '🐾', label: 'Passeio' },
-  xixi:    { emoji: '🪣', label: 'Xixi'    },
-  coco:    { emoji: '💩', label: 'Cocô'    },
-  banho:   { emoji: '🛁', label: 'Banho'   },
+interface GoalIconProps { size?: number; color?: string; strokeWidth?: number }
+
+const GOAL_META: Record<ActionKey, { Icon: ComponentType<GoalIconProps>; label: string }> = {
+  comida:  { Icon: Utensils,   label: 'Comida'  },
+  agua:    { Icon: Droplet,    label: 'Água'    },
+  passeio: { Icon: Footprints, label: 'Passeio' },
+  xixi:    { Icon: Droplets,   label: 'Xixi'    },
+  coco:    { Icon: Sprout,     label: 'Cocô'    },
+  banho:   { Icon: Bath,       label: 'Banho'   },
 };
 
 // ─── Props ────────────────────────────────────────────────────
@@ -105,12 +110,26 @@ export function DailyProgress({ todayCounts, petTipo, onFirstComplete }: DailyPr
           backgroundColor: allComplete ? actionTheme.passeio.bg : colors.bgInput,
           borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4,
         }}>
-          <Text style={{
-            fontWeight: '700', fontSize: 12,
-            color: allComplete ? actionTheme.passeio.primary : colors.textTertiary,
-          }}>
-            {allComplete ? 'Completo 🏆' : `${doneCount} de ${goals.length}`}
-          </Text>
+          {allComplete ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Check size={14} strokeWidth={2.6} color={actionTheme.passeio.primary} />
+              <Text style={{
+                fontWeight: '700', fontSize: 12,
+                color: actionTheme.passeio.primary,
+                textTransform: 'uppercase',
+                letterSpacing: 0.4,
+              }}>
+                Completo
+              </Text>
+            </View>
+          ) : (
+            <Text style={{
+              fontWeight: '700', fontSize: 12,
+              color: colors.textTertiary,
+            }}>
+              {doneCount} de {goals.length}
+            </Text>
+          )}
         </View>
       </View>
 
@@ -127,16 +146,20 @@ export function DailyProgress({ todayCounts, petTipo, onFirstComplete }: DailyPr
 
           return (
             <React.Fragment key={key}>
-              {/* Nó */}
+              {/* Nó — ícone Lucide com check overlay quando concluído */}
               <View style={{ alignItems: 'center', flex: 0 }}>
                 <View style={{
                   width: 44, height: 44, borderRadius: 22,
-                  backgroundColor: done ? theme.bg   : colors.bgInput,
+                  backgroundColor: done ? theme.primary : colors.bgInput,
                   borderWidth: 2,
-                  borderColor:    done ? theme.border : colors.border,
+                  borderColor:    done ? theme.primary : colors.border,
                   alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <Text style={{ fontSize: 20 }}>{meta.emoji}</Text>
+                  <meta.Icon
+                    size={20}
+                    strokeWidth={2.2}
+                    color={done ? '#FFFEF8' : colors.textTertiary}
+                  />
                 </View>
               </View>
 

@@ -1,67 +1,99 @@
-import React from 'react';
+import React, { type ComponentType } from 'react';
 import { View, Text, Platform } from 'react-native';
 import { useThemeColors } from '@/hooks/useThemeColors';
 
+interface StatIconProps {
+  size?: number;
+  color?: string;
+  strokeWidth?: number;
+}
+
 interface StatItem {
-  emoji: string;
+  /** Ícone Lucide. Renderizado dentro de um chip de marca acima do número. */
+  Icon: ComponentType<StatIconProps>;
   value: string;
   label: string;
+  /** Cor de acento opcional pro ícone (default: verdigris da marca) */
+  accent?: string;
 }
 
 interface QuickStatsProps {
   stats: StatItem[];
 }
 
+/**
+ * Strip horizontal de 3 KPIs no topo da Home.
+ *
+ * Estética: cards do tamanho de cartão de vacinação, ícone Lucide num
+ * chip suave da marca acima do número grande Nunito 800. Sem emoji.
+ */
 export function QuickStats({ stats }: QuickStatsProps) {
-  const { colors, isDark } = useThemeColors();
+  const { colors, brand, isDark } = useThemeColors();
 
   return (
     <View style={{ flexDirection: 'row' }}>
-      {stats.map((stat, i) => (
-        <React.Fragment key={i}>
-          {i > 0 && <View style={{ width: 8 }} />}
-          <View
-            accessible
-            accessibilityRole="text"
-            accessibilityLabel={`${stat.label}: ${stat.value}`}
-            style={{
-              flex: 1,
-              backgroundColor: colors.bgCard,
-              borderRadius: 16,
-              paddingVertical: 14, paddingHorizontal: 12,
-              alignItems: 'center',
-              ...(Platform.OS === 'android' ? { elevation: 2 } : {
-                shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: isDark ? 0.22 : 0.05, shadowRadius: 6,
-              }),
-            }}
-          >
-            <Text style={{ fontSize: 20, marginBottom: 4 }}>{stat.emoji}</Text>
-            <Text
-              numberOfLines={1}
-              adjustsFontSizeToFit
+      {stats.map((stat, i) => {
+        const tint = stat.accent ?? brand.primary;
+        const Icon = stat.Icon;
+        return (
+          <React.Fragment key={i}>
+            {i > 0 && <View style={{ width: 8 }} />}
+            <View
+              accessible
+              accessibilityRole="text"
+              accessibilityLabel={`${stat.label}: ${stat.value}`}
               style={{
-                color: colors.textPrimary,
-                fontFamily: 'Nunito_800ExtraBold',
-                fontSize: 18, fontWeight: '800',
-                lineHeight: 22,
+                flex: 1,
+                backgroundColor: colors.bgCard,
+                borderRadius: 16,
+                paddingVertical: 14, paddingHorizontal: 12,
+                alignItems: 'center',
+                ...(Platform.OS === 'android' ? { elevation: 2 } : {
+                  shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+                  shadowOpacity: isDark ? 0.22 : 0.05, shadowRadius: 6,
+                }),
               }}
             >
-              {stat.value}
-            </Text>
-            <Text
-              numberOfLines={1}
-              style={{
-                color: colors.textTertiary,
-                fontSize: 10, fontWeight: '600',
-                marginTop: 1,
-              }}
-            >
-              {stat.label}
-            </Text>
-          </View>
-        </React.Fragment>
-      ))}
+              {/* Chip do ícone — calor visual sem cair em emoji */}
+              <View style={{
+                width: 32, height: 32, borderRadius: 10,
+                backgroundColor: isDark
+                  ? 'rgba(155, 228, 198, 0.18)'
+                  : '#EAFAF1',
+                alignItems: 'center', justifyContent: 'center',
+                marginBottom: 6,
+              }}>
+                <Icon size={18} strokeWidth={2.2} color={tint} />
+              </View>
+
+              <Text
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                style={{
+                  color: colors.textPrimary,
+                  fontFamily: 'Nunito_800ExtraBold',
+                  fontSize: 18, fontWeight: '800',
+                  lineHeight: 22,
+                }}
+              >
+                {stat.value}
+              </Text>
+              <Text
+                numberOfLines={1}
+                style={{
+                  color: colors.textTertiary,
+                  fontSize: 10, fontWeight: '600',
+                  marginTop: 1,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.6,
+                }}
+              >
+                {stat.label}
+              </Text>
+            </View>
+          </React.Fragment>
+        );
+      })}
     </View>
   );
 }

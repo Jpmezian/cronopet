@@ -5,7 +5,10 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
-import { Trash2, Plus, Check, Stethoscope, Syringe, CalendarPlus, Scale } from 'lucide-react-native';
+import {
+  Trash2, Plus, Check, Stethoscope, Syringe, CalendarPlus, Scale,
+  Droplet, Footprints, ClipboardList, Thermometer, BicepsFlexed, UtensilsCrossed,
+} from 'lucide-react-native';
 import Animated from 'react-native-reanimated';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ScalePress } from '@/components/ui/ScalePress';
@@ -21,14 +24,16 @@ import type { MedicalEventType, Vaccine } from '@/types/pet';
 
 // ─── Tipos de sintoma ─────────────────────────────────────────
 
-const SYMPTOM_OPTIONS: { type: MedicalEventType; emoji: string; label: string }[] = [
-  { type: 'vomito',        emoji: '🤢', label: 'Vômito' },
-  { type: 'febre',         emoji: '🌡️', label: 'Febre' },
-  { type: 'mancando',      emoji: '🦵', label: 'Mancando' },
-  { type: 'diarreia',      emoji: '💧', label: 'Diarreia' },
-  { type: 'coceira',       emoji: '🐾', label: 'Coceira' },
-  { type: 'perda_apetite', emoji: '🍽️', label: 'Sem apetite' },
-  { type: 'outro',         emoji: '📋', label: 'Outro' },
+// Migração 2026-05-15: emojis substituídos por Lucide. Cada sintoma tem
+// um ícone semântico — sem chrome cartoony.
+const SYMPTOM_OPTIONS: { type: MedicalEventType; Icon: typeof Stethoscope; label: string }[] = [
+  { type: 'vomito',        Icon: Droplet,         label: 'Vômito' },
+  { type: 'febre',         Icon: Thermometer,     label: 'Febre' },
+  { type: 'mancando',      Icon: BicepsFlexed,    label: 'Mancando' },
+  { type: 'diarreia',      Icon: Droplet,         label: 'Diarreia' },
+  { type: 'coceira',       Icon: Footprints,      label: 'Coceira' },
+  { type: 'perda_apetite', Icon: UtensilsCrossed, label: 'Sem apetite' },
+  { type: 'outro',         Icon: ClipboardList,   label: 'Outro' },
 ];
 
 function fmtDate(ts: number): string {
@@ -349,7 +354,7 @@ export default function MedicalScreen() {
 
           {apptSorted.length === 0 ? (
             <EmptyState
-              emoji="🗓️"
+              Icon={CalendarPlus}
               title="Nenhuma consulta agendada"
               subtitle="Agende consultas e procedimentos para receber lembretes automáticos."
               accentColor={infoText}
@@ -428,7 +433,7 @@ export default function MedicalScreen() {
 
           {vaccines.length === 0 ? (
             <EmptyState
-              emoji="💉"
+              Icon={Syringe}
               title="Carteira vazia"
               subtitle="Registre as vacinas do seu pet para manter o histórico sempre atualizado."
               accentColor={actionTheme.passeio.primary}
@@ -493,7 +498,7 @@ export default function MedicalScreen() {
 
           {weightSorted.length === 0 ? (
             <EmptyState
-              emoji="⚖️"
+              Icon={Scale}
               title="Sem registros de peso"
               subtitle="Acompanhe a evolução do peso do seu pet ao longo do tempo."
               accentColor={actionTheme.xixi.primary}
@@ -560,7 +565,7 @@ export default function MedicalScreen() {
 
           {medicalEvents.length === 0 ? (
             <EmptyState
-              emoji="🩺"
+              Icon={Stethoscope}
               title="Nenhuma ocorrência registrada"
               subtitle="Registre sintomas e eventos de saúde para compartilhar com o veterinário."
               accentColor="#b91c1c"
@@ -585,9 +590,12 @@ export default function MedicalScreen() {
                       )}
                       <View style={{ padding: 14, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                         <View style={{ flex: 1 }}>
-                          <Text style={{ color: errorText, fontWeight: '700', fontSize: 15 }}>
-                            {meta?.emoji} {meta?.label ?? e.type}
-                          </Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            {meta?.Icon && <meta.Icon size={16} strokeWidth={2.2} color={errorText} />}
+                            <Text style={{ color: errorText, fontWeight: '700', fontSize: 15 }}>
+                              {meta?.label ?? e.type}
+                            </Text>
+                          </View>
                           <Text style={{ color: errorSubtext, fontSize: 12, marginTop: 4 }}>
                             {fmtDateTime(e.timestamp)}
                           </Text>
@@ -642,8 +650,8 @@ export default function MedicalScreen() {
                     accessibilityRole="button"
                     accessibilityLabel={`${opt.label}${sel ? ', selecionado' : ''}`}
                   >
-                    <Text style={{ fontSize: 16 }}>{opt.emoji}</Text>
-                    <Text style={{ fontWeight: '600', fontSize: 13, color: sel ? '#ffffff' : colors.textSecondary }}>
+                    <opt.Icon size={16} strokeWidth={2.2} color={sel ? '#FFFEF8' : colors.textSecondary} />
+                    <Text style={{ fontWeight: '600', fontSize: 13, color: sel ? '#FFFEF8' : colors.textSecondary }}>
                       {opt.label}
                     </Text>
                   </ScalePress>

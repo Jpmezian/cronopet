@@ -10,18 +10,21 @@ import { ScalePress } from '@/components/ui/ScalePress';
 import { useMotion } from '@/hooks/useMotion';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { usePetStore } from '@/store/usePetStore';
+import { ACTION_ICON, ACTION_LABEL } from '@/constants/actionIcons';
+import { BarChart3, SearchX } from 'lucide-react-native';
 import type { ActionKey, ActionLog } from '@/types/pet';
 
 // ─── Metadados estáticos das ações ───────────────────────────
+// Migração 2026-05-15: emojis substituídos por Lucide. Fonte única em
+// constants/actionIcons.ts.
 
-const ACTION_META: Record<ActionKey, { emoji: string; label: string }> = {
-  comida:  { emoji: '🍖', label: 'Comida'  },
-  agua:    { emoji: '💧', label: 'Água'    },
-  passeio: { emoji: '🐾', label: 'Passeio' },
-  xixi:    { emoji: '🪣', label: 'Xixi'    },
-  coco:    { emoji: '💩', label: 'Cocô'    },
-  banho:   { emoji: '🛁', label: 'Banho'   },
-};
+const ACTION_META = ACTION_KEYS_HELPER();
+function ACTION_KEYS_HELPER() {
+  const keys: ActionKey[] = ['comida', 'agua', 'passeio', 'xixi', 'coco', 'banho'];
+  return Object.fromEntries(
+    keys.map((k) => [k, { Icon: ACTION_ICON[k], label: ACTION_LABEL[k] }]),
+  ) as Record<ActionKey, { Icon: typeof ACTION_ICON[ActionKey]; label: string }>;
+}
 
 const ACTION_KEYS: ActionKey[] = ['comida', 'agua', 'passeio', 'xixi', 'coco', 'banho'];
 
@@ -139,16 +142,13 @@ function TimelineItem({ log, index, isLast }: TimelineItemProps) {
               )}
 
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 }}>
-                {/* Bolha com emoji */}
+                {/* Chip com ícone Lucide — sem emoji */}
                 <View style={{
                   width: 40, height: 40, borderRadius: 12,
-                  backgroundColor: theme.bg,
+                  backgroundColor: theme.primary,
                   alignItems: 'center', justifyContent: 'center',
-                  borderWidth: 1, borderColor: theme.border,
                 }}>
-                  <Text style={{ fontSize: 20 }} importantForAccessibility="no">
-                    {meta.emoji}
-                  </Text>
+                  <meta.Icon size={20} strokeWidth={2.2} color="#FFFEF8" />
                 </View>
 
                 {/* Textos */}
@@ -407,13 +407,11 @@ export default function HistoryScreen() {
                     borderColor: active ? theme.primary : colors.border,
                   }}
                 >
-                  <Text style={{ fontSize: 14 }} importantForAccessibility="no">
-                    {meta.emoji}
-                  </Text>
+                  <meta.Icon size={14} strokeWidth={2.2} color={active ? '#FFFEF8' : colors.textSecondary} />
                   <Text style={{
                     fontSize: 13,
                     fontWeight: '600',
-                    color: active ? '#ffffff' : colors.textSecondary,
+                    color: active ? '#FFFEF8' : colors.textSecondary,
                   }}>
                     {meta.label}
                   </Text>
@@ -427,7 +425,7 @@ export default function HistoryScreen() {
         {actionHistory.length === 0 ? (
           <View style={{ paddingHorizontal: 20 }}>
             <EmptyState
-              emoji="📊"
+              Icon={BarChart3}
               title="Histórico vazio"
               subtitle="Registre as ações do seu pet no dashboard. Elas aparecerão aqui em ordem cronológica."
               accentColor={actionTheme.passeio.primary}
@@ -437,7 +435,7 @@ export default function HistoryScreen() {
         ) : sections.length === 0 ? (
           <View style={{ paddingHorizontal: 20 }}>
             <EmptyState
-              emoji="🔍"
+              Icon={SearchX}
               title="Nenhum resultado"
               subtitle="Nenhum registro encontrado para este filtro."
               accentColor={actionTheme.agua.primary}
