@@ -1,0 +1,63 @@
+name: CI
+
+# Roda em todo push pra main e em todo PR aberto contra main.
+# Bloqueia merge se algum passo falhar.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancela runs antigos da mesma branch quando um novo é disparado —
+# evita 3 workflows na fila quando você faz 3 push em sequência.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: typecheck · knip · tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Dead-code audit (knip)
+        run: npx knip
+
+      - name: Unit tests (Wave 1+2+3 — 105 casos)
+        run: npm run test:all
+
+  # Maestro E2E só roda manualmente (precisa macOS runner = caro).
+  # Acionar via workflow_dispatch quando precisar validar onboarding.
+  e2e:
+    name: maestro e2e (manual only)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+      - run: npm ci
+      - name: Install Maestro
+        run: curl -fsSL https://get.maestro.mobile.dev | bash
+      - name: Run flows
+        run: $HOME/.maestro/bin/maestro test .maestro/
