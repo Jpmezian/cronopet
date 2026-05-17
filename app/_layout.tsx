@@ -15,6 +15,7 @@ import { ensureEncryptionKeyReady } from '@/store/storage';
 import { initSupabaseAuthStorage } from '@/services/supabase';
 import { BiometricLock } from '@/components/security/BiometricLock';
 import { initAnalytics, track } from '@/services/analytics';
+import { createPostHogClient, posthogBackend } from '@/services/analytics-posthog';
 import { initPurchases } from '@/services/purchases';
 import '../global.css';
 
@@ -64,9 +65,14 @@ export default function RootLayout() {
   // antes de termos session/userId potenciais.
   useEffect(() => {
     if (!storageReady) return;
-    initAnalytics();
+    (async () => {
+      // PostHog opcional: se EXPO_PUBLIC_POSTHOG_KEY vazia, fica em modo
+      // stub (apenas console em DEV). Sem ele, o app não trava.
+      const phClient = await createPostHogClient();
+      initAnalytics(phClient ? posthogBackend(phClient) : undefined);
+      track({ name: 'app_opened', props: { coldStart: true } });
+    })();
     initPurchases().catch(() => {});
-    track({ name: 'app_opened', props: { coldStart: true } });
   }, [storageReady]);
 
   // Registra first-open uma única vez (usado para trigger "7 dias de uso")

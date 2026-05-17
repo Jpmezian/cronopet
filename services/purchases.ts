@@ -3,32 +3,40 @@
  * ─────────────────────────────────────────────────────────────────────────
  * Wrapper para RevenueCat (StoreKit 2 + Google Billing).
  *
- * Estratégia:
- * - Hoje: stub que retorna o estado do `usePetStore.isPremium` (legado).
- * - Quando integrar: substituir `getCustomerInfo()` por `Purchases.getCustomerInfo()`
- *   e `purchasePackage()` por `Purchases.purchasePackage()`.
- * - O store usa o resultado deste módulo como fonte de verdade — nunca grava
- *   `isPremium` direto sem passar por `refreshEntitlements()`.
+ * MODOS DE OPERAÇÃO:
+ *   • `live`: env var `EXPO_PUBLIC_REVENUECAT_{IOS,ANDROID}_KEY` setada.
+ *     Toda chamada vai pro SDK nativo.
+ *   • `stub`: env var ausente → simula localmente (DEV). Útil pra rodar
+ *     em simulador sem conta Sandbox Apple Connect. UI continua testável.
  *
- * Setup futuro (quando habilitar):
- *   npx expo install react-native-purchases
- *   Configurar entitlement "premium" no RevenueCat dashboard
- *   Criar produtos `cronopet_monthly` e `cronopet_yearly` no App Store Connect e Play Console
- *   Linkar em Offerings → "default" no RevenueCat
- *
- * IDs de produto (SoT — fonte única de verdade):
- *   - Apple/Google product IDs: cronopet_premium_monthly | cronopet_premium_yearly
- *   - RevenueCat entitlement ID: premium
- *   - Trial: 7 dias (configurar em App Store Connect e Play Console — não no RC)
+ * O modo é decidido em `initPurchases()` e persiste pelo ciclo de vida.
+ * Caller (UI) não precisa saber — gates de Premium leem `setPremiumStatus`
+ * do store que é alimentado pelo customerInfo listener em ambos os modos.
  *
  * SEGURANÇA:
- * - `isPremium` retornado aqui é a verdade local. Para gates server-side
+ * - `isPremium` retornado aqui é a verdade LOCAL. Para gates server-side
  *   (criar grupo familiar, sync), o backend (Supabase Edge Function) DEVE
- *   re-verificar via webhook do RevenueCat ou via receipt validation direto.
- *   O cliente é confiável apenas pra UX, nunca pra autorização.
+ *   re-verificar via webhook do RevenueCat. O cliente é confiável apenas
+ *   pra UX, nunca pra autorização.
+ *
+ * SETUP PRODUÇÃO (LAUNCH.md tem checklist):
+ *   1. Criar produtos em App Store Connect e Play Console:
+ *      - `cronopet_premium_monthly` (auto-renewable)
+ *      - `cronopet_premium_yearly`
+ *   2. Configurar entitlement "premium" no RevenueCat dashboard
+ *   3. Linkar offering "default" com os dois packages (monthly/annual)
+ *   4. Trial de 7 dias configurado em App Store Connect/Play Console
+ *      (não no RevenueCat)
+ *   5. Setar `EXPO_PUBLIC_REVENUECAT_IOS_KEY` + ANDROID_KEY no .env
  */
 
+import { Platform } from 'react-native';
 import * as Sentry from '@sentry/react-native';
+import Purchases, {
+  type CustomerInfo as RCCustomerInfo,
+  type PurchasesPackage,
+  PURCHASES_ERROR_CODE,
+} from 'react-native-purchases';
 import { track } from '@/services/analytics';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -50,6 +58,8 @@ export interface Offering {
   trialDays?: number;
 }
 
+const ENTITLEMENT_ID = 'premium';
+
 const DEFAULT_INFO: CustomerInfo = {
   isPremium: false,
   activePlan: null,
@@ -60,35 +70,69 @@ const DEFAULT_INFO: CustomerInfo = {
 
 // ─── State ──────────────────────────────────────────────────────────────────
 
+let mode: 'live' | 'stub' = 'stub';
 let initialized = false;
 let cachedInfo: CustomerInfo = DEFAULT_INFO;
 let listeners: Array<(info: CustomerInfo) => void> = [];
 
+// ─── Mapper RC → CustomerInfo nosso ────────────────────────────────────────
+
+function mapCustomerInfo(info: RCCustomerInfo): CustomerInfo {
+  const ent = info.entitlements.active[ENTITLEMENT_ID];
+  if (!ent) return DEFAULT_INFO;
+
+  const identifier = ent.productIdentifier ?? '';
+  const activePlan: PremiumPlan | null = identifier.includes('yearly') || identifier.includes('annual')
+    ? 'yearly'
+    : identifier.includes('monthly') ? 'monthly' : null;
+
+  return {
+    isPremium:      true,
+    activePlan,
+    expirationDate: ent.expirationDate ? new Date(ent.expirationDate) : null,
+    willRenew:      ent.willRenew,
+    isInTrial:      ent.periodType === 'TRIAL',
+  };
+}
+
+function notifyListeners() {
+  for (const fn of listeners) fn(cachedInfo);
+}
+
 // ─── API pública ────────────────────────────────────────────────────────────
 
 /**
- * Inicializa o SDK. Chamar uma vez no _layout.tsx após hidratação do store.
- * Lê as keys do .env (`EXPO_PUBLIC_REVENUECAT_*`).
+ * Inicializa o SDK. Decide modo live/stub baseado em env.
+ * Chamar uma vez no _layout.tsx após hidratação do store.
  */
 export async function initPurchases(userId?: string): Promise<void> {
   if (initialized) return;
   initialized = true;
 
-  if (__DEV__) {
-    console.log('[purchases] init (stub)', { userId, hasIosKey: !!process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY });
+  const apiKey = Platform.OS === 'ios'
+    ? process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY
+    : process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY;
+
+  if (!apiKey) {
+    mode = 'stub';
+    if (__DEV__) console.log('[purchases] init STUB (sem REVENUECAT key)');
+    return;
   }
 
-  // TODO(produção):
-  //   import Purchases from 'react-native-purchases';
-  //   const apiKey = Platform.OS === 'ios'
-  //     ? process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY!
-  //     : process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY!;
-  //   Purchases.configure({ apiKey, appUserID: userId });
-  //   Purchases.addCustomerInfoUpdateListener((info) => {
-  //     cachedInfo = mapCustomerInfo(info);
-  //     listeners.forEach(fn => fn(cachedInfo));
-  //   });
-  //   await refreshEntitlements();
+  mode = 'live';
+  try {
+    await Purchases.configure({ apiKey, appUserID: userId });
+    Purchases.addCustomerInfoUpdateListener((info) => {
+      cachedInfo = mapCustomerInfo(info);
+      notifyListeners();
+    });
+    await refreshEntitlements();
+    if (__DEV__) console.log('[purchases] init LIVE');
+  } catch (err) {
+    // Falha na config não pode travar startup — cai pra stub
+    mode = 'stub';
+    Sentry.captureException(err, { tags: { source: 'purchases', op: 'init' } });
+  }
 }
 
 /**
@@ -96,8 +140,17 @@ export async function initPurchases(userId?: string): Promise<void> {
  * Liga as compras anteriores do device a esta conta.
  */
 export async function identifyPurchasesUser(userId: string): Promise<void> {
-  if (__DEV__) console.log('[purchases] identify', userId);
-  // TODO: await Purchases.logIn(userId);
+  if (mode === 'stub') {
+    if (__DEV__) console.log('[purchases] identify (stub)', userId);
+    return;
+  }
+  try {
+    const { customerInfo } = await Purchases.logIn(userId);
+    cachedInfo = mapCustomerInfo(customerInfo);
+    notifyListeners();
+  } catch (err) {
+    Sentry.captureException(err, { tags: { source: 'purchases', op: 'identify' } });
+  }
 }
 
 /**
@@ -105,7 +158,13 @@ export async function identifyPurchasesUser(userId: string): Promise<void> {
  */
 export async function resetPurchases(): Promise<void> {
   cachedInfo = DEFAULT_INFO;
-  // TODO: await Purchases.logOut();
+  notifyListeners();
+  if (mode === 'stub') return;
+  try {
+    await Purchases.logOut();
+  } catch (err) {
+    Sentry.captureException(err, { tags: { source: 'purchases', op: 'reset' } });
+  }
 }
 
 /**
@@ -114,22 +173,56 @@ export async function resetPurchases(): Promise<void> {
  * o backend deve validar via webhook do RevenueCat.
  */
 export async function getCustomerInfo(): Promise<CustomerInfo> {
-  // TODO: const info = await Purchases.getCustomerInfo();
-  // return mapCustomerInfo(info);
-  return cachedInfo;
+  if (mode === 'stub') return cachedInfo;
+  try {
+    const info = await Purchases.getCustomerInfo();
+    cachedInfo = mapCustomerInfo(info);
+    return cachedInfo;
+  } catch (err) {
+    Sentry.captureException(err, { tags: { source: 'purchases', op: 'getCustomerInfo' } });
+    return cachedInfo;
+  }
 }
 
 /**
- * Lista de planos disponíveis. Os valores reais virão do RevenueCat,
- * mas mantemos preços fallback caso o fetch falhe (UX nunca trava).
+ * Lista de planos disponíveis. Em live, vem do RevenueCat (com preços
+ * localizados pelo App Store). Em stub, fallback hardcoded em pt-BR.
  */
 export async function getOfferings(): Promise<Offering[]> {
-  // TODO: const offerings = await Purchases.getOfferings();
-  // return mapOfferings(offerings.current);
-  return [
-    { id: 'monthly', priceString: 'R$ 14,90', trialDays: 7 },
-    { id: 'yearly', priceString: 'R$ 99,00', pricePerMonth: 'R$ 8,25', trialDays: 7 },
-  ];
+  if (mode === 'stub') {
+    return [
+      { id: 'monthly', priceString: 'R$ 14,90', trialDays: 7 },
+      { id: 'yearly', priceString: 'R$ 99,00', pricePerMonth: 'R$ 8,25', trialDays: 7 },
+    ];
+  }
+
+  try {
+    const offerings = await Purchases.getOfferings();
+    const current = offerings.current;
+    if (!current) return [];
+
+    const out: Offering[] = [];
+    if (current.monthly) {
+      out.push({
+        id: 'monthly',
+        priceString: current.monthly.product.priceString,
+        trialDays: 7,
+      });
+    }
+    if (current.annual) {
+      out.push({
+        id: 'yearly',
+        priceString: current.annual.product.priceString,
+        // RC já calcula priceString amortizado em annual.product.pricePerMonthString
+        pricePerMonth: current.annual.product.pricePerMonthString ?? undefined,
+        trialDays: 7,
+      });
+    }
+    return out;
+  } catch (err) {
+    Sentry.captureException(err, { tags: { source: 'purchases', op: 'getOfferings' } });
+    return [];
+  }
 }
 
 /**
@@ -138,18 +231,9 @@ export async function getOfferings(): Promise<Offering[]> {
 export async function purchasePackage(plan: PremiumPlan): Promise<{ success: boolean; cancelled: boolean; error?: string }> {
   track({ name: 'premium_purchase_started', props: { plan } });
 
-  try {
-    // TODO:
-    //   const offerings = await Purchases.getOfferings();
-    //   const pkg = offerings.current?.[plan === 'monthly' ? 'monthly' : 'annual'];
-    //   if (!pkg) throw new Error('package_not_found');
-    //   const { customerInfo } = await Purchases.purchasePackage(pkg);
-    //   cachedInfo = mapCustomerInfo(customerInfo);
-    //   listeners.forEach(fn => fn(cachedInfo));
-
+  if (mode === 'stub') {
+    // Em DEV (sem RC), simula sucesso pra testar UX downstream
     if (__DEV__) {
-      console.log('[purchases] purchasePackage (stub)', plan);
-      // Simula sucesso em DEV pra testar UX downstream
       cachedInfo = {
         isPremium: true,
         activePlan: plan,
@@ -157,21 +241,40 @@ export async function purchasePackage(plan: PremiumPlan): Promise<{ success: boo
         willRenew: true,
         isInTrial: true,
       };
-      listeners.forEach((fn) => fn(cachedInfo));
+      notifyListeners();
+      track({ name: 'premium_purchase_completed', props: { plan } });
+      return { success: true, cancelled: false };
     }
+    // Em PROD sem chave: não tem como comprar, falha graceful
+    return { success: false, cancelled: false, error: 'storekit_unavailable' };
+  }
 
+  try {
+    const offerings = await Purchases.getOfferings();
+    const current = offerings.current;
+    const pkg: PurchasesPackage | null | undefined = plan === 'monthly'
+      ? current?.monthly
+      : current?.annual;
+    if (!pkg) throw new Error('package_not_found');
+
+    const { customerInfo } = await Purchases.purchasePackage(pkg);
+    cachedInfo = mapCustomerInfo(customerInfo);
+    notifyListeners();
     track({ name: 'premium_purchase_completed', props: { plan } });
     return { success: true, cancelled: false };
-  } catch (err: any) {
-    const cancelled = err?.userCancelled === true || /cancel/i.test(err?.message ?? '');
+  } catch (err: unknown) {
+    const e = err as { userCancelled?: boolean; code?: string; message?: string };
+    const cancelled = e?.userCancelled === true
+      || e?.code === PURCHASES_ERROR_CODE.PURCHASE_CANCELLED_ERROR
+      || /cancel/i.test(e?.message ?? '');
     if (!cancelled) {
       Sentry.captureException(err, { tags: { source: 'purchases' } });
       track({
         name: 'premium_purchase_failed',
-        props: { plan, reason: err?.code ?? err?.message ?? 'unknown' },
+        props: { plan, reason: e?.code ?? e?.message ?? 'unknown' },
       });
     }
-    return { success: false, cancelled, error: cancelled ? undefined : (err?.message ?? 'unknown') };
+    return { success: false, cancelled, error: cancelled ? undefined : (e?.message ?? 'unknown') };
   }
 }
 
@@ -179,9 +282,13 @@ export async function purchasePackage(plan: PremiumPlan): Promise<{ success: boo
  * Restaura compras anteriores (necessário pela política da Apple).
  */
 export async function restorePurchases(): Promise<{ success: boolean; isPremium: boolean }> {
+  if (mode === 'stub') {
+    return { success: true, isPremium: cachedInfo.isPremium };
+  }
   try {
-    // TODO: const info = await Purchases.restorePurchases();
-    //       cachedInfo = mapCustomerInfo(info);
+    const info = await Purchases.restorePurchases();
+    cachedInfo = mapCustomerInfo(info);
+    notifyListeners();
     return { success: true, isPremium: cachedInfo.isPremium };
   } catch (err) {
     Sentry.captureException(err, { tags: { source: 'purchases', op: 'restore' } });
@@ -204,8 +311,14 @@ export function onCustomerInfoUpdate(fn: (info: CustomerInfo) => void): () => vo
  * Refresh forçado (ex: após app voltar do background).
  */
 export async function refreshEntitlements(): Promise<CustomerInfo> {
-  // TODO: const info = await Purchases.getCustomerInfo();
-  //       cachedInfo = mapCustomerInfo(info);
-  //       listeners.forEach(fn => fn(cachedInfo));
-  return cachedInfo;
+  if (mode === 'stub') return cachedInfo;
+  try {
+    const info = await Purchases.getCustomerInfo();
+    cachedInfo = mapCustomerInfo(info);
+    notifyListeners();
+    return cachedInfo;
+  } catch (err) {
+    Sentry.captureException(err, { tags: { source: 'purchases', op: 'refresh' } });
+    return cachedInfo;
+  }
 }

@@ -180,52 +180,80 @@ Música instrumental leve, sem letra. Loop de 30s. Sugestão: Epidemic Sound tag
 
 ## 5. Checklist técnico PRÉ-LANÇAMENTO
 
-### Conta Apple Developer
+> Auditado em 2026-05-17 contra o código atual. ✅ = feito, ❌ = pendente
+> de fato, 🟡 = código pronto mas precisa de chave de produção, 👤 = só
+> você pode fazer (conta Apple/Google, dinheiro, decisão estratégica).
+
+### Conta Apple Developer 👤
 - [ ] Apple Developer Program ($99/ano) ativo
 - [ ] App record criado no App Store Connect (Bundle ID `com.cronopet.app`)
-- [ ] Certificado de distribuição gerado
-- [ ] Profile de distribuição configurado
+- [ ] Certificado de distribuição: gerado automático via `eas credentials`
+- [ ] APNs push key: gerar via `eas credentials` (interativo)
 
-### Integração StoreKit (se for lançar pago)
-- [ ] Produtos criados no App Store Connect:
-  - `cronopet_annual` — Auto-renewable subscription — R$ 99/ano
-  - `cronopet_monthly` — Auto-renewable subscription — R$ 14,90/mês
-  - Trial de 7 dias configurado nos dois
-- [ ] Preencher informações bancárias + tax forms
-- [ ] SDK instalado: `react-native-purchases` (RevenueCat) ou `expo-in-app-purchases`
-- [ ] Sandbox testing com sandbox user
-- [ ] Lógica conectada ao `setPremiumStatus` do store (já existe)
+### Integração StoreKit / RevenueCat
+- [x] SDK `react-native-purchases` instalado + plugin configurado
+- [x] Wrapper `services/purchases.ts` com fallback graceful (sem key = stub DEV)
+- [x] Wired ao `setPremiumStatus` do store
+- [ ] 👤 Produtos criados no App Store Connect:
+      - `cronopet_premium_monthly` — Auto-renewable — R$ 14,90/mês
+      - `cronopet_premium_yearly` — Auto-renewable — R$ 99,00/ano
+      - Trial de 7 dias configurado em ambos
+- [ ] 👤 Informações bancárias + tax forms preenchidos
+- [ ] 🟡 `EXPO_PUBLIC_REVENUECAT_IOS_KEY` no `.env` de produção
+- [ ] 🟡 `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` no `.env` de produção
+- [ ] Sandbox testing com Apple Sandbox user
 
 ### Compliance
-- [ ] **Privacy Policy** publicada em cronopet.app/privacy (ou link Notion)
-- [ ] **Terms of Service** publicados em cronopet.app/termos
-- [ ] **App Privacy** preenchido no App Store Connect (quais dados coleta)
-- [ ] **LGPD compliance**: Brasil exige texto claro sobre armazenamento local
+- [x] **Privacy Policy** publicada em https://cronopet.com.br/privacidade
+- [x] **Terms of Service** publicados em https://cronopet.com.br/termos
+- [x] **Account deletion** in-app (Apple Guideline 5.1.1(v)) — `app/settings.tsx`
+- [x] **LGPD**: app é local-first, MMKV encrypted via Keychain
+- [ ] 👤 **App Privacy** questionnaire preenchido no App Store Connect
+      (fundamentação no código pronta — local-first, Sentry opt-in,
+      analytics consensual)
 
 ### Técnico
-- [ ] `.env` com chaves de produção (rotacionar OWM, Supabase, Sentry)
-- [ ] Build de produção via EAS: `eas build --platform ios --profile production`
-- [ ] Upload pra TestFlight: `eas submit --platform ios`
-- [ ] Internal testing: convidar os betatesters
-- [ ] External testing: 100 pessoas max, 24-48h pra Apple aprovar
+- [x] Sentry integrado e inicializado em `_layout.tsx`
+- [x] PostHog wrapper instalado com graceful fallback
+- [x] `iosInfoPlist.ITSAppUsesNonExemptEncryption: false` declarado
+      (MMKV cai em qualified exemption — confirmar com Apple legal se
+      tiver dúvida)
+- [x] Android `usesCleartextTraffic: false` (bloqueia HTTP plain)
+- [x] Android `blockedPermissions` remove READ/WRITE_EXTERNAL_STORAGE
+      (image-picker auto-declara mas não precisamos em Android 13+)
+- [ ] 🟡 `.env` com keys de produção: SUPABASE_URL, SUPABASE_ANON_KEY,
+      OWM_KEY, SENTRY_DSN, POSTHOG_KEY, REVENUECAT_*
+- [ ] Build de produção testado: `eas build --platform ios --profile production`
+- [ ] Upload TestFlight: `eas submit --platform ios`
+- [ ] Internal testing: convidar 5-15 betatesters
+- [ ] App roda em iPhone real, cold start < 3s
 
 ### Assets
-- [ ] Ícone do app 1024×1024 (sem transparência, sem arredondamento)
-- [ ] Splash screen testada em iPhone e Android
-- [ ] 5 screenshots em 6.9" (iPhone 16 Pro Max — 1290×2796)
-- [ ] 3 screenshots em 6.5" (iPhone 11 Pro Max — 1242×2688)
-- [ ] Adaptive icon no Android
+- [x] Ícone 1024×1024 sem alpha (`assets/images/icon.png`)
+- [x] Splash screen 1024×1024 (`assets/images/splash-icon.png`)
+- [x] Android adaptive icon foreground (`assets/images/adaptive-icon.png`)
+      com `backgroundColor: #E9F1CF`
+- [ ] 5 screenshots iPhone 16 Pro Max (1290×2796) — gerar via simulator
+      ⌘+S ou usar `/sandbox` como cenário canônico
+- [ ] 3 screenshots iPhone 11 Pro Max (1242×2688)
+- [ ] Android screenshots (phone + 7" + 10")
+- [ ] App Preview vídeo 30s (roteiro pronto na seção 3)
 
 ### Analytics
-- [ ] Mixpanel ou Amplitude configurado (eventos: signup, first_log, paywall_view, subscription_started, subscription_cancelled)
-- [ ] Sentry error tracking ativo (já configurado)
-- [ ] Crash-free rate monitorado
+- [x] Sentry error tracking ativo (DSN só precisa estar no .env prod)
+- [x] PostHog SDK integrado (track() chama posthog se chave configurada,
+      no-op caso contrário)
+- [x] Eventos canônicos tipados em `services/analytics.ts`:
+      `onboarding_completed`, `action_logged`, `daily_goals_completed`,
+      `premium_purchase_started/completed/failed`
+- [ ] 👤 PostHog project criado em app.posthog.com (free tier)
+- [ ] 🟡 `EXPO_PUBLIC_POSTHOG_KEY` + `EXPO_PUBLIC_POSTHOG_HOST` no .env
 
 ### Marketing
-- [ ] Landing page em cronopet.app (básica, com botão de download)
-- [ ] @cronopet criado: Instagram, TikTok, Twitter
-- [ ] E-mail de suporte: contato@cronopet.app
-- [ ] FAQ básico (10 perguntas): como funciona, como cancelar Premium, como exportar dados, etc.
+- [x] Landing page cronopet.com.br no ar (com waitlist signup)
+- [ ] 👤 @cronopet criado: Instagram, TikTok, Twitter
+- [x] E-mail de suporte: contato@cronopet.com.br (já no footer do site)
+- [x] FAQ no site cobre 9 perguntas essenciais (Faq.tsx)
 
 ---
 
