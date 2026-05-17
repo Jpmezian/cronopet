@@ -11,11 +11,22 @@
 | Área | Tipo | Cobertura | Como rodar |
 |---|---|---|---|
 | `services/HealthInsights.ts` (40 detectores) | Gold dataset sintético (51 casos) | 46/46 prefixos de ID | `npm run test:health` |
-| E2E iOS | Maestro flows | Onboarding | `npm run test:e2e` |
-| Type safety | `tsc --noEmit` | 100% | `npm run typecheck` |
-| Dead code | `knip` | 100% | `npx knip` |
+| `data/calories.ts` (NRC nutrition) | 10 casos contra ref NRC + edge | RER/MER/lose-floor/life-stage | `npm run test:calories` |
+| `data/breed-conditions.ts` (lookup) | 10 casos (exact/partial/fuzzy/SRD) | Matching + fallback defensivo | `npm run test:breeds` |
+| `lib/fuzzy.ts` (autocomplete) | 7 casos por camada | Exact/prefix/substring/fuzzy | `npm run test:fuzzy` |
+| `lib/security.ts` (input + rate limit) | 7 casos com time mock | Sanitize/strength/email/rate | `npm run test:security` |
+| **Total Wave 1+2** | **85 casos** | **<50ms full run** | `npm run test:all` |
+| E2E iOS | Maestro flows | Onboarding (1 flow) | `npm run test:e2e` |
+| Type safety | `tsc --noEmit` | 100% (incl. tsconfig.test.json) | `npm run typecheck` |
+| Dead code | `knip` | 100% clean | `npx knip` |
 
-Todo o resto é **manualmente testado** via `/sandbox` (catálogo nativo) ou no device.
+Todo o resto (UI, animações, motion) é validado manualmente via
+`/sandbox` (catálogo nativo) ou no device.
+
+**Bugs reais encontrados pelos testes durante construção:**
+- `data/calories.ts:ageFromBirth` aceitava datas inválidas silenciosamente
+  (`2026-13-99` virava `~Jan/2027` via auto-normalize do `new Date`).
+  Corrigido com validação de range + round-trip check.
 
 ---
 
@@ -44,7 +55,16 @@ Todo o resto é **manualmente testado** via `/sandbox` (catálogo nativo) ou no 
 - [x] `HealthInsights` gold dataset (51 casos curados, 46/46 detectores cobertos)
 - [x] Maestro E2E onboarding
 
-### Wave 2 — Pure logic units (prioridade ALTA)
+### Wave 2 — Pure logic units ✅
+- [x] `data/calories.ts` (10 casos, NRC reference values)
+- [x] `data/breed-conditions.ts` (10 casos, exact/partial/fuzzy/SRD fallback)
+- [x] `lib/fuzzy.ts` (7 casos, todas as camadas do matcher)
+- [x] `lib/security.ts` (7 casos, com time mock pra rate limit)
+- [x] Mini-framework compartilhado em `__tests__/_lib/assert.ts`
+- [x] `tsconfig.test.json` + stub de `expo-crypto` pra rodar security em Node
+- [ ] `lib/email-typo-suggest.ts` (no projeto web, separado) — Wave 2b futura
+
+### Wave 2 (especificação original — referência)
 
 Arquivos sem dependência de React/Native — testáveis com `tsx` direto,
 sem Jest config.
@@ -226,9 +246,9 @@ unitários forem montados.
 
 ## Próximos passos imediatos
 
-1. ✅ Gold dataset HealthInsights (FEITO)
-2. ⏭️  Adicionar `__tests__/calories/` (Wave 2 — 8 casos)
-3. ⏭️  Adicionar `__tests__/breeds/` (Wave 2 — 10 casos)
+1. ✅ Gold dataset HealthInsights (51 casos)
+2. ✅ Wave 2 completa: calories + breeds + fuzzy + security (34 casos)
+3. ✅ `npm run test:all` rodando full Wave 1+2 em <50ms
 4. ⏭️  Adicionar `reset()` ao `usePetStore` + `__tests__/store/` (Wave 3)
-5. ⏭️  Montar `npm run test:all` que roda toda a Wave 1+2+3
-6. ⏭️  Adicionar GitHub Action minimal (typecheck + knip + test:all)
+5. ⏭️  Adicionar GitHub Action minimal (typecheck + knip + test:all)
+6. ⏭️  Wave 2b: `__tests__/email-typo-suggest/` no projeto web

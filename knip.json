@@ -4,7 +4,8 @@
     "babel.config.js",
     "supabase/functions/**",
     "services/purchases.ts",
-    "store/storage.ts"
+    "store/storage.ts",
+    "__tests__/_stubs/**"
   ],
   "ignoreBinaries": ["eas", "maestro"],
   "ignoreDependencies": ["expo-updates", "expo-system-ui"]

@@ -118,9 +118,17 @@ export function ageFromBirth(nascimento?: string): number | null {
   if (!nascimento) return null;
   const [y, m, d] = nascimento.split('-').map(Number);
   if (!y || !m || !d) return null;
-  const birth = new Date(y, m - 1, d).getTime();
-  if (isNaN(birth)) return null;
-  const diff = Date.now() - birth;
+  // Validação de range — `new Date(2026, 12, 99)` normaliza silenciosamente
+  // pra "feb 2027" em vez de virar Invalid Date. Bloqueamos antes.
+  if (m < 1 || m > 12 || d < 1 || d > 31) return null;
+  const birth = new Date(y, m - 1, d);
+  if (isNaN(birth.getTime())) return null;
+  // Round-trip check: se o dia/mês não bateu com o input, era um overflow
+  // tipo 31 de fevereiro virou 3 de março. Tratar como inválido.
+  if (birth.getFullYear() !== y || birth.getMonth() !== m - 1 || birth.getDate() !== d) {
+    return null;
+  }
+  const diff = Date.now() - birth.getTime();
   const years = diff / (365.25 * 24 * 60 * 60 * 1000);
   return Math.max(0, years);
 }
