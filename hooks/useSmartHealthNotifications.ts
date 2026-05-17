@@ -27,6 +27,45 @@ import type { HealthInsight } from '@/services/HealthInsights';
 import type { PetProfile } from '@/types/pet';
 
 const RENOTIFY_AFTER_MS = 24 * 60 * 60 * 1000; // não re-notifica o mesmo insight em <24h
+const PUSH_BODY_MAX_CHARS = 110;
+
+/**
+ * Decisão pura: escolhe o primeiro insight `alert` ainda não notificado
+ * nas últimas 24h. Retorna null se não há candidato.
+ *
+ * Extraído pra ser testável sem render context.
+ */
+export function pickInsightToNotify(
+  insights: HealthInsight[],
+  notifiedInsightIds: Record<string, number>,
+  now: number,
+): HealthInsight | null {
+  return insights.find((i) => {
+    if (i.severity !== 'alert') return false;
+    const lastNotified = notifiedInsightIds[i.id] ?? 0;
+    return now - lastNotified > RENOTIFY_AFTER_MS;
+  }) ?? null;
+}
+
+/**
+ * Trunca body pra caber no limite de chars de push notification
+ * (iOS/Android limitam ~110-150 chars antes de cortar com elipse feio).
+ */
+export function truncateNotificationBody(body: string, max = PUSH_BODY_MAX_CHARS): string {
+  if (body.length <= max) return body;
+  // '…' é 1 char (Unicode U+2026), não 3 como '...'. Usar max-1 garante
+  // que o output final tenha exatamente `max` chars (bug antigo: o código
+  // fazia `max-3` assumindo elipse ASCII e gerava strings 2 chars curtas).
+  return body.slice(0, max - 1) + '…';
+}
+
+/**
+ * Hash determinístico do conjunto de insights — usado pra evitar
+ * disparar useEffect em re-renders que não mudam o conjunto.
+ */
+export function buildInsightsSnapshot(insights: HealthInsight[]): string {
+  return insights.map((i) => `${i.id}:${i.severity}`).sort().join('|');
+}
 
 export function useSmartHealthNotifications(
   insights: HealthInsight[],
@@ -39,29 +78,17 @@ export function useSmartHealthNotifications(
   const lastSnapshotRef = useRef<string>('');
 
   useEffect(() => {
-    const snapshot = insights.map((i) => `${i.id}:${i.severity}`).sort().join('|');
+    const snapshot = buildInsightsSnapshot(insights);
     if (snapshot === lastSnapshotRef.current) return;
     lastSnapshotRef.current = snapshot;
 
-    // Pega o pior alerta ainda não notificado nas últimas 24h
-    const now = Date.now();
-    const candidate = insights.find((i) => {
-      if (i.severity !== 'alert') return false;
-      const lastNotified = notifiedInsightIds[i.id] ?? 0;
-      return now - lastNotified > RENOTIFY_AFTER_MS;
-    });
-
+    const candidate = pickInsightToNotify(insights, notifiedInsightIds, Date.now());
     if (!candidate) return;
 
     (async () => {
       try {
         const copy = personalizeInsight(candidate, pet);
-        // Push max ~110 chars — usa só body, sem o nextStep
-        const truncatedBody = copy.body.length > 110
-          ? copy.body.slice(0, 107) + '…'
-          : copy.body;
-
-        await scheduleSmartHealthAlert(copy.title, truncatedBody);
+        await scheduleSmartHealthAlert(copy.title, truncateNotificationBody(copy.body));
         markInsightNotified(candidate.id);
       } catch (err) {
         Sentry.captureException(err, { tags: { source: 'smart_health_notifications' } });

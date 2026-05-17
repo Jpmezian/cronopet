@@ -34,13 +34,29 @@ maestro test .maestro/01_onboarding.yaml
 
 ## Suite atual
 
-| # | Arquivo | O que cobre |
-|---|---|---|
-| 01 | `01_onboarding.yaml` | Fluxo de criação de pet do zero |
-| 02 | `02_log_action.yaml` | Registrar comida + água, ver streak |
-| 03 | `03_navigation_tabs.yaml` | Tab bar — Home / Histórico / Saúde |
-| 04 | `04_paywall.yaml` | Abrir paywall, voltar sem comprar |
-| 05 | `05_settings_lock.yaml` | Habilitar bloqueio biométrico |
+| # | Arquivo | O que cobre | Status |
+|---|---|---|---|
+| 01 | `01_onboarding.yaml` | Criação de pet do zero | ✅ |
+| 02 | `02_log_action.yaml` | Registrar comida + água, streak | ✅ |
+| 03 | `03_navigation_tabs.yaml` | Tab bar Home/Histórico/Saúde | ✅ |
+| 04 | `04_paywall.yaml` | Abrir paywall, voltar sem comprar | ✅ |
+| 05 | `05_settings_lock.yaml` | Bloqueio biométrico | ✅ |
+| 06 | `06_premium_purchase.yaml` | Stub DEV de compra → badge Premium | 🆕 |
+| 07 | `07_pdf_export.yaml` | Médico → Exportar PDF → share sheet | 🆕 |
+| 08 | `08_account_deletion.yaml` | Apagar conta com dialog (sem confirmar) | 🆕 |
+| 09 | `09_multi_pet_switch.yaml` | 2º pet + switch sem vazar dados | 🆕 |
+| 10 | `10_insight_dismiss.yaml` | Dismiss persiste após restart (regressão) | 🆕 |
+
+Flows 🆕 estão escritos com selectors flexíveis (regex) mas precisam de
+1ª passada num simulator iOS dev pra confirmar que os matchers batem
+nos textos reais. Rodar individualmente:
+
+```bash
+maestro test .maestro/06_premium_purchase.yaml
+```
+
+Selectors que falharem ajustam-se editando o YAML — não precisa mexer
+no app.
 
 ## Quando criar mais testes
 

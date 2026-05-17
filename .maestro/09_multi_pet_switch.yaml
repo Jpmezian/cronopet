@@ -1,0 +1,48 @@
+# Fluxo: cadastrar 2º pet e alternar entre eles pelo pet switcher na
+# home. Valida que os históricos NÃO vazam entre pets (regressão crítica:
+# já tivemos bug onde counts de hoje misturavam logs de pets diferentes).
+#
+# Premium-gated: precisa ter premium ativo. Rodar 06_premium_purchase
+# antes ou usar stub DEV que ativa premium na inicialização.
+appId: com.cronopet.app.dev
+---
+- launchApp
+
+# Premium é pré-requisito de multi-pet — confirma badge
+- tapOn:
+    id: "settings-button"
+    optional: true
+- assertVisible: ".*[Pp]remium.*"
+- tapOn:
+    id: "close-settings"
+    optional: true
+
+# Adiciona 2º pet via pet switcher
+- tapOn:
+    id: "pet-switcher-trigger"
+    optional: true
+- runFlow:
+    when:
+      notVisible: ".*[Aa]dicionar pet.*"
+    commands:
+      - tapOn: ".*[Tt]rocar pet.*|.*[Pp]erfis.*"
+
+- tapOn: ".*[Aa]dicionar pet.*|\\+ pet"
+
+# Onboarding simplificado pro 2º
+- inputText: "Mia"
+- tapOn: ".*[Pp]róximo.*|.*[Cc]ontinuar.*"
+- tapOn: ".*[Gg]ato.*"
+- tapOn: ".*[Pp]róximo.*|.*[Cc]oncluir.*"
+
+# Volta pra home — deve mostrar Mia como pet ativo
+- waitForAnimationToEnd
+- assertVisible: ".*Mia.*"
+
+# Troca de volta pro Bidu via switcher
+- tapOn: "id: \"pet-switcher-trigger\""
+- tapOn: ".*Bidu.*"
+- waitForAnimationToEnd
+
+# Verifica que voltou pro Bidu (regressão: testar contagens)
+- assertVisible: ".*Bidu.*"

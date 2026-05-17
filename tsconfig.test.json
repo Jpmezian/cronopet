@@ -9,6 +9,7 @@
       "expo-secure-store":                ["./__tests__/_stubs/expo-secure-store.ts"],
       "expo-file-system":                 ["./__tests__/_stubs/expo-file-system.ts"],
       "expo-image-manipulator":           ["./__tests__/_stubs/expo-image-manipulator.ts"],
+      "expo-location":                    ["./__tests__/_stubs/expo-location.ts"],
       "react-native-mmkv":                ["./__tests__/_stubs/react-native-mmkv.ts"],
       "react-native":                     ["./__tests__/_stubs/react-native.ts"],
       "react-native-reanimated":          ["./__tests__/_stubs/reanimated.ts"],

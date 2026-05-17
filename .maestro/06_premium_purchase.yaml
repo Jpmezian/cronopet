@@ -1,0 +1,38 @@
+# Fluxo: simular compra premium via stub DEV (services/purchases.ts em
+# DEV simula sucesso instantâneo via setPremiumStatus). Verifica que
+# gates de UI atualizam (badge Premium aparece, paywall some).
+#
+# NÃO testa StoreKit real — esse caminho exige sandbox + conta de teste
+# Apple Connect, fora do escopo de Maestro local.
+appId: com.cronopet.app.dev
+---
+- launchApp
+
+# Abre Settings → Premium
+- tapOn:
+    id: "settings-button"
+    optional: true
+- runFlow:
+    when:
+      notVisible: ".*[Pp]remium.*"
+    commands:
+      - tapOn: ".*[Cc]onfigurações.*|.*[Aa]justes.*"
+
+- tapOn: ".*[Pp]remium.*|.*[Aa]ssinar.*"
+
+# Escolhe plano mensal e confirma
+- assertVisible: ".*[Mm]ensal.*"
+- tapOn: ".*[Mm]ensal.*|R\\$ 14.*"
+
+# Em DEV o stub `purchasePackage` retorna success imediato →
+# UI deve fechar paywall e marcar como premium
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: ".*[Cc]onfirmar.*|.*[Aa]ssinar.*"
+    commands:
+      - tapOn: ".*[Cc]onfirmar.*|.*[Aa]ssinar.*"
+
+# Verifica que voltou pra Settings e mostra badge de Premium ativo
+- waitForAnimationToEnd
+- assertVisible: ".*[Aa]tivo.*|.*[Pp]remium ✓.*|.*[Mm]embro.*"

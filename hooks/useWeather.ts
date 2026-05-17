@@ -4,11 +4,38 @@ import * as Location from 'expo-location';
 // ─── Constantes ────────────────────────────────────────────────
 
 /** Copacabana, RJ — fallback quando GPS negado ou falha de rede */
-const FALLBACK_LAT = -22.9711;
-const FALLBACK_LON = -43.1822;
+export const FALLBACK_LAT = -22.9711;
+export const FALLBACK_LON = -43.1822;
 
-/** Limiar para alerta de asfalto quente (°C) */
+/** Limiar para alerta de asfalto quente (°C) — interno, testado via isAsfaltoQuente. */
 const HOT_PAVEMENT_THRESHOLD = 28;
+
+// ─── Helpers puros (testáveis sem mock de fetch/Location) ─────
+
+/** Constrói a URL canônica do OpenWeatherMap (units=metric, lang=pt_br). */
+export function buildOWMUrl(lat: number, lon: number, apiKey: string): string {
+  return `https://api.openweathermap.org/data/2.5/weather` +
+    `?lat=${lat}&lon=${lon}&units=metric&lang=pt_br&appid=${apiKey}`;
+}
+
+/** Parse defensivo do JSON do OWM — tolera shape parcial sem crash. */
+export function parseOWMResponse(json: unknown): { temp: number; descricao: string } {
+  const root = (json && typeof json === 'object') ? json as Record<string, unknown> : {};
+  const main = (root.main && typeof root.main === 'object') ? root.main as Record<string, unknown> : {};
+  const weatherArr = Array.isArray(root.weather) ? root.weather : [];
+  const first = (weatherArr[0] && typeof weatherArr[0] === 'object') ? weatherArr[0] as Record<string, unknown> : {};
+  return {
+    temp: Math.round(typeof main.temp === 'number' ? main.temp : 0),
+    descricao: typeof first.description === 'string' && first.description.length > 0
+      ? first.description
+      : 'Tempo desconhecido',
+  };
+}
+
+/** Asfalto está perigoso pro pet andar descalço? (limiar empírico ~28°C) */
+export function isAsfaltoQuente(temp: number): boolean {
+  return temp > HOT_PAVEMENT_THRESHOLD;
+}
 
 /**
  * API Key do OpenWeatherMap.
@@ -40,22 +67,10 @@ interface OWMResponse {
 }
 
 async function fetchOWM(lat: number, lon: number): Promise<{ temp: number; descricao: string }> {
-  if (!OWM_KEY) {
-    throw new Error('EXPO_PUBLIC_OWM_KEY não configurada');
-  }
-  const url =
-    `https://api.openweathermap.org/data/2.5/weather` +
-    `?lat=${lat}&lon=${lon}&units=metric&lang=pt_br&appid=${OWM_KEY}`;
-
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`OWM API retornou ${response.status}`);
-  }
-  const data: OWMResponse = await response.json();
-  return {
-    temp: Math.round(data.main.temp),
-    descricao: data.weather[0]?.description ?? 'Tempo desconhecido',
-  };
+  if (!OWM_KEY) throw new Error('EXPO_PUBLIC_OWM_KEY não configurada');
+  const response = await fetch(buildOWMUrl(lat, lon, OWM_KEY));
+  if (!response.ok) throw new Error(`OWM API retornou ${response.status}`);
+  return parseOWMResponse(await response.json());
 }
 
 // ─── Hook principal ─────────────────────────────────────────────
@@ -110,7 +125,7 @@ export function useWeather(): WeatherData {
           setWeather({
             temp,
             descricao,
-            asfaltoQuente: temp > HOT_PAVEMENT_THRESHOLD,
+            asfaltoQuente: isAsfaltoQuente(temp),
             loading: false,
             error: null,
           });

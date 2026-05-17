@@ -23,7 +23,10 @@
 | `hooks/useMotion.ts` (`pickEntering`) | 4 casos | reduced-motion fade vs spring stagger | `npm run test:motion` |
 | `services/syncMappers.ts` | 16 casos | Domain↔Row + family + realtime | `npm run test:sync` |
 | `services/pdfReportHelpers.ts` | 17 casos | calcAge + fmtISO + computeReportStats | `npm run test:pdf` |
-| **Total Wave 1+2+3+4+5** | **164 casos** | **<120ms full run** | `npm run test:all` |
+| `hooks/useSmartHealthNotifications.ts` | 7 casos | pickInsightToNotify + truncate + snapshot | `npm run test:smart` |
+| `hooks/useWeather.ts` | 5 casos | buildOWMUrl + parseOWMResponse + asfalto | `npm run test:weather` |
+| `lib/insightPersonalization.ts` | 11 casos | copy por categoria + nome fallback + invariantes | `npm run test:copy` |
+| **Total Wave 1+2+3+4+5+side-effecting** | **187 casos** | **<150ms full run** | `npm run test:all` |
 | E2E iOS | Maestro flows | Onboarding (1 flow) | `npm run test:e2e` |
 | Type safety | `tsc --noEmit` | 100% (incl. tsconfig.test.json) | `npm run typecheck` |
 | Dead code | `knip` | 100% clean | `npx knip` |
@@ -111,13 +114,22 @@ Todo o resto (UI, animações, motion) é validado manualmente via
       import top-level (hook real ainda precisa de renderHook pra ser
       testado end-to-end — fora do escopo desta wave)
 
-### Wave 4 fora do escopo (futuro)
+### Wave 4 fora do escopo original — agora cobertos ✅
 - [x] `useMotion.ts`: extraído `pickEntering`/`pickSectionEntering`
       retornando MotionSpec puro (4 casos). Stub mínimo de Reanimated
       adicionado em `__tests__/_stubs/reanimated.ts`.
-- [ ] `useSmartHealthNotifications.ts` + `useWeather.ts`: side-effecting
-      hooks (notif scheduling, fetch) — testes seriam de integração via
-      Maestro ou exigem stubs muito grandes
+- [x] `useSmartHealthNotifications.ts`: extraído `pickInsightToNotify`,
+      `truncateNotificationBody`, `buildInsightsSnapshot` (7 casos).
+      Pegou bug real: `truncateNotificationBody` assumia ellipsis ASCII
+      3-char (`'...'`) mas usa `'…'` (1 char Unicode) — output ficava 2
+      chars curto. Corrigido `max - 3` → `max - 1`.
+- [x] `useWeather.ts`: extraído `buildOWMUrl`, `parseOWMResponse`,
+      `isAsfaltoQuente` + constantes `FALLBACK_LAT/LON` (5 casos).
+      `parseOWMResponse` agora tolerante a shape parcial (`null`/`'garbage'`
+      não crashava antes mas tinha tipos `any`).
+- [x] `lib/insightPersonalization.ts`: 11 casos cobrindo cada uma das
+      10 categorias do switch + fallback pra categoria desconhecida +
+      invariantes (nunca retorna string vazia em title/body/nextStep).
 
 ### Wave 2 (especificação original — referência)
 
@@ -312,9 +324,18 @@ Todas as ondas planejadas para teste unitário estão FECHADAS:
 7. ✅ Wave 2b web: email-typo-suggest (9 casos)
 8. ✅ GitHub Action ativo em mobile + web (typecheck + knip + test:all)
 
-Aberto fora de testes unitários:
-- ⏭️  Wave 6: E2E Maestro novos flows (premium purchase, PDF export,
-       account deletion, multi-pet switch, dismiss persistence)
-- ⏭️  Wave 7: visual regression via screenshots do /sandbox
-- ⏭️  Hooks side-effecting (useSmartHealthNotifications, useWeather) —
-       teste de integração via Maestro, não unitário
+### Wave 6 — E2E Maestro ✅ (escritos, pendente validação device)
+- [x] `06_premium_purchase.yaml` — stub DEV → badge Premium aparece
+- [x] `07_pdf_export.yaml` — share sheet abre após exportar
+- [x] `08_account_deletion.yaml` — dialog de irreversibilidade
+- [x] `09_multi_pet_switch.yaml` — switcher sem vazar contagens
+- [x] `10_insight_dismiss.yaml` — dismiss persiste após restart
+      (regressão crítica)
+
+Flows usam selectors regex flexíveis — primeira passada num simulator
+iOS dev valida quais matchers batem nos textos/IDs reais. Veja
+`.maestro/README.md`.
+
+Aberto:
+- ⏭️  Wave 7: visual regression via screenshots do /sandbox (requer
+       baseline server ou comparação manual em PR)

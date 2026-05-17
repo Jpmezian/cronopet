@@ -1,0 +1,35 @@
+# Fluxo: gerar e compartilhar PDF clínico via Médico → Exportar PDF.
+# Pré-condição: pet criado com algum histórico (depende de 01+02 OU
+# usa pet de demo seedado em DEV).
+#
+# Maestro NÃO consegue verificar conteúdo de share sheet nativo do iOS,
+# mas pode confirmar que o sheet abriu (assertVisible no overlay).
+appId: com.cronopet.app.dev
+---
+- launchApp
+
+# Navega pra aba Médico
+- tapOn: ".*[Mm]édico.*|.*[Ss]aúde.*"
+
+# Procura botão de exportar PDF (geralmente no header da tela)
+- assertVisible: ".*[Mm]édico.*|.*[Ss]aúde.*"
+- tapOn:
+    id: "export-pdf-button"
+    optional: true
+- runFlow:
+    when:
+      notVisible: ".*[Cc]ompartilhar.*|.*[Pp]artilhar.*"
+    commands:
+      - tapOn: ".*[Ee]xportar.*|.*PDF.*|.*[Rr]elatório.*"
+
+# Verifica que share sheet abriu (iOS UIActivityViewController ou
+# Android share intent — ambos mostram "Compartilhar"/"Partilhar")
+- waitForAnimationToEnd
+- assertVisible: ".*[Cc]ompartilhar.*|.*[Pp]artilhar.*|.*AirDrop.*|.*[Mm]ensagens.*"
+
+# Fecha share sheet sem realmente compartilhar
+- runFlow:
+    when:
+      visible: ".*[Cc]ancelar.*"
+    commands:
+      - tapOn: ".*[Cc]ancelar.*"

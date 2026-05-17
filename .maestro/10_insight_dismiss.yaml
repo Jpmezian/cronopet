@@ -1,0 +1,45 @@
+# Fluxo: dispensar (dismiss) um health insight e confirmar que NÃO
+# volta a aparecer após reabrir o app (persistência no MMKV via
+# usePetStore.dismissedInsightIds).
+#
+# Pré-condição: o pet precisa ter histórico que GERE insights. Em DEV,
+# o /sandbox tem seed que popula 14 dias simulados com dados que
+# disparam pelo menos 2-3 insights heurísticos.
+appId: com.cronopet.app.dev
+---
+- launchApp
+
+# Navega pra aba Saúde / Médico onde insights aparecem
+- tapOn: ".*[Ss]aúde.*|.*[Mm]édico.*"
+
+# Aguarda renderização e captura o primeiro insight (qualquer um)
+- waitForAnimationToEnd
+- assertVisible:
+    text: ".*[Aa]lerta.*|.*[Aa]tenção.*|.*[Aa]rrastando.*|.*[Pp]olidipsia.*"
+
+# Faz long-press OU swipe pra revelar o botão de dismiss
+- longPressOn:
+    text: ".*[Aa]lerta.*|.*[Aa]tenção.*|.*[Aa]rrastando.*|.*[Pp]olidipsia.*"
+    optional: true
+- runFlow:
+    when:
+      notVisible: ".*[Dd]ispensar.*|.*[Ee]sconder.*"
+    commands:
+      - swipe:
+          start: 80%, 40%
+          end:   10%, 40%
+
+- tapOn: ".*[Dd]ispensar.*|.*[Ee]sconder.*|.*Não mostrar.*"
+
+# Confirma que sumiu da lista
+- waitForAnimationToEnd
+
+# Mata o app e reabre — insight dismissado NÃO deve voltar
+- stopApp
+- launchApp
+- tapOn: ".*[Ss]aúde.*|.*[Mm]édico.*"
+- waitForAnimationToEnd
+
+# REGRESSÃO: bug antigo é o dismiss não persistir entre opens. Esse
+# assert deve falhar se isso voltar a acontecer (insight reaparece).
+- assertNotVisible: ".*[Aa]rrastando.*|.*[Pp]olidipsia.*"

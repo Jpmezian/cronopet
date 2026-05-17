@@ -1,0 +1,37 @@
+# Fluxo: Settings → Conta → Apagar conta (sem confirmar de fato).
+# Valida que o caminho de deletion existe + tem dialog de confirmação
+# (não dá pra deletar acidentalmente com 1 tap).
+#
+# IMPORTANTE: este flow NÃO confirma a deletion — apenas verifica que
+# o dialog de confirmação aparece e pode ser cancelado. Testar a
+# deletion real exige cenário separado com state descartável (rodar
+# 01_onboarding antes pra recriar o pet).
+appId: com.cronopet.app.dev
+---
+- launchApp
+
+- tapOn:
+    id: "settings-button"
+    optional: true
+- runFlow:
+    when:
+      notVisible: ".*[Cc]onta.*"
+    commands:
+      - tapOn: ".*[Cc]onfigurações.*|.*[Aa]justes.*"
+
+# Vai pra Conta / Privacidade
+- tapOn: ".*[Cc]onta.*|.*[Pp]rivacidade.*"
+
+# Procura ação de apagar
+- assertVisible: ".*[Aa]pagar.*|.*[Ee]xcluir.*|.*[Dd]eletar.*"
+- tapOn: ".*[Aa]pagar conta.*|.*[Ee]xcluir conta.*|.*[Dd]eletar conta.*"
+
+# Dialog de confirmação — texto deve avisar irreversibilidade
+- assertVisible: ".*irreversível.*|.*não pode.*desfa.*|.*permanente.*|.*[Tt]em certeza.*"
+
+# Cancela — não deleta de fato
+- tapOn: ".*[Cc]ancelar.*"
+
+# Verifica que estamos de volta na tela de Conta (não foi deletada)
+- waitForAnimationToEnd
+- assertVisible: ".*[Cc]onta.*"
