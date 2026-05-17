@@ -12,7 +12,8 @@
 
 export interface TestCase {
   name: string;
-  fn: () => void;
+  /** Pode ser sync ou async — runner sempre `await Promise.resolve(fn())`. */
+  fn: () => void | Promise<void>;
   /** Marca opcional pra agrupar visualmente (ex: "edge"). */
   tag?: string;
 }
@@ -67,39 +68,43 @@ export function assertNotNull<T>(v: T | null | undefined, msg = ''): asserts v i
 // ─── Runner ───────────────────────────────────────────────────────────
 
 export function runSuite(suiteName: string, cases: TestCase[]): void {
-  // Sync runner — top-level await complica build CJS do tsx e nenhum
-  // dos casos precisa de I/O real. Mocks de tempo e funções puras só.
-  const startedAt = Date.now();
-  const results: Result[] = [];
+  // Runner híbrido sync/async: o caller invoca sem await, e o IIFE interno
+  // garante execução sequencial dos casos (importante quando casos
+  // mutam state global compartilhado, ex: usePetStore). Process.exit é
+  // chamado dentro do IIFE — caller não precisa fazer nada além de chamar.
+  (async () => {
+    const startedAt = Date.now();
+    const results: Result[] = [];
 
-  for (const c of cases) {
-    try {
-      c.fn();
-      results.push({ name: c.name, tag: c.tag, pass: true });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      results.push({ name: c.name, tag: c.tag, pass: false, error: msg });
+    for (const c of cases) {
+      try {
+        await Promise.resolve(c.fn());
+        results.push({ name: c.name, tag: c.tag, pass: true });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        results.push({ name: c.name, tag: c.tag, pass: false, error: msg });
+      }
     }
-  }
 
-  const passed = results.filter((r) => r.pass).length;
-  const failed = results.length - passed;
+    const passed = results.filter((r) => r.pass).length;
+    const failed = results.length - passed;
 
-  console.log(`\n${DIM}── ${suiteName} ──${RESET}`);
-  for (const r of results) {
-    const tag = r.pass ? `${GREEN}PASS${RESET}` : `${RED}FAIL${RESET}`;
-    console.log(`${tag}  ${r.name}`);
-    if (!r.pass && r.error) {
-      console.log(`      ${DIM}${r.error}${RESET}`);
+    console.log(`\n${DIM}── ${suiteName} ──${RESET}`);
+    for (const r of results) {
+      const tag = r.pass ? `${GREEN}PASS${RESET}` : `${RED}FAIL${RESET}`;
+      console.log(`${tag}  ${r.name}`);
+      if (!r.pass && r.error) {
+        console.log(`      ${DIM}${r.error}${RESET}`);
+      }
     }
-  }
 
-  const dur = Date.now() - startedAt;
-  const tot = `${passed}/${results.length}`;
-  const status = failed === 0 ? `${GREEN}✓ ${tot} passou${RESET}` : `${RED}✗ ${failed} falhou${RESET} (${tot})`;
-  console.log(`${DIM}── ${status}  ·  ${dur}ms${RESET}`);
+    const dur = Date.now() - startedAt;
+    const tot = `${passed}/${results.length}`;
+    const status = failed === 0 ? `${GREEN}✓ ${tot} passou${RESET}` : `${RED}✗ ${failed} falhou${RESET} (${tot})`;
+    console.log(`${DIM}── ${status}  ·  ${dur}ms${RESET}`);
 
-  if (failed > 0) process.exit(1);
+    process.exit(failed === 0 ? 0 : 1);
+  })();
 }
 
 // ─── Time mocking — pra suites que dependem de Date.now() ────────────

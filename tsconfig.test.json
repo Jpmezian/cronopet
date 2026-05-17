@@ -2,8 +2,15 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "paths": {
-      "@/*": ["./*"],
-      "expo-crypto": ["./__tests__/_stubs/expo-crypto.ts"]
+      "@/*":                              ["./*"],
+      "@/services/NotificationService":   ["./__tests__/_stubs/notifications.ts"],
+      "@/services/SyncService":           ["./__tests__/_stubs/sync-service.ts"],
+      "expo-crypto":                      ["./__tests__/_stubs/expo-crypto.ts"],
+      "expo-secure-store":                ["./__tests__/_stubs/expo-secure-store.ts"],
+      "expo-file-system":                 ["./__tests__/_stubs/expo-file-system.ts"],
+      "expo-image-manipulator":           ["./__tests__/_stubs/expo-image-manipulator.ts"],
+      "react-native-mmkv":                ["./__tests__/_stubs/react-native-mmkv.ts"],
+      "@sentry/react-native":             ["./__tests__/_stubs/sentry-react-native.ts"]
     }
   }
 }

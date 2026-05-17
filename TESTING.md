@@ -15,7 +15,9 @@
 | `data/breed-conditions.ts` (lookup) | 10 casos (exact/partial/fuzzy/SRD) | Matching + fallback defensivo | `npm run test:breeds` |
 | `lib/fuzzy.ts` (autocomplete) | 7 casos por camada | Exact/prefix/substring/fuzzy | `npm run test:fuzzy` |
 | `lib/security.ts` (input + rate limit) | 7 casos com time mock | Sanitize/strength/email/rate | `npm run test:security` |
-| **Total Wave 1+2** | **85 casos** | **<50ms full run** | `npm run test:all` |
+| `store/useToastStore.ts` | 5 casos | showToast/dismiss/duration | `npm run test:toast` |
+| `store/usePetStore.ts` | 15 casos | CRUD + streak + dismiss/snooze/toggle | `npm run test:pet` |
+| **Total Wave 1+2+3** | **105 casos** | **<60ms full run** | `npm run test:all` |
 | E2E iOS | Maestro flows | Onboarding (1 flow) | `npm run test:e2e` |
 | Type safety | `tsc --noEmit` | 100% (incl. tsconfig.test.json) | `npm run typecheck` |
 | Dead code | `knip` | 100% clean | `npx knip` |
@@ -63,6 +65,15 @@ Todo o resto (UI, animações, motion) é validado manualmente via
 - [x] Mini-framework compartilhado em `__tests__/_lib/assert.ts`
 - [x] `tsconfig.test.json` + stub de `expo-crypto` pra rodar security em Node
 - [ ] `lib/email-typo-suggest.ts` (no projeto web, separado) — Wave 2b futura
+
+### Wave 3 — Stores ✅
+- [x] `useToastStore` (5 casos — showToast/dismiss/duration/fila-de-1)
+- [x] `usePetStore` (15 casos — onboarding/CRUD/streak/dismiss/snooze/toggle/reset)
+- [x] 7 stubs nativos em `__tests__/_stubs/` (mmkv, secure-store, file-system,
+      image-manipulator, sentry, notifications, sync) — todos no
+      `tsconfig.test.json` paths
+- [x] Runner híbrido sync/async em `assert.ts` (IIFE interno awaita cada
+      caso sequencialmente; suite files chamam `runSuite(...)` sem await)
 
 ### Wave 2 (especificação original — referência)
 
@@ -248,7 +259,10 @@ unitários forem montados.
 
 1. ✅ Gold dataset HealthInsights (51 casos)
 2. ✅ Wave 2 completa: calories + breeds + fuzzy + security (34 casos)
-3. ✅ `npm run test:all` rodando full Wave 1+2 em <50ms
-4. ⏭️  Adicionar `reset()` ao `usePetStore` + `__tests__/store/` (Wave 3)
-5. ⏭️  Adicionar GitHub Action minimal (typecheck + knip + test:all)
+3. ✅ Wave 3 completa: toast + pet store (20 casos, 7 stubs nativos)
+4. ✅ `npm run test:all` rodando full Wave 1+2+3 em <60ms
+5. ⏭️  GitHub Action minimal (typecheck + knip + test:all em PR)
 6. ⏭️  Wave 2b: `__tests__/email-typo-suggest/` no projeto web
+7. ⏭️  Wave 4: hooks (`useMotion`, `usePremium`, `usePremiumTriggers`,
+       `useThemeColors`) — requer `react-test-renderer` ou helper de
+       `renderHook` sem React Testing Library
