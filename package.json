@@ -14,6 +14,7 @@
     "android:dev": "dotenv -e .env.dev -- expo run:android",
     "android:prod": "dotenv -e .env.prod -- expo run:android",
     "typecheck": "tsc --noEmit",
+    "test:health": "tsx __tests__/health-insights/run.ts",
     "build:ios:preview": "eas build --platform ios --profile preview",
     "build:ios:production": "eas build --platform ios --profile production",
     "build:android:preview": "eas build --platform android --profile preview",
@@ -69,6 +70,7 @@
     "@types/react": "~19.1.0",
     "dotenv-cli": "^7.4.4",
     "react-test-renderer": "19.1.0",
+    "tsx": "^4.22.1",
     "typescript": "~5.9.2"
   },
   "private": true
