@@ -47,3 +47,6 @@ yarn-error.*
 /ios
 /android
 relatorio.md
+
+# Claude Code local state
+.claude/
