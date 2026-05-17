@@ -11,6 +11,7 @@
       "expo-image-manipulator":           ["./__tests__/_stubs/expo-image-manipulator.ts"],
       "react-native-mmkv":                ["./__tests__/_stubs/react-native-mmkv.ts"],
       "react-native":                     ["./__tests__/_stubs/react-native.ts"],
+      "react-native-reanimated":          ["./__tests__/_stubs/reanimated.ts"],
       "@sentry/react-native":             ["./__tests__/_stubs/sentry-react-native.ts"]
     }
   }

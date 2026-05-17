@@ -5,6 +5,9 @@ import type { ActionLog, MedicalEvent, Vaccine, PetProfile, Appointment, WeightE
 import { escapeHtml } from '@/lib/security';
 import { getBreedHealthProfile, CATEGORY_LABELS, SEVERITY_LABELS } from '@/data/breed-conditions';
 import { analyzeHealth, type HealthInsight } from '@/services/HealthInsights';
+import {
+  fmtDateTime, fmtISO, calcAge, tolWord, riskWord, computeReportStats,
+} from './pdfReportHelpers';
 
 // ─── Alias local para deixar o template HTML mais legível ───
 const E = escapeHtml;
@@ -43,31 +46,8 @@ const CONSISTENCY_LABELS: Record<string, string> = {
   hard:   '⬛ Fezes duras',
 };
 
-// Formata timestamp em data/hora pt-BR
-function fmtDateTime(ts: number): string {
-  return new Date(ts).toLocaleString('pt-BR', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit',
-  });
-}
-
-// Formata YYYY-MM-DD sem bug de timezone (não passa pelo construtor Date)
-function fmtISO(iso: string): string {
-  const [y, m, d] = iso.split('-');
-  return `${d}/${m}/${y}`;
-}
-
-// Calcula idade a partir de YYYY-MM-DD
-function calcAge(iso: string): string {
-  const [y, m, d] = iso.split('-').map(Number);
-  const birth = new Date(y, m - 1, d);
-  const now   = new Date();
-  const months = (now.getFullYear() - birth.getFullYear()) * 12 + (now.getMonth() - birth.getMonth());
-  if (months < 1)  return 'Recém-nascido';
-  if (months < 12) return `${months} ${months === 1 ? 'mês' : 'meses'}`;
-  const years = Math.floor(months / 12);
-  return `${years} ${years === 1 ? 'ano' : 'anos'}`;
-}
+// fmtDateTime, fmtISO, calcAge, tolWord, riskWord extraídos pra
+// pdfReportHelpers.ts em 2026-05-17 — testáveis sem mock de expo-print.
 
 // Converte URI local para base64 data URI para embutir no HTML
 async function toBase64(uri: string): Promise<string | null> {
@@ -90,23 +70,11 @@ export async function generateVetReport(
   appointments:   Appointment[] = [],
   weightHistory:  WeightEntry[]  = [],
 ): Promise<void> {
-  const now          = Date.now();
-  const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
-
-  const recentLogs = actionHistory.filter((l) => l.timestamp >= thirtyDaysAgo);
-
-  // Contagem por ação nos últimos 30 dias + totais de quantidade/duração
-  const counts: Record<string, number> = {};
-  let totalFoodGrams = 0;
-  let totalWalkMinutes = 0;
-  recentLogs.forEach((l) => {
-    counts[l.key] = (counts[l.key] ?? 0) + 1;
-    if (l.key === 'comida' && l.quantity) totalFoodGrams += l.quantity;
-    if (l.key === 'passeio' && l.duration) totalWalkMinutes += l.duration;
+  const now = Date.now();
+  const stats = computeReportStats({
+    actionHistory, weightHistory, appointments, now, windowDays: 30,
   });
-
-  // Ocorrências com aparência alterada (últimos 30 dias)
-  const abnormalCount = recentLogs.filter((l) => l.appearance === 'abnormal').length;
+  const { recentLogs, counts, totalFoodGrams, totalWalkMinutes, abnormalCount } = stats;
 
   // Perfil da raça (educativo) e insights heurísticos detectados
   const breedProfile = pet.raca ? getBreedHealthProfile(pet.raca, pet.tipo) : null;
@@ -132,20 +100,8 @@ export async function generateVetReport(
     })
   );
 
-  // Agrupa logs por data
-  const byDay: Record<string, ActionLog[]> = {};
-  recentLogs.forEach((l) => {
-    const d = new Date(l.timestamp).toLocaleDateString('pt-BR');
-    if (!byDay[d]) byDay[d] = [];
-    byDay[d].push(l);
-  });
-
-  // Peso ordenado
-  const weightSorted = [...weightHistory].sort((a, b) => a.data.localeCompare(b.data));
-
-  // Consultas ordenadas: recentes primeiro
-  const apptSorted = [...appointments].sort((a, b) => b.data.localeCompare(a.data));
-
+  // byDay / weightSorted / apptSorted vêm de `stats` (computeReportStats)
+  const { byDay, weightSorted, apptSorted } = stats;
   const today = new Date().toISOString().slice(0, 10);
 
   const html = `
@@ -478,9 +434,4 @@ function renderBreedProfileSection(profile: ReturnType<typeof getBreedHealthProf
   `;
 }
 
-function tolWord(t: 'low' | 'medium' | 'high'): string {
-  return t === 'low' ? 'baixa' : t === 'medium' ? 'média' : 'alta';
-}
-function riskWord(r: 'low' | 'medium' | 'high'): string {
-  return r === 'low' ? 'baixo' : r === 'medium' ? 'médio' : 'alto';
-}
+// tolWord/riskWord vêm de pdfReportHelpers.ts (importados no topo).

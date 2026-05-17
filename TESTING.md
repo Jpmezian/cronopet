@@ -20,8 +20,10 @@
 | `hooks/usePremium.ts` (`computePremiumStatus`) | 9 casos | Trial + paid + expiração + sobreposição | `npm run test:premium` |
 | `hooks/usePremiumTriggers.ts` (`pickPremiumTrigger`) | 10 casos | 5 triggers + prioridade + shownPrompts | `npm run test:triggers` |
 | `hooks/useThemeColors.ts` (`pickIsDark`) | 3 casos | dark/light/system override | `npm run test:theme` |
+| `hooks/useMotion.ts` (`pickEntering`) | 4 casos | reduced-motion fade vs spring stagger | `npm run test:motion` |
 | `services/syncMappers.ts` | 16 casos | Domain↔Row + family + realtime | `npm run test:sync` |
-| **Total Wave 1+2+3+4+5** | **143 casos** | **<100ms full run** | `npm run test:all` |
+| `services/pdfReportHelpers.ts` | 17 casos | calcAge + fmtISO + computeReportStats | `npm run test:pdf` |
+| **Total Wave 1+2+3+4+5** | **164 casos** | **<120ms full run** | `npm run test:all` |
 | E2E iOS | Maestro flows | Onboarding (1 flow) | `npm run test:e2e` |
 | Type safety | `tsc --noEmit` | 100% (incl. tsconfig.test.json) | `npm run typecheck` |
 | Dead code | `knip` | 100% clean | `npx knip` |
@@ -79,7 +81,7 @@ Todo o resto (UI, animações, motion) é validado manualmente via
 - [x] Runner híbrido sync/async em `assert.ts` (IIFE interno awaita cada
       caso sequencialmente; suite files chamam `runSuite(...)` sem await)
 
-### Wave 5 — Services ✅ (parcial — SyncService done)
+### Wave 5 — Services ✅
 - [x] `services/syncMappers.ts` extraído de SyncService.ts (10 fns puras
       cobrindo Domain↔Row, family group/member, realtime payload). Refactor
       reduziu SyncService de 323 → 241 linhas e eliminou todos os 5
@@ -87,7 +89,14 @@ Todo o resto (UI, animações, motion) é validado manualmente via
 - [x] 16 casos cobrindo todos os mappers + edge cases (foto local NUNCA
       sobe, role inválido vira "member" default seguro, peso string→number
       coerce pro Postgres numeric, profile faltante = fallback gracioso)
-- [ ] `services/PdfReportService.ts` (futuro) — gerar PDF via stub fs
+- [x] `services/pdfReportHelpers.ts` extraído de PdfReportService.ts
+      (6 fns puras: fmtISO/fmtDateTime/calcAge/tolWord/riskWord/
+      computeReportStats). Refactor reduziu PdfReportService de
+      486 → 437 linhas e isolou a aritmética testável da geração HTML.
+- [x] 17 casos: timezone-safe fmtISO, calcAge singular/plural, janela
+      filtra logs antigos, totalFoodGrams/totalWalkMinutes ignoram keys
+      erradas, abnormalCount conta só `appearance='abnormal'`, weight
+      ASC vs appt DESC, empty case sem crash, windowDays custom.
 
 ### Wave 4 — Hooks ✅
 - [x] `usePremium.ts`: extraído `computePremiumStatus(input)` pura,
@@ -103,8 +112,9 @@ Todo o resto (UI, animações, motion) é validado manualmente via
       testado end-to-end — fora do escopo desta wave)
 
 ### Wave 4 fora do escopo (futuro)
-- [ ] `useMotion.ts`: requer stub completo de `react-native-reanimated`
-      ou refactor pra retornar shape em vez de Reanimated objects
+- [x] `useMotion.ts`: extraído `pickEntering`/`pickSectionEntering`
+      retornando MotionSpec puro (4 casos). Stub mínimo de Reanimated
+      adicionado em `__tests__/_stubs/reanimated.ts`.
 - [ ] `useSmartHealthNotifications.ts` + `useWeather.ts`: side-effecting
       hooks (notif scheduling, fetch) — testes seriam de integração via
       Maestro ou exigem stubs muito grandes
@@ -289,14 +299,22 @@ unitários forem montados.
 
 ---
 
-## Próximos passos imediatos
+## Status do planejamento
+
+Todas as ondas planejadas para teste unitário estão FECHADAS:
 
 1. ✅ Gold dataset HealthInsights (51 casos)
-2. ✅ Wave 2 completa: calories + breeds + fuzzy + security (34 casos)
-3. ✅ Wave 3 completa: toast + pet store (20 casos, 7 stubs nativos)
-4. ✅ Wave 4 completa: hooks puros extraídos (22 casos)
-5. ✅ `npm run test:all` rodando full Wave 1+2+3+4 em <80ms
-6. ✅ GitHub Action ativo: typecheck + knip + test:all em todo PR/push
-7. ✅ Wave 2b feita (no projeto web — 9 casos)
-8. ⏭️  Wave 5 (futuro): SyncService com mock Supabase, PdfReportService
-9. ⏭️  Wave 4b (futuro): useMotion via stub Reanimated
+2. ✅ Wave 2: calories + breeds + fuzzy + security (34 casos)
+3. ✅ Wave 3: toast + pet store (20 casos, 7 stubs nativos)
+4. ✅ Wave 4: hooks puros extraídos (premium + triggers + theme = 22 casos)
+5. ✅ Wave 4b: useMotion via pickEntering pure + stub Reanimated (4 casos)
+6. ✅ Wave 5: SyncService syncMappers + PdfReportService helpers (33 casos)
+7. ✅ Wave 2b web: email-typo-suggest (9 casos)
+8. ✅ GitHub Action ativo em mobile + web (typecheck + knip + test:all)
+
+Aberto fora de testes unitários:
+- ⏭️  Wave 6: E2E Maestro novos flows (premium purchase, PDF export,
+       account deletion, multi-pet switch, dismiss persistence)
+- ⏭️  Wave 7: visual regression via screenshots do /sandbox
+- ⏭️  Hooks side-effecting (useSmartHealthNotifications, useWeather) —
+       teste de integração via Maestro, não unitário
