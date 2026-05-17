@@ -17,7 +17,10 @@
 | `lib/security.ts` (input + rate limit) | 7 casos com time mock | Sanitize/strength/email/rate | `npm run test:security` |
 | `store/useToastStore.ts` | 5 casos | showToast/dismiss/duration | `npm run test:toast` |
 | `store/usePetStore.ts` | 15 casos | CRUD + streak + dismiss/snooze/toggle | `npm run test:pet` |
-| **Total Wave 1+2+3** | **105 casos** | **<60ms full run** | `npm run test:all` |
+| `hooks/usePremium.ts` (`computePremiumStatus`) | 9 casos | Trial + paid + expiração + sobreposição | `npm run test:premium` |
+| `hooks/usePremiumTriggers.ts` (`pickPremiumTrigger`) | 10 casos | 5 triggers + prioridade + shownPrompts | `npm run test:triggers` |
+| `hooks/useThemeColors.ts` (`pickIsDark`) | 3 casos | dark/light/system override | `npm run test:theme` |
+| **Total Wave 1+2+3+4** | **127 casos** | **<80ms full run** | `npm run test:all` |
 | E2E iOS | Maestro flows | Onboarding (1 flow) | `npm run test:e2e` |
 | Type safety | `tsc --noEmit` | 100% (incl. tsconfig.test.json) | `npm run typecheck` |
 | Dead code | `knip` | 100% clean | `npx knip` |
@@ -74,6 +77,26 @@ Todo o resto (UI, animações, motion) é validado manualmente via
       `tsconfig.test.json` paths
 - [x] Runner híbrido sync/async em `assert.ts` (IIFE interno awaita cada
       caso sequencialmente; suite files chamam `runSuite(...)` sem await)
+
+### Wave 4 — Hooks ✅
+- [x] `usePremium.ts`: extraído `computePremiumStatus(input)` pura,
+      testada com 9 casos (free, pago ativo/expirado, trial dia 3/8,
+      sobreposição pago+trial, daysSinceFirstOpen floor, trialDaysLeft ceil)
+- [x] `usePremiumTriggers.ts`: extraído `pickPremiumTrigger(input)` pura,
+      testada com 10 casos (premium não vê, threshold de cada um dos 5
+      triggers, prioridade, shownPrompts respeitado, esgotamento da fila)
+- [x] `useThemeColors.ts`: extraído `pickIsDark(themeMode, scheme)` pura,
+      testada com 3 casos (override dark/light vs system)
+- [x] Stub `react-native.ts` adicionado pra suportar `useColorScheme`
+      import top-level (hook real ainda precisa de renderHook pra ser
+      testado end-to-end — fora do escopo desta wave)
+
+### Wave 4 fora do escopo (futuro)
+- [ ] `useMotion.ts`: requer stub completo de `react-native-reanimated`
+      ou refactor pra retornar shape em vez de Reanimated objects
+- [ ] `useSmartHealthNotifications.ts` + `useWeather.ts`: side-effecting
+      hooks (notif scheduling, fetch) — testes seriam de integração via
+      Maestro ou exigem stubs muito grandes
 
 ### Wave 2 (especificação original — referência)
 
@@ -260,9 +283,9 @@ unitários forem montados.
 1. ✅ Gold dataset HealthInsights (51 casos)
 2. ✅ Wave 2 completa: calories + breeds + fuzzy + security (34 casos)
 3. ✅ Wave 3 completa: toast + pet store (20 casos, 7 stubs nativos)
-4. ✅ `npm run test:all` rodando full Wave 1+2+3 em <60ms
-5. ⏭️  GitHub Action minimal (typecheck + knip + test:all em PR)
-6. ⏭️  Wave 2b: `__tests__/email-typo-suggest/` no projeto web
-7. ⏭️  Wave 4: hooks (`useMotion`, `usePremium`, `usePremiumTriggers`,
-       `useThemeColors`) — requer `react-test-renderer` ou helper de
-       `renderHook` sem React Testing Library
+4. ✅ Wave 4 completa: hooks puros extraídos (22 casos)
+5. ✅ `npm run test:all` rodando full Wave 1+2+3+4 em <80ms
+6. ✅ GitHub Action ativo: typecheck + knip + test:all em todo PR/push
+7. ✅ Wave 2b feita (no projeto web — 9 casos)
+8. ⏭️  Wave 5 (futuro): SyncService com mock Supabase, PdfReportService
+9. ⏭️  Wave 4b (futuro): useMotion via stub Reanimated

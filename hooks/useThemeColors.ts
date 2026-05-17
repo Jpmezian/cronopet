@@ -94,14 +94,27 @@ const brandTokens = {
 // componente precisar tipar props que recebem o retorno do hook, use
 // `ReturnType<typeof useThemeColors>`.
 
+/**
+ * Decisão pura: dado o modo escolhido pelo usuário + scheme do sistema,
+ * retorna se a UI deve renderizar em dark mode. Extraído pra testabilidade.
+ *
+ *   themeMode='dark'   → sempre dark (override do user)
+ *   themeMode='light'  → sempre light (override do user)
+ *   themeMode='system' → segue o sistema (null/undefined cai em light)
+ */
+export function pickIsDark(
+  themeMode: 'system' | 'light' | 'dark',
+  systemScheme: 'light' | 'dark' | null | undefined,
+): boolean {
+  if (themeMode === 'dark')  return true;
+  if (themeMode === 'light') return false;
+  return systemScheme === 'dark';
+}
+
 export function useThemeColors() {
   const scheme    = useColorScheme();
   const themeMode = usePetStore((s) => s.themeMode);
-
-  const isDark =
-    themeMode === 'dark'  ? true
-    : themeMode === 'light' ? false
-    : scheme === 'dark';
+  const isDark    = pickIsDark(themeMode, scheme);
 
   return {
     colors:      isDark ? dark : light,

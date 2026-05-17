@@ -33,6 +33,51 @@ export interface PremiumStatus {
 const TRIAL_DAYS = 7;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+/**
+ * Decisão pura: dado o estado de premium + trial + first open, retorna
+ * o `PremiumStatus` agregado. Extraído do hook pra ficar testável em
+ * Node puro sem render context.
+ *
+ * `now` é injetável (default Date.now()) pra testes determinísticos.
+ */
+export function computePremiumStatus(input: {
+  isPremium:        boolean;
+  premiumPlan:      'monthly' | 'annual' | null;
+  premiumExpiresAt: number | null;
+  trialStartedAt:   number | null;
+  firstAppOpenAt:   number | null;
+  now?:             number;
+}): PremiumStatus {
+  const now = input.now ?? Date.now();
+
+  const trialEndsAt = input.trialStartedAt
+    ? input.trialStartedAt + TRIAL_DAYS * MS_PER_DAY
+    : null;
+  const isTrialActive = trialEndsAt !== null && now < trialEndsAt;
+  const trialDaysLeft = isTrialActive
+    ? Math.ceil(((trialEndsAt ?? 0) - now) / MS_PER_DAY)
+    : 0;
+
+  const isPaidActive = input.isPremium && (
+    input.premiumExpiresAt === null || now < input.premiumExpiresAt
+  );
+
+  const daysSinceFirstOpen = input.firstAppOpenAt
+    ? Math.floor((now - input.firstAppOpenAt) / MS_PER_DAY)
+    : 0;
+
+  return {
+    isPremium:      isPaidActive || isTrialActive,
+    isTrialActive,
+    trialDaysLeft,
+    trialEndsAt,
+    plan:           isPaidActive ? input.premiumPlan : null,
+    canStartTrial:  input.trialStartedAt === null,
+    firstAppOpenAt: input.firstAppOpenAt,
+    daysSinceFirstOpen,
+  };
+}
+
 export function usePremium(): PremiumStatus {
   const isPremium        = usePetStore((s) => s.isPremium);
   const premiumPlan      = usePetStore((s) => s.premiumPlan);
@@ -40,36 +85,12 @@ export function usePremium(): PremiumStatus {
   const trialStartedAt   = usePetStore((s) => s.trialStartedAt);
   const firstAppOpenAt   = usePetStore((s) => s.firstAppOpenAt);
 
-  return useMemo(() => {
-    const now = Date.now();
-
-    // Trial ativo?
-    const trialEndsAt = trialStartedAt ? trialStartedAt + TRIAL_DAYS * MS_PER_DAY : null;
-    const isTrialActive = trialEndsAt !== null && now < trialEndsAt;
-    const trialDaysLeft = isTrialActive
-      ? Math.ceil(((trialEndsAt ?? 0) - now) / MS_PER_DAY)
-      : 0;
-
-    // Pago e não expirou?
-    const isPaidActive = isPremium && (
-      premiumExpiresAt === null || now < premiumExpiresAt
-    );
-
-    const daysSinceFirstOpen = firstAppOpenAt
-      ? Math.floor((now - firstAppOpenAt) / MS_PER_DAY)
-      : 0;
-
-    return {
-      isPremium:      isPaidActive || isTrialActive,
-      isTrialActive,
-      trialDaysLeft,
-      trialEndsAt,
-      plan:           isPaidActive ? premiumPlan : null,
-      canStartTrial:  trialStartedAt === null,
-      firstAppOpenAt,
-      daysSinceFirstOpen,
-    };
-  }, [isPremium, premiumPlan, premiumExpiresAt, trialStartedAt, firstAppOpenAt]);
+  return useMemo(
+    () => computePremiumStatus({
+      isPremium, premiumPlan, premiumExpiresAt, trialStartedAt, firstAppOpenAt,
+    }),
+    [isPremium, premiumPlan, premiumExpiresAt, trialStartedAt, firstAppOpenAt],
+  );
 }
 
 // PREMIUM_FEATURES / PREMIUM_FEATURE_COPY removidos em 2026-05-17 —
