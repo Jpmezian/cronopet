@@ -20,7 +20,8 @@
 | `hooks/usePremium.ts` (`computePremiumStatus`) | 9 casos | Trial + paid + expiração + sobreposição | `npm run test:premium` |
 | `hooks/usePremiumTriggers.ts` (`pickPremiumTrigger`) | 10 casos | 5 triggers + prioridade + shownPrompts | `npm run test:triggers` |
 | `hooks/useThemeColors.ts` (`pickIsDark`) | 3 casos | dark/light/system override | `npm run test:theme` |
-| **Total Wave 1+2+3+4** | **127 casos** | **<80ms full run** | `npm run test:all` |
+| `services/syncMappers.ts` | 16 casos | Domain↔Row + family + realtime | `npm run test:sync` |
+| **Total Wave 1+2+3+4+5** | **143 casos** | **<100ms full run** | `npm run test:all` |
 | E2E iOS | Maestro flows | Onboarding (1 flow) | `npm run test:e2e` |
 | Type safety | `tsc --noEmit` | 100% (incl. tsconfig.test.json) | `npm run typecheck` |
 | Dead code | `knip` | 100% clean | `npx knip` |
@@ -77,6 +78,16 @@ Todo o resto (UI, animações, motion) é validado manualmente via
       `tsconfig.test.json` paths
 - [x] Runner híbrido sync/async em `assert.ts` (IIFE interno awaita cada
       caso sequencialmente; suite files chamam `runSuite(...)` sem await)
+
+### Wave 5 — Services ✅ (parcial — SyncService done)
+- [x] `services/syncMappers.ts` extraído de SyncService.ts (10 fns puras
+      cobrindo Domain↔Row, family group/member, realtime payload). Refactor
+      reduziu SyncService de 323 → 241 linhas e eliminou todos os 5
+      `: any` smells documentados no audit.
+- [x] 16 casos cobrindo todos os mappers + edge cases (foto local NUNCA
+      sobe, role inválido vira "member" default seguro, peso string→number
+      coerce pro Postgres numeric, profile faltante = fallback gracioso)
+- [ ] `services/PdfReportService.ts` (futuro) — gerar PDF via stub fs
 
 ### Wave 4 — Hooks ✅
 - [x] `usePremium.ts`: extraído `computePremiumStatus(input)` pura,

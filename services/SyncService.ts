@@ -3,9 +3,16 @@ import { supabase } from './supabase';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { FamilyGroup, FamilyMember } from '@/types/auth';
 import type {
-  ActionKey, ActionLog, PetProfile, MedicalEvent,
+  ActionLog, PetProfile,
   Vaccine, Appointment, WeightEntry,
 } from '@/types/pet';
+import {
+  actionLogToRow, vaccineToRow, appointmentToRow, weightEntryToRow,
+  petProfileToRow,
+  rowToActionLog, rowToVaccine, rowToAppointment, rowToWeightEntry,
+  dbGroupToFamilyGroup, dbMemberToFamilyMember,
+  realtimePayloadToActionLog,
+} from './syncMappers';
 
 // ─── Canal ativo (singleton) ──────────────────────────────────
 
@@ -43,22 +50,9 @@ export async function createFamilyGroup(
     .insert({ group_id: group.id, user_id: uid, role: 'owner' })
     .throwOnError();
 
-  // Sobe perfil do pet (foto_url somente se for URL remota)
-  await supabase.from('pets').insert({
-    group_id:   group.id,
-    nome:       pet.nome,
-    tipo:       pet.tipo,
-    raca:       pet.raca || null,
-    foto_url:   pet.foto?.startsWith('http') ? pet.foto : null,
-    nascimento: pet.nascimento ?? null,
-  }).throwOnError();
+  await supabase.from('pets').insert(petProfileToRow(pet, group.id)).throwOnError();
 
-  return {
-    id:         group.id,
-    nome:       group.nome,
-    inviteCode: group.invite_code,
-    ownerId:    group.owner_id,
-  };
+  return dbGroupToFamilyGroup(group);
 }
 
 /**
@@ -78,12 +72,7 @@ export async function joinFamilyGroup(code: string): Promise<FamilyGroup> {
     .upsert({ group_id: group.id, user_id: uid, role: 'member' })
     .throwOnError();
 
-  return {
-    id:         group.id,
-    nome:       group.nome,
-    inviteCode: group.invite_code,
-    ownerId:    group.owner_id,
-  };
+  return dbGroupToFamilyGroup(group);
 }
 
 /**
@@ -100,10 +89,8 @@ export async function getMyFamilyGroup(): Promise<FamilyGroup | null> {
     .limit(1)
     .single();
 
-  if (!data) return null;
-  const g = data.family_groups as any;
-  if (!g) return null;
-  return { id: g.id, nome: g.nome, inviteCode: g.invite_code, ownerId: g.owner_id };
+  if (!data || !data.family_groups) return null;
+  return dbGroupToFamilyGroup(data.family_groups);
 }
 
 /**
@@ -116,13 +103,7 @@ export async function getFamilyMembers(groupId: string): Promise<FamilyMember[]>
     .eq('group_id', groupId);
   if (error || !data) return [];
 
-  return data.map((m: any) => ({
-    userId:   m.profiles.id,
-    nome:     m.profiles.nome ?? m.profiles.email.split('@')[0],
-    email:    m.profiles.email,
-    role:     m.role as 'owner' | 'member',
-    joinedAt: m.joined_at,
-  }));
+  return data.map(dbMemberToFamilyMember);
 }
 
 // ─── Sync — push data ─────────────────────────────────────────
@@ -130,15 +111,8 @@ export async function getFamilyMembers(groupId: string): Promise<FamilyMember[]>
 /** Sincroniza um registro de ação para a nuvem (fire-and-forget). */
 export function pushActionLog(groupId: string, userId: string, log: ActionLog): void {
   // SECURITY: timeout de 10s — não deixar sync hangar indefinidamente.
-  const op = supabase.from('action_logs').upsert({
-    id:        log.id,
-    group_id:  groupId,
-    user_id:   userId,
-    key:       log.key,
-    timestamp: log.timestamp,
-    note:      log.note ?? null,
-    // foto não sincronizada nesta versão — requer Supabase Storage
-  });
+  // foto não sincronizada nesta versão — requer Supabase Storage.
+  const op = supabase.from('action_logs').upsert(actionLogToRow(log, groupId, userId));
   const timer = setTimeout(() => {
     Sentry.captureMessage('[Sync] pushActionLog timeout (10s)', 'warning');
   }, 10_000);
@@ -157,10 +131,7 @@ export async function pushAllActionLogs(
   logs:    ActionLog[],
 ): Promise<void> {
   if (!logs.length) return;
-  const rows = logs.map((l) => ({
-    id: l.id, group_id: groupId, user_id: userId,
-    key: l.key, timestamp: l.timestamp, note: l.note ?? null,
-  }));
+  const rows = logs.map((l) => actionLogToRow(l, groupId, userId));
   const { error } = await supabase.from('action_logs').upsert(rows);
   if (error) {
     Sentry.captureException(new Error(error.message), { tags: { op: 'pushAllActionLogs' } });
@@ -170,37 +141,19 @@ export async function pushAllActionLogs(
 /** Sincroniza vacinas. */
 export async function pushVaccines(groupId: string, vaccines: Vaccine[]): Promise<void> {
   if (!vaccines.length) return;
-  await supabase.from('vaccines').upsert(
-    vaccines.map((v) => ({
-      id: v.id, group_id: groupId,
-      nome: v.nome, data: v.data,
-      proxima: v.proxima ?? null, veterinario: v.veterinario ?? null,
-      lote: v.lote ?? null, nota: v.nota ?? null,
-    }))
-  );
+  await supabase.from('vaccines').upsert(vaccines.map((v) => vaccineToRow(v, groupId)));
 }
 
 /** Sincroniza consultas. */
 export async function pushAppointments(groupId: string, appts: Appointment[]): Promise<void> {
   if (!appts.length) return;
-  await supabase.from('appointments').upsert(
-    appts.map((a) => ({
-      id: a.id, group_id: groupId,
-      titulo: a.titulo, data: a.data,
-      hora: a.hora ?? null, veterinario: a.veterinario ?? null, nota: a.nota ?? null,
-    }))
-  );
+  await supabase.from('appointments').upsert(appts.map((a) => appointmentToRow(a, groupId)));
 }
 
 /** Sincroniza histórico de peso. */
 export async function pushWeightHistory(groupId: string, entries: WeightEntry[]): Promise<void> {
   if (!entries.length) return;
-  await supabase.from('weight_entries').upsert(
-    entries.map((w) => ({
-      id: w.id, group_id: groupId,
-      peso: w.peso, data: w.data, nota: w.nota ?? null,
-    }))
-  );
+  await supabase.from('weight_entries').upsert(entries.map((w) => weightEntryToRow(w, groupId)));
 }
 
 /**
@@ -243,15 +196,8 @@ export async function subscribeToFamilyLogs(
       'postgres_changes',
       { event: 'INSERT', schema: 'public', table: 'action_logs', filter: `group_id=eq.${groupId}` },
       (payload) => {
-        const r = payload.new as any;
-        // Ignora logs do próprio usuário (já inseridos localmente)
-        if (r.user_id === myUserId) return;
-        onInsert({
-          id:        r.id,
-          key:       r.key,
-          timestamp: r.timestamp,
-          ...(r.note ? { note: r.note } : {}),
-        });
+        const log = realtimePayloadToActionLog(payload.new, myUserId);
+        if (log) onInsert(log);
       },
     )
     .subscribe();
@@ -286,38 +232,10 @@ export async function pullGroupData(groupId: string): Promise<{
       .select('*').eq('group_id', groupId).order('data', { ascending: false }),
   ]);
 
-  const actionLogs: ActionLog[] = (logsRes.data ?? []).map((r: any) => ({
-    id:        r.id,
-    key:       r.key as ActionKey,
-    timestamp: r.timestamp,
-    ...(r.note ? { note: r.note } : {}),
-  }));
-
-  const vaccines: Vaccine[] = (vaccinesRes.data ?? []).map((r: any) => ({
-    id:   r.id,
-    nome: r.nome,
-    data: r.data,
-    ...(r.proxima     ? { proxima:     r.proxima }     : {}),
-    ...(r.veterinario ? { veterinario: r.veterinario } : {}),
-    ...(r.lote        ? { lote:        r.lote }        : {}),
-    ...(r.nota        ? { nota:        r.nota }        : {}),
-  }));
-
-  const appointments: Appointment[] = (apptsRes.data ?? []).map((r: any) => ({
-    id:     r.id,
-    titulo: r.titulo,
-    data:   r.data,
-    ...(r.hora        ? { hora:        r.hora }        : {}),
-    ...(r.veterinario ? { veterinario: r.veterinario } : {}),
-    ...(r.nota        ? { nota:        r.nota }        : {}),
-  }));
-
-  const weightHistory: WeightEntry[] = (weightRes.data ?? []).map((r: any) => ({
-    id:   r.id,
-    peso: Number(r.peso),
-    data: r.data,
-    ...(r.nota ? { nota: r.nota } : {}),
-  }));
-
-  return { actionLogs, vaccines, appointments, weightHistory };
+  return {
+    actionLogs:    (logsRes.data     ?? []).map(rowToActionLog),
+    vaccines:      (vaccinesRes.data ?? []).map(rowToVaccine),
+    appointments:  (apptsRes.data    ?? []).map(rowToAppointment),
+    weightHistory: (weightRes.data   ?? []).map(rowToWeightEntry),
+  };
 }
