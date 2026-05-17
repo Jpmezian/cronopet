@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import {
   View, Text, SafeAreaView, ScrollView,
   TextInput, Platform, Image, Modal, KeyboardAvoidingView,
-  TouchableOpacity,
+  Pressable,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
@@ -614,10 +614,10 @@ export default function NutritionScreen() {
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <TouchableOpacity
-            activeOpacity={1}
+          <Pressable
             onPress={() => setWeightModalVisible(false)}
             style={{ flex: 1, backgroundColor: modalOverlay }}
+            accessibilityLabel="Fechar modal de peso"
           />
           <View style={{
             backgroundColor: colors.bgCard,

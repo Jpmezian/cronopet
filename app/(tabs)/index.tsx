@@ -1,6 +1,6 @@
 import React, { useEffect, useCallback, useState, useMemo, useRef } from 'react';
 import {
-  View, Text, Image, TouchableOpacity, SafeAreaView,
+  View, Text, Image, Pressable, SafeAreaView,
   Platform, Modal, TextInput, ScrollView, ActivityIndicator,
   KeyboardAvoidingView,
 } from 'react-native';
@@ -969,10 +969,10 @@ export default function PetDashboard() {
         onRequestClose={() => setModalAction(null)}
       >
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <TouchableOpacity
+          <Pressable
             style={{ flex: 1, backgroundColor: modalOverlay }}
-            activeOpacity={1}
             onPress={() => setModalAction(null)}
+            accessibilityLabel="Fechar modal"
           />
           <View style={{
             backgroundColor: colors.bgCard,
@@ -1280,10 +1280,10 @@ export default function PetDashboard() {
         animationType="slide"
         onRequestClose={() => setShowPetSwitcher(false)}
       >
-        <TouchableOpacity
+        <Pressable
           style={{ flex: 1, backgroundColor: modalOverlay }}
-          activeOpacity={1}
           onPress={() => setShowPetSwitcher(false)}
+          accessibilityLabel="Fechar seletor de pet"
         />
         <View style={{
           backgroundColor: colors.bgCard,

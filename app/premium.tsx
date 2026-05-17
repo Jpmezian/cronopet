@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
-  View, Text, SafeAreaView, ScrollView, TouchableOpacity,
+  View, Text, SafeAreaView, ScrollView,
   TextInput, Platform, ActivityIndicator, Alert, KeyboardAvoidingView,
   Clipboard,
 } from 'react-native';

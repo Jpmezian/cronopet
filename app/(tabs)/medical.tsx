@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import {
-  View, Text, SafeAreaView, ScrollView, Platform, TouchableOpacity,
+  View, Text, SafeAreaView, ScrollView, Platform, Pressable,
   Modal, TextInput, ActivityIndicator, Alert, Image, KeyboardAvoidingView,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -622,7 +622,7 @@ export default function MedicalScreen() {
       {/* ── Modal: Registrar Ocorrência ─────────────── */}
       <Modal visible={symptomModal} transparent animationType="slide" onRequestClose={() => setSymptomModal(false)}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <TouchableOpacity style={{ flex: 1, backgroundColor: modalOverlay }} activeOpacity={1} onPress={() => setSymptomModal(false)} />
+          <Pressable style={{ flex: 1, backgroundColor: modalOverlay }} onPress={() => setSymptomModal(false)} accessibilityLabel="Fechar modal de sintoma" />
           <View style={{
             backgroundColor: colors.bgCard, borderTopLeftRadius: 28, borderTopRightRadius: 28,
             paddingHorizontal: 24, paddingTop: 8, paddingBottom: 40,
@@ -707,7 +707,7 @@ export default function MedicalScreen() {
       {/* ── Modal: Adicionar Vacina ──────────────────── */}
       <Modal visible={vaccineModal} transparent animationType="slide" onRequestClose={() => setVaccineModal(false)}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <TouchableOpacity style={{ flex: 1, backgroundColor: modalOverlay }} activeOpacity={1} onPress={() => setVaccineModal(false)} />
+          <Pressable style={{ flex: 1, backgroundColor: modalOverlay }} onPress={() => setVaccineModal(false)} accessibilityLabel="Fechar modal de vacina" />
           <View style={{
             backgroundColor: colors.bgCard, borderTopLeftRadius: 28, borderTopRightRadius: 28,
             paddingHorizontal: 24, paddingTop: 8, paddingBottom: 40,
@@ -767,7 +767,7 @@ export default function MedicalScreen() {
       {/* ── Modal: Agendar Consulta ──────────────────── */}
       <Modal visible={apptModal} transparent animationType="slide" onRequestClose={() => setApptModal(false)}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <TouchableOpacity style={{ flex: 1, backgroundColor: modalOverlay }} activeOpacity={1} onPress={() => setApptModal(false)} />
+          <Pressable style={{ flex: 1, backgroundColor: modalOverlay }} onPress={() => setApptModal(false)} accessibilityLabel="Fechar modal de consulta" />
           <View style={{
             backgroundColor: colors.bgCard, borderTopLeftRadius: 28, borderTopRightRadius: 28,
             paddingHorizontal: 24, paddingTop: 8, paddingBottom: 40,
@@ -829,7 +829,7 @@ export default function MedicalScreen() {
       {/* ── Modal: Registrar Peso ────────────────────── */}
       <Modal visible={weightModal} transparent animationType="slide" onRequestClose={() => setWeightModal(false)}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <TouchableOpacity style={{ flex: 1, backgroundColor: modalOverlay }} activeOpacity={1} onPress={() => setWeightModal(false)} />
+          <Pressable style={{ flex: 1, backgroundColor: modalOverlay }} onPress={() => setWeightModal(false)} accessibilityLabel="Fechar modal de peso" />
           <View style={{
             backgroundColor: colors.bgCard, borderTopLeftRadius: 28, borderTopRightRadius: 28,
             paddingHorizontal: 24, paddingTop: 8, paddingBottom: 40,
