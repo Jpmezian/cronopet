@@ -130,9 +130,6 @@ export async function analyzeWithAI(req: AnalyzeRequest): Promise<AIAnalyzeResul
   }
 }
 
-/** Limpa cache (chamar no logout / account deletion) */
-export function clearAICache() { cache = null; }
-
 // ─── Internals ─────────────────────────────────────────────────────────
 
 /**

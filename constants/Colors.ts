@@ -155,4 +155,5 @@ export const semantic = {
   },
 } as const;
 
-export type ActionKey = keyof typeof actions;
+// ActionKey type-only export removido (não usado): a fonte de verdade
+// canônica é `ActionKey` em types/pet.ts. Aqui ficaria duplicado.

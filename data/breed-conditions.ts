@@ -16,9 +16,6 @@
 //   • Cobertura: 40 raças mais comuns no Brasil + 8 gatos populares
 //   • Vira-lata / SRD: perfil neutro com apenas alertas comportamentais gerais
 //
-// ATUALIZADO EM:
-export const BREED_CONDITIONS_UPDATED_AT = '2026-05';
-
 import type { MedicalEventType } from '@/types/pet';
 import { bestMatch } from '@/lib/fuzzy';
 

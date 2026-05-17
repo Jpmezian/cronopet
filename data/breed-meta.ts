@@ -9,7 +9,7 @@
 import type { PetType, PetSize } from '@/types/pet';
 
 // Raças canônicas → porte oficial
-export const DOG_BREED_SIZES: Record<string, PetSize> = {
+const DOG_BREED_SIZES: Record<string, PetSize> = {
   // ── Pequeno (< 10 kg) ────────────────────
   'Affenpinscher':                  'small',
   'Bichon Frisé':                   'small',

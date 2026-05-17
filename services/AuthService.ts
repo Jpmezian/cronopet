@@ -70,14 +70,3 @@ export async function getSession(): Promise<CronoPetUser | null> {
   return { id: u.id, email: u.email!, nome: u.user_metadata?.nome };
 }
 
-// ─── Auth state listener ──────────────────────────────────────
-
-export function onAuthStateChange(
-  callback: (user: CronoPetUser | null) => void,
-) {
-  return supabase.auth.onAuthStateChange((_event, session) => {
-    if (!session?.user) { callback(null); return; }
-    const u = session.user;
-    callback({ id: u.id, email: u.email!, nome: u.user_metadata?.nome });
-  });
-}

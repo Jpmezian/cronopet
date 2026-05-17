@@ -15,11 +15,11 @@
 
 import type { LifeStage, NutritionGoal, PetSize } from '@/types/pet';
 
-export const FOODS_DB_UPDATED_AT = '2026-04';
+const FOODS_DB_UPDATED_AT = '2026-04';
 
 export type FoodTier = 'economic' | 'standard' | 'premium' | 'superpremium';
 
-export type FoodPurpose =
+type FoodPurpose =
   | 'maintenance'
   | 'weight_loss'
   | 'weight_gain'
@@ -45,7 +45,7 @@ export interface FoodProduct {
 
 // ─── Catálogo ──────────────────────────────────────────────
 
-export const FOODS_DB: FoodProduct[] = [
+const FOODS_DB: FoodProduct[] = [
   // ══════════ CÃES ADULTOS — PREMIUM ══════════
 
   {

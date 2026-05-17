@@ -72,50 +72,7 @@ export function usePremium(): PremiumStatus {
   }, [isPremium, premiumPlan, premiumExpiresAt, trialStartedAt, firstAppOpenAt]);
 }
 
-// ─── Features gated ──────────────────────────────────────────
-// Lista centralizada de features Premium. Usado pra gates na UI.
-
-export const PREMIUM_FEATURES = {
-  MULTI_PET:         'multi-pet',         // Cadastrar mais de um pet
-  CLOUD_SYNC:        'cloud-sync',        // Backup em nuvem
-  FAMILY_SHARING:    'family-sharing',    // Compartilhar com família
-  UNLIMITED_HISTORY: 'unlimited-history', // Histórico ilimitado (free = 30 dias)
-  JSON_EXPORT:       'json-export',       // Exportar para sistemas vet
-  MULTIPLE_PLANS:    'multiple-plans',    // Vários planos nutricionais salvos
-} as const;
-
-export type PremiumFeature = typeof PREMIUM_FEATURES[keyof typeof PREMIUM_FEATURES];
-
-// Copy pra cada feature (usado nos prompts)
-export const PREMIUM_FEATURE_COPY: Record<PremiumFeature, { title: string; desc: string; emoji: string }> = {
-  'multi-pet': {
-    emoji: '🐾',
-    title: 'Cadastre mais pets',
-    desc:  'Dashboards separados, histórico individual, planos nutricionais próprios.',
-  },
-  'cloud-sync': {
-    emoji: '☁️',
-    title: 'Backup em nuvem',
-    desc:  'Seus dados salvos automaticamente. Trocou de celular? Tá tudo lá.',
-  },
-  'family-sharing': {
-    emoji: '👨‍👩‍👦',
-    title: 'Compartilhe com a família',
-    desc:  'Toda a família acompanha a rotina em tempo real.',
-  },
-  'unlimited-history': {
-    emoji: '📊',
-    title: 'Histórico ilimitado',
-    desc:  'Guarda registros desde o primeiro dia. Perfeito pro check-up anual.',
-  },
-  'json-export': {
-    emoji: '💾',
-    title: 'Exportação avançada',
-    desc:  'PDF + JSON para sistemas veterinários profissionais.',
-  },
-  'multiple-plans': {
-    emoji: '🥗',
-    title: 'Vários planos nutricionais',
-    desc:  'Salve múltiplos planos (manutenção, emagrecimento) e alterne conforme necessário.',
-  },
-};
+// PREMIUM_FEATURES / PREMIUM_FEATURE_COPY removidos em 2026-05-17 —
+// não havia nenhum gate de UI consumindo eles. Quando voltarmos a
+// implementar prompts de paywall por feature, recriamos baseados na
+// lista oficial em vez de manter código morto.

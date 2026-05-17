@@ -4,7 +4,7 @@
 // como digitado para exibição, mas categorizado como "Outro"
 // nos dados analíticos futuros.
 
-export const DOG_BREEDS: string[] = [
+const DOG_BREEDS: string[] = [
   'Affenpinscher',
   'Akita',
   'American Bully',
@@ -70,7 +70,7 @@ export const DOG_BREEDS: string[] = [
   'Yorkshire Terrier',
 ];
 
-export const CAT_BREEDS: string[] = [
+const CAT_BREEDS: string[] = [
   'Abissínio',
   'American Shorthair',
   'Angora Turco',
@@ -101,12 +101,6 @@ export function breedsForType(tipo: 'cachorro' | 'gato' | 'outro'): string[] {
   if (tipo === 'cachorro') return DOG_BREEDS;
   if (tipo === 'gato') return CAT_BREEDS;
   return [];
-}
-
-/** Verifica se uma raça digitada pertence à lista conhecida */
-export function isKnownBreed(raca: string, tipo: 'cachorro' | 'gato' | 'outro'): boolean {
-  const list = breedsForType(tipo);
-  return list.some((b) => b.toLowerCase() === raca.trim().toLowerCase());
 }
 
 import { fuzzyMatch, bestMatch as fuzzyBest, type FuzzyMatch } from '@/lib/fuzzy';

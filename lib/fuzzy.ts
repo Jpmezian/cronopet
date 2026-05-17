@@ -19,7 +19,7 @@
  */
 
 /** Normaliza string: lowercase, sem acento, sem espaço duplicado */
-export function normalize(s: string): string {
+function normalize(s: string): string {
   return s
     .toLowerCase()
     .normalize('NFD')
@@ -36,7 +36,7 @@ export function normalize(s: string): string {
  * Implementação iterativa O(n*m). Pra strings curtas como nome de raça
  * (max ~30 chars), é instantâneo.
  */
-export function levenshtein(a: string, b: string): number {
+function levenshtein(a: string, b: string): number {
   if (a === b) return 0;
   if (a.length === 0) return b.length;
   if (b.length === 0) return a.length;
@@ -65,7 +65,7 @@ export function levenshtein(a: string, b: string): number {
  *
  * Retorna 0..1 (1 = idêntico).
  */
-export function bigramSimilarity(a: string, b: string): number {
+function bigramSimilarity(a: string, b: string): number {
   if (a === b) return 1;
   if (a.length < 2 || b.length < 2) return 0;
 

@@ -13,7 +13,7 @@
 import { useColorScheme } from 'react-native';
 import { usePetStore } from '@/store/usePetStore';
 import {
-  brand, neutral, neutralDark, card, cardDark, verdigrisDeep,
+  brand, neutral, neutralDark, card, cardDark, verdigrisDeep, actions,
 } from '@/constants/colors';
 
 // ─── Tokens neutros (light) ────────────────────────────────────
@@ -69,14 +69,10 @@ const actionsDark = {
   banho:   { primary: '#38BDF8', bg: 'rgba( 3, 105,161,  0.22)', border: 'rgba( 3, 105,161,  0.40)' },
 } as const;
 
-const actionsLight = {
-  comida:  { primary: '#B45309', bg: '#FFFBEB', border: '#FDE68A' },
-  agua:    { primary: '#0369A1', bg: '#F0F9FF', border: '#BAE6FD' },
-  passeio: { primary: '#047857', bg: '#F0FDF4', border: '#BBF7D0' },
-  xixi:    { primary: '#7C3AED', bg: '#FAF5FF', border: '#E9D5FF' },
-  coco:    { primary: '#92400E', bg: '#FEF3C7', border: '#FDE68A' },
-  banho:   { primary: '#0369A1', bg: '#F0F9FF', border: '#BAE6FD' },
-} as const;
+// Light = importado direto de constants/colors (single source of truth,
+// CLAUDE.md proíbe hardcode duplicado). Antes era duplicação literal de
+// 6 entradas — caí no erro de "deixei aqui pra ficar perto do dark".
+const actionsLight = actions;
 
 // ─── Brand tokens (independentes de tema) ──────────────────────
 // Para uso direto quando o componente expressa identidade da marca
@@ -93,9 +89,10 @@ const brandTokens = {
 
 // ─── Hook ──────────────────────────────────────────────────────
 
-export type ThemeColors = typeof light;
-export type ActionTheme = typeof actionsLight;
-export type BrandTokens = typeof brandTokens;
+// Os 3 tipos type-only (ThemeColors, ActionTheme, BrandTokens) foram
+// removidos em 2026-05-17 — não tinham consumidor externo. Se algum
+// componente precisar tipar props que recebem o retorno do hook, use
+// `ReturnType<typeof useThemeColors>`.
 
 export function useThemeColors() {
   const scheme    = useColorScheme();

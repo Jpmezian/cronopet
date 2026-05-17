@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignore": [
+    "babel.config.js",
+    "supabase/functions/**",
+    "services/purchases.ts",
+    "store/storage.ts"
+  ],
+  "ignoreBinaries": ["eas", "maestro"],
+  "ignoreDependencies": ["expo-updates", "expo-system-ui"]
+}

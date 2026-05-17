@@ -142,14 +142,6 @@ export function generateSecureInviteCode(length: number = INPUT_LIMITS.INVITE_CO
   return code;
 }
 
-/**
- * Gera token curto (para uso interno).
- */
-export function generateSecureToken(byteLength: number = 16): string {
-  const bytes = Crypto.getRandomBytes(byteLength);
-  return Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
-}
-
 // ───────────────────────────────────────────────────────────
 // 4. RATE LIMITING (client-side)
 // ───────────────────────────────────────────────────────────
@@ -218,22 +210,3 @@ export function clearRateLimit(key: string): void {
   rateLimits.delete(key);
 }
 
-// ───────────────────────────────────────────────────────────
-// 5. WITH TIMEOUT — para operações de rede
-// ───────────────────────────────────────────────────────────
-
-/**
- * Envolve uma Promise com um timeout. Se não resolver em `ms`, rejeita.
- * Usado em syncs para não travar UI indefinidamente.
- */
-export function withTimeout<T>(promise: Promise<T>, ms: number, tag = 'operation'): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      reject(new Error(`Timeout after ${ms}ms (${tag})`));
-    }, ms);
-    promise.then(
-      (v) => { clearTimeout(timer); resolve(v); },
-      (e) => { clearTimeout(timer); reject(e); },
-    );
-  });
-}

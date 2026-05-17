@@ -19,7 +19,7 @@ export function petTypeToSpecies(tipo: PetType): Species {
  * Resting Energy Requirement (RER) — kcal/dia
  * Fórmula NRC: 70 × (peso em kg) ^ 0.75
  */
-export function calculateRER(weightKg: number): number {
+function calculateRER(weightKg: number): number {
   if (weightKg <= 0) return 0;
   return 70 * Math.pow(weightKg, 0.75);
 }
@@ -28,7 +28,7 @@ export function calculateRER(weightKg: number): number {
  * Fator de atividade baseado em minutos de passeio no dia.
  * Sedentário (1.2) → Muito ativo (1.8)
  */
-export function getActivityFactor(totalWalkMinutes: number): number {
+function getActivityFactor(totalWalkMinutes: number): number {
   if (totalWalkMinutes <= 0) return 1.2;
   if (totalWalkMinutes <= 30) return 1.4;
   if (totalWalkMinutes <= 60) return 1.6;
@@ -39,7 +39,7 @@ export function getActivityFactor(totalWalkMinutes: number): number {
  * Daily Energy Requirement (DER) — kcal/dia
  * RER × fator de atividade
  */
-export function calculateDER(weightKg: number, totalWalkMinutes: number): number {
+function calculateDER(weightKg: number, totalWalkMinutes: number): number {
   return calculateRER(weightKg) * getActivityFactor(totalWalkMinutes);
 }
 
@@ -52,7 +52,7 @@ export const DEFAULT_FOOD_KCAL_PER_GRAM = 3.5;
 /**
  * Calorias ingeridas com base na quantidade de comida em gramas.
  */
-export function foodCalories(
+function foodCalories(
   totalGrams: number,
   kcalPerGram: number = DEFAULT_FOOD_KCAL_PER_GRAM,
 ): number {
@@ -63,7 +63,7 @@ export function foodCalories(
  * Calorias estimadas queimadas durante passeios.
  * ~0.067 kcal/min/kg é uma aproximação para caminhada canina.
  */
-export function walkCaloriesBurned(durationMinutes: number, weightKg: number): number {
+function walkCaloriesBurned(durationMinutes: number, weightKg: number): number {
   return durationMinutes * 0.067 * weightKg;
 }
 
@@ -170,7 +170,7 @@ interface MealFactorParams {
  * Diretrizes WSAVA/NRC. Adult/senior ajustam por castração e atividade.
  * Puppy é fixo (crescimento domina).
  */
-export function mealFactor(params: MealFactorParams): number {
+function mealFactor(params: MealFactorParams): number {
   const { species, lifeStage, neutered, activity } = params;
 
   if (species === 'dog') {
@@ -199,7 +199,7 @@ export function mealFactor(params: MealFactorParams): number {
  * Maintenance Energy Requirement — kcal/dia para MANTER o peso.
  * MER = RER(peso) × meal factor.
  */
-export function calculateMER(params: {
+function calculateMER(params: {
   weightKg:  number;
   species:   Species;
   lifeStage: LifeStage;
@@ -226,7 +226,7 @@ export function calculateMER(params: {
  * - Sobrepeso (BCS 6-7): −15% (precisa perder ~15%)
  * - Obeso (BCS 8-9):   −30% (perda significativa)
  */
-export function estimateIdealWeight(currentKg: number, condition: BodyCondition): number {
+function estimateIdealWeight(currentKg: number, condition: BodyCondition): number {
   switch (condition) {
     case 'thin':       return +(currentKg * 1.10).toFixed(1);
     case 'ideal':      return currentKg;

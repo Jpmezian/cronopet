@@ -49,8 +49,3 @@ export const ACTION_LABEL: Record<ActionKey, string> = {
   coco:    'Cocô',
   banho:   'Banho',
 };
-
-/** Helper: mapa completo `{ Icon, label }` por ActionKey. */
-export function actionMeta(key: ActionKey) {
-  return { Icon: ACTION_ICON[key], label: ACTION_LABEL[key] };
-}
