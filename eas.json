@@ -33,6 +33,12 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "contato@cronopet.com.br",
+        "ascAppId": "6770387252",
+        "appleTeamId": "7RSGWY462K"
+      }
+    }
   }
 }

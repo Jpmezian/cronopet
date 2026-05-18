@@ -76,6 +76,14 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "appVariant": "production",
+      "eas": {
+        "projectId": "35824170-9f64-4585-a363-db31ad968625"
+      },
+      "router": {}
+    },
+    "owner": "jpmezian"
   }
 }
