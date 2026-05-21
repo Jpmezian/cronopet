@@ -23,10 +23,57 @@ import '../global.css';
 // DSN lida do .env (EXPO_PUBLIC_SENTRY_DSN).
 // Em desenvolvimento (__DEV__ = true) o Sentry fica desativado para
 // não poluir o dashboard com crashes de dev/simulador.
+//
+// PII SCRUB (security audit 2026-05-21, M-4):
+//   - sendDefaultPii: false  → não anexa IP/email/cookies automaticamente
+//   - beforeSend: tira email do event.user e auth headers
+//   - beforeBreadcrumb: redige emails em mensagens de console capturadas
+//     (breadcrumbs fazem auto-capture de console.log, que pode vazar
+//      nome do pet, email, etc. — app é local-first com dados clínicos)
+//
+// Defesa em camadas pra LGPD: peso, nome do pet, foto NUNCA devem
+// trafegar pra Sentry. Mesmo que algum console.log esqueça de redigir
+// no código, o filtro abaixo segura.
+const EMAIL_RE = /[\w.+-]+@[\w-]+\.[\w.-]+/g;
+const TOKEN_RE = /\b(?:Bearer\s+|eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.)[A-Za-z0-9_.-]+/g;
+function scrubString(s: string): string {
+  return s.replace(EMAIL_RE, '[email]').replace(TOKEN_RE, '[token]');
+}
+
 Sentry.init({
   dsn: process.env.EXPO_PUBLIC_SENTRY_DSN ?? '',
   enabled: !__DEV__,
   tracesSampleRate: 0.2,
+  sendDefaultPii: false,
+  beforeSend(event) {
+    if (event.user) {
+      delete event.user.email;
+      delete event.user.ip_address;
+    }
+    if (event.request?.headers) {
+      delete event.request.headers.authorization;
+      delete event.request.headers.Authorization;
+      delete event.request.headers.cookie;
+      delete event.request.headers.Cookie;
+    }
+    return event;
+  },
+  beforeBreadcrumb(crumb) {
+    // console.log/warn/error breadcrumbs podem vazar PII — redige
+    // emails e tokens antes de mandar pra Sentry.
+    if (crumb.category === 'console' && typeof crumb.message === 'string') {
+      crumb.message = scrubString(crumb.message);
+    }
+    if (crumb.data && typeof crumb.data === 'object') {
+      for (const k of Object.keys(crumb.data)) {
+        const v = (crumb.data as Record<string, unknown>)[k];
+        if (typeof v === 'string') {
+          (crumb.data as Record<string, unknown>)[k] = scrubString(v);
+        }
+      }
+    }
+    return crumb;
+  },
 });
 
 export { ErrorBoundary } from 'expo-router';

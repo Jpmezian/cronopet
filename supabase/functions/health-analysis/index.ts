@@ -35,15 +35,36 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const ANTHROPIC_MODEL = Deno.env.get('ANTHROPIC_MODEL') ?? 'claude-haiku-4-5';
 const MAX_TOKENS = 1024;
 
-// CORS: ajuste o ALLOW_ORIGIN pra dominio do app em produção.
-// Pra testes locais com Expo Go, use '*'.
-const ALLOW_ORIGIN = Deno.env.get('ALLOW_ORIGIN') ?? '*';
+// CORS allowlist — security audit 2026-05-21 (H-3).
+// Antes: ALLOW_ORIGIN=* default. Risco: qualquer site no mundo podia
+// chamar a function do navegador (com JWT vazado / capturado / etc).
+// Agora: allowlist explícita do app (custom scheme) + web origin.
+// `ALLOW_ORIGIN` env var ainda dá override pra dev local — mas em PROD
+// configurar EXATAMENTE as origens válidas, nada de wildcard.
+const DEFAULT_ALLOWED_ORIGINS = [
+  'https://cronopet.com.br',
+  'cronopet://',       // iOS deep link
+  'cronopet-dev://',   // dev variant
+  'cronopet-stg://',   // staging variant
+];
+const ENV_OVERRIDE = Deno.env.get('ALLOW_ORIGIN');
+const ALLOWED_ORIGINS = ENV_OVERRIDE
+  ? ENV_OVERRIDE.split(',').map((o) => o.trim())
+  : DEFAULT_ALLOWED_ORIGINS;
 
-const cors = {
-  'Access-Control-Allow-Origin': ALLOW_ORIGIN,
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-};
+function corsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get('Origin') ?? '';
+  // Echo back só se for da allowlist. Caso contrário, devolve o primeiro
+  // permitido (browser bloqueia, mas mantém o response funcional pra
+  // clientes nativos que não respeitam CORS).
+  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowed,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Vary': 'Origin',  // CDN-correct: cache key inclui Origin
+  };
+}
 
 // ─── System prompt — define a "personalidade" e os limites do modelo ──
 
@@ -77,37 +98,39 @@ Lembre: você está olhando AGREGADOS de 30 dias, não detalhes clínicos. Seja 
 // ─── Handler ─────────────────────────────────────────────────────────
 
 serve(async (req) => {
+  const cors = corsHeaders(req);
+
   // Preflight CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: cors });
   }
 
   if (req.method !== 'POST') {
-    return json({ error: 'Method not allowed' }, 405);
+    return json({ error: 'Method not allowed' }, 405, cors);
   }
 
   if (!ANTHROPIC_API_KEY) {
     console.error('[health-analysis] ANTHROPIC_API_KEY missing in secrets');
-    return json({ error: 'Server not configured' }, 500);
+    return json({ error: 'Server not configured' }, 500, cors);
   }
 
   let payload: any;
   try {
     payload = await req.json();
   } catch {
-    return json({ error: 'Invalid JSON' }, 400);
+    return json({ error: 'Invalid JSON' }, 400, cors);
   }
 
   // Validação mínima — payload tem que ter pet + last30Days
   if (!payload?.pet || !payload?.last30Days) {
-    return json({ error: 'Invalid payload shape' }, 400);
+    return json({ error: 'Invalid payload shape' }, 400, cors);
   }
 
   // Sanitização defensiva: rejeita campos suspeitos de PII que o cliente
   // não deveria ter mandado (nome, foto, email, user_id, lat/long).
   if (containsLikelyPII(payload)) {
     console.warn('[health-analysis] Rejecting payload — likely PII detected');
-    return json({ error: 'Payload rejected by privacy check' }, 422);
+    return json({ error: 'Payload rejected by privacy check' }, 422, cors);
   }
 
   // Monta a mensagem do usuário pro Claude
@@ -137,7 +160,7 @@ Lembre-se: APENAS JSON na resposta, sem markdown, sem texto introdutório.`;
       const errText = await claudeRes.text();
       console.error('[health-analysis] Claude API error', claudeRes.status, errText);
       // Não vazamos detalhes do erro do provider pro cliente
-      return json({ error: 'Upstream provider error' }, 502);
+      return json({ error: 'Upstream provider error' }, 502, cors);
     }
 
     const claudeData = await claudeRes.json();
@@ -147,7 +170,7 @@ Lembre-se: APENAS JSON na resposta, sem markdown, sem texto introdutório.`;
     const jsonText = extractJson(text);
     if (!jsonText) {
       console.error('[health-analysis] No JSON in model output:', text.slice(0, 200));
-      return json({ error: 'Invalid response from AI' }, 502);
+      return json({ error: 'Invalid response from AI' }, 502, cors);
     }
 
     const analysis = JSON.parse(jsonText);
@@ -160,22 +183,22 @@ Lembre-se: APENAS JSON na resposta, sem markdown, sem texto introdutório.`;
       !['low', 'medium', 'high'].includes(analysis.overallSeverity)
     ) {
       console.error('[health-analysis] Bad shape from model', analysis);
-      return json({ error: 'Invalid shape from AI' }, 502);
+      return json({ error: 'Invalid shape from AI' }, 502, cors);
     }
 
     // Garante o campo `model` mesmo se o modelo esqueceu
     if (!analysis.model) analysis.model = ANTHROPIC_MODEL;
 
-    return json(analysis, 200);
+    return json(analysis, 200, cors);
   } catch (err) {
     console.error('[health-analysis] Unhandled error', err);
-    return json({ error: 'Internal error' }, 500);
+    return json({ error: 'Internal error' }, 500, cors);
   }
 });
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
-function json(body: unknown, status: number): Response {
+function json(body: unknown, status: number, cors: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...cors, 'content-type': 'application/json' },

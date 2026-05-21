@@ -1,0 +1,24 @@
+# ═══════════════════════════════════════════════════════════════
+# Supabase project config — CronoPet
+# ═══════════════════════════════════════════════════════════════
+#
+# Este arquivo configura comportamento por-projeto da CLI Supabase.
+# Aplicado em `supabase functions deploy ...`.
+#
+# Referência: https://supabase.com/docs/guides/local-development/cli/config
+
+project_id = "qhbsmvuwuiupdqdrrdov"
+
+# ─── Edge Functions ──────────────────────────────────────────
+#
+# verify_jwt = true (default na CLI moderna, mas explícito aqui):
+#   Cada chamada DEVE incluir Authorization: Bearer <user JWT>.
+#   Supabase verifica a assinatura ANTES de invocar o handler.
+#   Sem isso, qualquer um com a URL pode disparar requests pra
+#   Anthropic e cobrar a chave (security audit 2026-05-21, H-3).
+#
+# Se for criar uma função pública (webhook externo, ex), abre
+# explicitamente com verify_jwt = false NAQUELE bloco.
+
+[functions.health-analysis]
+verify_jwt = true

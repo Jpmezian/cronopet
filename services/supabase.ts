@@ -80,6 +80,13 @@ export function clearSupabaseAuthStorage(): void {
 // `detectSessionInUrl: false` obrigatório em React Native —
 // o ambiente não tem window.location para fazer o parse da URL.
 // `autoRefreshToken: true` mantém a sessão viva sem re-login.
+// `flowType: 'pkce'` (security audit 2026-05-21, H-2):
+//    Mobile DEVE usar PKCE — implicit grant é vulnerável a apps
+//    maliciosos no mesmo device interceptando tokens via custom
+//    URL scheme. PKCE adiciona code_verifier que SÓ o app legítimo
+//    conhece. Supabase blog: "the implicit grant flow raised
+//    security concerns for mobile use cases since malicious apps
+//    could potentially obtain the user session".
 
 const supabaseUrl  = process.env.EXPO_PUBLIC_SUPABASE_URL  ?? '';
 const supabaseAnon = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
@@ -90,5 +97,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnon, {
     autoRefreshToken:   true,
     persistSession:     true,
     detectSessionInUrl: false,
+    flowType:           'pkce',
   },
 });
