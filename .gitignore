@@ -50,3 +50,7 @@ relatorio.md
 
 # Claude Code local state
 .claude/
+
+# Supabase CLI local cache
+supabase/.temp/
+supabase/.branches/
