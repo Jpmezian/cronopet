@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View, Text, TextInput, SafeAreaView, Image,
+  View, Text, TextInput, SafeAreaView,
   Platform, KeyboardAvoidingView, ScrollView,
   useWindowDimensions,
 } from 'react-native';
@@ -53,7 +53,10 @@ export default function OnboardingScreen() {
     opacity: illustrationOpacity.value,
   }));
 
-  const HERO_H = height * (displayStep === 2 ? 0.34 : 0.46);
+  // R5-2: reduzido de 0.46 → 0.36 no welcome/petType. O bottom sheet
+  // estava com muito espaço sobrando porque o hero tomava quase metade
+  // da tela. Agora 36% no step 0 e 1, 30% no step 2 (form mais denso).
+  const HERO_H = height * (displayStep === 2 ? 0.30 : 0.36);
 
   const HERO_COLORS = [
     actionTheme.agua.bg,
@@ -198,38 +201,15 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
       }}
       showsVerticalScrollIndicator={false}
     >
-      {/* Logo brand — feedback TestFlight R2-6: marca precisa aparecer
-          no onboarding. Apple HIG / Strava / Linear todos têm logo
-          apenas no splash + boas-vindas. Aqui usamos o splash-icon
-          (mesmo asset do ícone do iOS) num círculo branded. */}
-      <Animated.View entering={textEntering} style={{ alignItems: 'center', gap: 10 }}>
-        <View style={{
-          width: 72, height: 72, borderRadius: 22,
-          overflow: 'hidden',
-          ...(isDark ? {
-            shadowColor: '#9BE4C6',
-            shadowOffset: { width: 0, height: 0 },
-            shadowOpacity: 0.5, shadowRadius: 12,
-          } : {
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.10, shadowRadius: 10,
-          }),
-        }}>
-          <Image
-            source={require('@/assets/images/icon.png')}
-            style={{ width: 72, height: 72 }}
-            resizeMode="cover"
-            accessible
-            accessibilityRole="image"
-            accessibilityLabel="Logo CronoPet"
-          />
-        </View>
+      {/* Logo brand removida daqui (R5-2): agora aparece no HERO
+          do onboarding (IllustrationWelcome). Mantida só a wordmark
+          minúscula como ancoragem da marca no início do conteúdo. */}
+      <Animated.View entering={textEntering} style={{ alignItems: 'center' }}>
         <Text style={{
           color: colors.tabActive,
           fontFamily: 'Nunito_800ExtraBold',
-          fontSize: 14, fontWeight: '800',
-          letterSpacing: 1.2,
+          fontSize: 12, fontWeight: '800',
+          letterSpacing: 2,
         }}>
           CRONOPET
         </Text>

@@ -7,8 +7,8 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import {
-  X, ChevronRight, Plus, BarChart2, HeartPulse,
-  Sparkles, Bell, Camera, Check,
+  X, ChevronRight, ChevronLeft, Plus, BarChart2, HeartPulse,
+  Sparkles, Bell, Check,
 } from 'lucide-react-native';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { useThemeColors } from '@/hooks/useThemeColors';
@@ -105,6 +105,16 @@ export function WelcomeTour({ visible, petNome, onComplete }: WelcomeTourProps) 
       setStepIndex((i) => i + 1);
     }
   }, [isLast, onComplete]);
+
+  // R5-3 (TestFlight): "voltar pra anterior caso a pessoa tenha se
+  // arrependido de pular". Aparece a partir do 2º step (step 0 não
+  // tem onde voltar — primeira tela do tour).
+  const handlePrev = useCallback(() => {
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch { /* haptic ausente */ }
+    setStepIndex((i) => Math.max(0, i - 1));
+  }, []);
 
   const handleSkip = useCallback(() => {
     try {
@@ -226,34 +236,64 @@ export function WelcomeTour({ visible, petNome, onComplete }: WelcomeTourProps) 
               </Text>
             </View>
 
-            {/* CTA Próximo / Pronto */}
-            <ScalePress
-              onPress={handleNext}
-              accessible
-              accessibilityRole="button"
-              accessibilityLabel={isLast ? 'Concluir tour' : 'Próximo passo'}
-              style={{
-                backgroundColor: accent.primary,
-                borderRadius: 14,
-                paddingVertical: 14,
-                flexDirection: 'row',
-                alignItems: 'center', justifyContent: 'center',
-                gap: 8,
-                marginTop: 4,
-              }}
-            >
-              <Text style={{
-                color: '#FFFFFF',
-                fontFamily: 'Nunito_700Bold',
-                fontSize: 15, fontWeight: '700',
-              }}>
-                {isLast ? 'Vamos começar!' : 'Próximo'}
-              </Text>
-              {isLast
-                ? <Check size={16} color="#FFFFFF" strokeWidth={2.6} />
-                : <ChevronRight size={16} color="#FFFFFF" strokeWidth={2.6} />
-              }
-            </ScalePress>
+            {/* CTAs: Voltar (só do 2º step em diante) + Próximo/Pronto */}
+            <View style={{
+              flexDirection: 'row', gap: 8,
+              marginTop: 4,
+            }}>
+              {stepIndex > 0 && (
+                <ScalePress
+                  onPress={handlePrev}
+                  accessible
+                  accessibilityRole="button"
+                  accessibilityLabel="Voltar pro passo anterior"
+                  style={{
+                    backgroundColor: colors.bgInput,
+                    borderRadius: 14,
+                    paddingVertical: 14, paddingHorizontal: 16,
+                    flexDirection: 'row',
+                    alignItems: 'center', justifyContent: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <ChevronLeft size={16} color={colors.textSecondary} strokeWidth={2.6} />
+                  <Text style={{
+                    color: colors.textSecondary,
+                    fontFamily: 'Nunito_700Bold',
+                    fontSize: 14, fontWeight: '700',
+                  }}>
+                    Anterior
+                  </Text>
+                </ScalePress>
+              )}
+              <ScalePress
+                onPress={handleNext}
+                accessible
+                accessibilityRole="button"
+                accessibilityLabel={isLast ? 'Concluir tour' : 'Próximo passo'}
+                style={{
+                  flex: 1,
+                  backgroundColor: accent.primary,
+                  borderRadius: 14,
+                  paddingVertical: 14,
+                  flexDirection: 'row',
+                  alignItems: 'center', justifyContent: 'center',
+                  gap: 8,
+                }}
+              >
+                <Text style={{
+                  color: '#FFFFFF',
+                  fontFamily: 'Nunito_700Bold',
+                  fontSize: 15, fontWeight: '700',
+                }}>
+                  {isLast ? 'Vamos começar!' : 'Próximo'}
+                </Text>
+                {isLast
+                  ? <Check size={16} color="#FFFFFF" strokeWidth={2.6} />
+                  : <ChevronRight size={16} color="#FFFFFF" strokeWidth={2.6} />
+                }
+              </ScalePress>
+            </View>
           </Animated.View>
         </View>
 
