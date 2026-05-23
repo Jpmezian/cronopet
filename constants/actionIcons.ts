@@ -2,16 +2,15 @@
 // ═══ Mapping centralizado: ActionKey → Lucide Icon            ═══
 // ═══════════════════════════════════════════════════════════════
 //
-// Migração 2026-05-15: emojis foram removidos de toda UI por
-// decisão de marca (ver CLAUDE.md atualizado). Este arquivo é a
-// fonte única de verdade para o ícone semântico de cada ação do
-// pet — usado em ActionButton, DailyProgress, history, medical,
-// log-detail, photos, etc.
+// Fonte única de verdade pro ícone semântico de cada ação do pet.
+// Consumidores: ActionButton, DailyProgress, history, medical,
+// log-detail, photos.
 //
 // Diretrizes:
-// • Sempre Lucide (consistência visual com chrome de UI)
-// • Semântica clara, sem pictograma vulgar (cocô = Sprout, broto
-//   enrolado, abstrato e fofo)
+// • Lucide pra consistência visual com chrome de UI
+// • Exceção: cocô usa PoopIcon (SVG custom) — feedback repetido
+//   TestFlight de que "Sprout não faz sentido". Esse arquivo é o
+//   último callsite que ficou com Sprout — corrigido em R6-1.
 // • strokeWidth padrão 2.2 nos componentes
 // ═══════════════════════════════════════════════════════════════
 
@@ -21,9 +20,9 @@ import {
   Droplet,     // agua   — gota única
   Footprints,  // passeio — pegadas
   Droplets,    // xixi   — gotas plurais (distinto de água)
-  Sprout,      // coco   — broto enrolado, abstrato
   Bath,        // banho  — banheira
 } from 'lucide-react-native';
+import { PoopIcon } from '@/components/icons/PoopIcon';
 import type { ActionKey } from '@/types/pet';
 
 interface IconProps {
@@ -37,7 +36,7 @@ export const ACTION_ICON: Record<ActionKey, ComponentType<IconProps>> = {
   agua:    Droplet,
   passeio: Footprints,
   xixi:    Droplets,
-  coco:    Sprout,
+  coco:    PoopIcon,
   banho:   Bath,
 };
 
