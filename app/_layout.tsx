@@ -18,7 +18,8 @@ import { initAnalytics, track } from '@/services/analytics';
 import { createPostHogClient, posthogBackend } from '@/services/analytics-posthog';
 import { initPurchases } from '@/services/purchases';
 import { getSession } from '@/services/AuthService';
-import '../global.css';
+// global.css removido junto com NativeWind (R7-B). Mantemos o arquivo
+// só pra preservar o gap visual no diff — sem side effects.
 
 // Inicializa o Sentry antes de qualquer renderização.
 // DSN lida do .env (EXPO_PUBLIC_SENTRY_DSN).
