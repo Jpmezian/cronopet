@@ -1,5 +1,6 @@
 import React, { forwardRef } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
+import { resolvePhotoUri } from '@/lib/photoPath';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 
 // ─── Dimensões fixas 9:16 ─────────────────────────────────────
@@ -34,7 +35,7 @@ export const SocialCardView = forwardRef<View, SocialCardViewProps>(
         {/* Background: foto do pet ou cor sólida emerald */}
         {hasFoto ? (
           <Image
-            source={{ uri: petFoto }}
+            source={{ uri: resolvePhotoUri(petFoto) }}
             style={StyleSheet.absoluteFill}
             resizeMode="cover"
           />
@@ -74,7 +75,7 @@ export const SocialCardView = forwardRef<View, SocialCardViewProps>(
             backgroundColor: '#047857',
           }}>
             {hasFoto && (
-              <Image source={{ uri: petFoto }} style={{ width: 148, height: 148 }} resizeMode="cover" />
+              <Image source={{ uri: resolvePhotoUri(petFoto) }} style={{ width: 148, height: 148 }} resizeMode="cover" />
             )}
           </View>
 

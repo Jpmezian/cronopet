@@ -1,5 +1,6 @@
 import React, { forwardRef } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
+import { resolvePhotoUri } from '@/lib/photoPath';
 
 // ─── Dimensões 9:16 (Stories) ─────────────────────────────────
 // Em iPhone @3x captureRef gera ~1080×1920 nativamente. Mantemos 360×640
@@ -222,7 +223,7 @@ export const WeeklyReportCard = forwardRef<View, WeeklyReportCardProps>(
             }}>
               {hasFoto && (
                 <Image
-                  source={{ uri: petFoto }}
+                  source={{ uri: resolvePhotoUri(petFoto) }}
                   style={{ width: 100, height: 100 }}
                   resizeMode="cover"
                 />
@@ -240,7 +241,10 @@ export const WeeklyReportCard = forwardRef<View, WeeklyReportCardProps>(
             </Text>
           </View>
 
-          {/* STREAK HERO — número dramático + label */}
+          {/* STREAK HERO — número dramático + label.
+              R3-5: emoji 🔥 posicionado absoluto à direita pra o
+              número ficar visualmente centralizado no card. Antes o
+              row com emoji empurrava o número pra esquerda. */}
           <View style={{
             backgroundColor: C.whiteFaint,
             borderWidth: 1, borderColor: C.whiteBord,
@@ -248,18 +252,21 @@ export const WeeklyReportCard = forwardRef<View, WeeklyReportCardProps>(
             paddingVertical: 12, paddingHorizontal: 16,
             marginBottom: 14,
             alignItems: 'center',
+            position: 'relative',
           }}>
-            <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
-              <Text style={{
-                fontSize: 72, fontFamily: 'Nunito_800ExtraBold',
-                color: C.accent, fontWeight: '800', lineHeight: 76,
-              }}>
-                {streak}
-              </Text>
-              <Text style={{
-                fontSize: 22, marginLeft: 10, marginBottom: 12,
-              }}>🔥</Text>
-            </View>
+            <Text style={{
+              fontSize: 72, fontFamily: 'Nunito_800ExtraBold',
+              color: C.accent, fontWeight: '800', lineHeight: 76,
+              textAlign: 'center',
+            }}>
+              {streak}
+            </Text>
+            {/* Emoji em absolute pra não deslocar o número */}
+            <Text style={{
+              position: 'absolute',
+              right: 22, top: 36,
+              fontSize: 24,
+            }}>🔥</Text>
             <Text style={{
               fontSize: 11, color: C.whiteSoft,
               fontWeight: '700', letterSpacing: 2,
@@ -269,13 +276,17 @@ export const WeeklyReportCard = forwardRef<View, WeeklyReportCardProps>(
             </Text>
           </View>
 
-          {/* 7-DAY GRID — narrativa visual da semana */}
+          {/* 7-DAY GRID — narrativa visual da semana.
+              R3-5: labels viraram 3 letras (Dom, Seg, Ter...) em vez
+              de só 1 letra (D, S, T) que confundia (D = Dom? Quinta?
+              S = Sex? Seg? Sáb?). Largura aumentada de 36 pra 40 pra
+              acomodar — mantém respiro entre dias. */}
           <View style={{
             flexDirection: 'row', justifyContent: 'space-between',
-            marginBottom: 14,
+            marginBottom: 16,
           }}>
             {dailyGrid.map((day, i) => (
-              <View key={i} style={{ alignItems: 'center', width: 36 }}>
+              <View key={i} style={{ alignItems: 'center', width: 40 }}>
                 <View style={{
                   width: 30, height: 30, borderRadius: 15,
                   backgroundColor: day.isComplete ? C.accent : 'transparent',
@@ -293,11 +304,11 @@ export const WeeklyReportCard = forwardRef<View, WeeklyReportCardProps>(
                   </Text>
                 </View>
                 <Text style={{
-                  fontSize: 9, color: C.whiteDim,
-                  fontWeight: '700', marginTop: 5,
+                  fontSize: 10, color: C.whiteSoft,
+                  fontWeight: '700', marginTop: 6,
                   letterSpacing: 0.3,
                 }}>
-                  {day.dayLabel.substring(0, 1).toUpperCase()}
+                  {day.dayLabel}
                 </Text>
               </View>
             ))}
@@ -309,14 +320,14 @@ export const WeeklyReportCard = forwardRef<View, WeeklyReportCardProps>(
               <StatCard
                 emoji="🍖"
                 value={String(totals.meals)}
-                label="refeições"
+                label="Refeições"
                 delta={formatDelta(totals.meals, previousTotals?.meals)}
               />
               <View style={{ width: 8 }} />
               <StatCard
                 emoji="💧"
                 value={String(totals.water)}
-                label="hidratações"
+                label="Hidratações"
                 delta={formatDelta(totals.water, previousTotals?.water)}
               />
             </View>
@@ -324,7 +335,7 @@ export const WeeklyReportCard = forwardRef<View, WeeklyReportCardProps>(
               <StatCard
                 emoji="🐾"
                 value={String(totals.walks)}
-                label="passeios"
+                label="Passeios"
                 delta={formatDelta(totals.walks, previousTotals?.walks)}
               />
               <View style={{ width: 8 }} />
@@ -335,7 +346,7 @@ export const WeeklyReportCard = forwardRef<View, WeeklyReportCardProps>(
                     ? `${latestWeight.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}kg`
                     : '—'
                 }
-                label="peso"
+                label="Peso"
                 delta={
                   latestWeight !== null && previousWeight != null && previousWeight > 0
                     ? formatDelta(latestWeight, previousWeight)

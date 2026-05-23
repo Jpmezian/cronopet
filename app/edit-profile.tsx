@@ -29,6 +29,7 @@ export default function EditProfileScreen() {
   const router           = useRouter();
   const pet              = usePetStore((s) => s.pet);
   const updatePetProfile = usePetStore((s) => s.updatePetProfile);
+  const setPetNutrition  = usePetStore((s) => s.setPetNutrition);
   const { colors, actionTheme, isDark } = useThemeColors();
 
   // Fundo escuro intencional para CTAs e botões primários
@@ -39,6 +40,7 @@ export default function EditProfileScreen() {
   const [raca, setRaca]             = useState(pet.raca === 'Sem raça definida' ? '' : pet.raca);
   const [foto, setFoto]             = useState<string>(pet.foto);
   const [nascimento, setNascimento] = useState(pet.nascimento ?? '');
+  const [notes, setNotes]           = useState(pet.notes ?? '');
   const [saving, setSaving]         = useState(false);
   const [racaSuggestions, setRacaSuggestions] = useState<string[]>([]);
 
@@ -48,7 +50,8 @@ export default function EditProfileScreen() {
     tipo              !== (pet.tipo ?? 'cachorro') ||
     raca.trim()       !== (pet.raca === 'Sem raça definida' ? '' : pet.raca) ||
     foto              !== pet.foto ||
-    nascimento.trim() !== (pet.nascimento ?? '');
+    nascimento.trim() !== (pet.nascimento ?? '') ||
+    notes.trim()      !== (pet.notes ?? '');
 
   const handleTipoSelect = useCallback((t: PetType) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -90,11 +93,14 @@ export default function EditProfileScreen() {
         foto,
         nascimento.trim() || undefined,
       );
+      // Notes vão por setPetNutrition (R3-8) — mesma tx do MMKV
+      // garante consistência sem precisar reescrever updatePetProfile.
+      setPetNutrition({ notes: notes.trim() || undefined });
       router.back();
     } finally {
       setSaving(false);
     }
-  }, [nome, tipo, raca, foto, isValid, saving, updatePetProfile, router]);
+  }, [nome, tipo, raca, foto, nascimento, notes, isValid, saving, updatePetProfile, setPetNutrition, router]);
 
   const canSave = isValid && hasChanges && !saving;
 
@@ -275,6 +281,29 @@ export default function EditProfileScreen() {
               keyboardType="numbers-and-punctuation" autoCorrect={false} maxLength={10}
               style={inputStyle}
             />
+          </View>
+
+          {/* Anotações gerais (R3-8): campo livre pra alergias,
+              medicações, manias e tudo que não cabe nas opções
+              padrões. Vai pro PDF veterinário também. */}
+          <View>
+            <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 14, marginBottom: 8 }}>
+              Anotações gerais <Text style={{ color: colors.textTertiary, fontWeight: '400' }}>(opcional)</Text>
+            </Text>
+            <TextInput
+              value={notes}
+              onChangeText={setNotes}
+              placeholder="Ex: alergia a frango, toma medicação X, tem medo de trovão..."
+              placeholderTextColor={colors.textTertiary}
+              accessibilityLabel="Anotações gerais sobre o pet"
+              accessibilityHint="Texto livre que aparece no relatório veterinário"
+              multiline
+              maxLength={500}
+              style={[inputStyle, { minHeight: 96, textAlignVertical: 'top', paddingTop: 14 }]}
+            />
+            <Text style={{ color: colors.textTertiary, fontSize: 11, marginTop: 4 }}>
+              {notes.length}/500 · aparece no PDF para o veterinário
+            </Text>
           </View>
 
           {/* Privacidade */}

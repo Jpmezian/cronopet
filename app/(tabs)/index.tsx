@@ -20,7 +20,7 @@ import { ActionButton } from '@/components/home/ActionButton';
 import type { ActionConfig } from '@/components/home/ActionButton';
 import {
   Settings, Check, ChevronDown, Plus, Crown,
-  Utensils, Droplet, Footprints, Droplets, Bath,
+  Utensils, Droplet, Footprints, Droplets,
   CheckCircle2, MinusCircle, XCircle, Waves, Square,
   Trophy, CalendarDays, Scale, TrendingUp,
 } from 'lucide-react-native';
@@ -146,13 +146,16 @@ export default function PetDashboard() {
   // Droplets=xixi (gota dupla, distinto da água), PoopIcon=cocô (SVG
   // custom — feedback TestFlight "Sprout não faz sentido"; agora silhueta
   // clássica de tufo, reconhecível sem precisar emoji), Bath=banho.
+  // R3-7 (TestFlight): banho NÃO é tarefa diária — sai do dashboard
+  // principal. Continua registrável programaticamente (logs antigos
+  // ainda renderizam em histórico, photos, etc.) mas o tutor não vê
+  // botão grande "Banho" no Home pressionando ele a registrar todo dia.
   const ALL_ACTIONS = useMemo<ActionConfig[]>(() => [
     { key: 'comida',  Icon: Utensils,   label: 'Comida',  color: actionTheme.comida.primary,  bg: actionTheme.comida.bg,  border: actionTheme.comida.border  },
     { key: 'agua',    Icon: Droplet,    label: 'Água',    color: actionTheme.agua.primary,    bg: actionTheme.agua.bg,    border: actionTheme.agua.border    },
     { key: 'passeio', Icon: Footprints, label: 'Passeio', color: actionTheme.passeio.primary, bg: actionTheme.passeio.bg, border: actionTheme.passeio.border },
     { key: 'xixi',    Icon: Droplets,   label: 'Xixi',    color: actionTheme.xixi.primary,    bg: actionTheme.xixi.bg,    border: actionTheme.xixi.border    },
     { key: 'coco',    Icon: PoopIcon,   label: 'Cocô',    color: actionTheme.coco.primary,    bg: actionTheme.coco.bg,    border: actionTheme.coco.border    },
-    { key: 'banho',   Icon: Bath,       label: 'Banho',   color: actionTheme.banho.primary,   bg: actionTheme.banho.bg,   border: actionTheme.banho.border   },
   ], [actionTheme]);
 
   // ── Store ────────────────────────────────────────────────────
@@ -1206,10 +1209,15 @@ export default function PetDashboard() {
                           borderColor: subCoco ? actionTheme.coco.border : colors.border,
                         }}
                       >
-                        <Text style={{ fontSize: 16, marginRight: 6 }}>💩</Text>
+                        <PoopIcon
+                          size={16}
+                          color={subCoco ? actionTheme.coco.primary : colors.textSecondary}
+                          strokeWidth={2.2}
+                        />
                         <Text style={{
                           fontSize: 13, fontWeight: subCoco ? '700' : '500',
                           color: subCoco ? actionTheme.coco.primary : colors.textSecondary,
+                          marginLeft: 6,
                         }}>
                           Fez cocô
                         </Text>

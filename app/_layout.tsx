@@ -17,6 +17,7 @@ import { BiometricLock } from '@/components/security/BiometricLock';
 import { initAnalytics, track } from '@/services/analytics';
 import { createPostHogClient, posthogBackend } from '@/services/analytics-posthog';
 import { initPurchases } from '@/services/purchases';
+import { getSession } from '@/services/AuthService';
 import '../global.css';
 
 // Inicializa o Sentry antes de qualquer renderização.
@@ -120,6 +121,14 @@ export default function RootLayout() {
       track({ name: 'app_opened', props: { coldStart: true } });
     })();
     initPurchases().catch(() => {});
+
+    // Cold-start auth: chama getSession (que internamente também
+    // dispara `maybeApplyDevPremium`) pra reativar premium dev em
+    // toda abertura do app, sem precisar logar/abrir tela /premium.
+    // Feedback R3-3: users já logados não viam o premium ativar
+    // porque o grant SÓ rodava em signIn fresh ou na tela /premium.
+    // Falha silenciosa se Supabase offline — não bloqueia nada.
+    getSession().catch(() => {});
   }, [storageReady]);
 
   // Registra first-open uma única vez (usado para trigger "7 dias de uso")

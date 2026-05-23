@@ -111,7 +111,10 @@ export function analyzeHealth(input: AnalyzeInput): HealthInsight[] {
     // ── Detectores raça-específicos (10-13) ──
     ...detectBreedRiskMatch(ctx),
     ...detectExerciseDeficit(ctx),
-    ...detectBathOverdue(ctx),
+    // R3-2 (TestFlight): heurística de banho atrasado removida — frequência
+    // de banho varia demais por raça, clima, lifestyle. Gerava falsos
+    // positivos. Mantemos o método pra reactivar no futuro se virar opt-in.
+    // ...detectBathOverdue(ctx),
     ...detectThermalStress(ctx),
     // ── Detectores singulares — Fase 2 (14-30) ──
     // Base: VetCompass (n=3,884 cães primary care UK), Cornell Feline
@@ -679,11 +682,12 @@ function detectExerciseDeficit(ctx: Ctx): HealthInsight[] {
   }];
 }
 
-// ─── 12. Banho atrasado ──────────────────────────────────────────────
+// ─── 12. Banho atrasado (DESATIVADO em R3-2) ─────────────────────────
 //
-// Verifica se passou da frequência recomendada pela raça desde o último banho.
-// Se nunca registrou banho, ignora (não dá pra inferir).
-
+// Desabilitado: frequência varia demais por raça/clima/lifestyle e era
+// fonte de falso positivo. Mantemos a função pra eventualmente virar
+// opt-in pelo tutor (notificação manual). Sem chamadores hoje.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function detectBathOverdue(ctx: Ctx): HealthInsight[] {
   if (!ctx.breedProfile || ctx.breedProfile.bathFrequencyDays === 0) return [];
 

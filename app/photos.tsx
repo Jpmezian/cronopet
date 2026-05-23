@@ -9,17 +9,20 @@ import { ChevronLeft, X } from 'lucide-react-native';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { resolvePhotoUri } from '@/lib/photoPath';
+import { ActionIcon } from '@/components/icons/ActionIcon';
 import { usePetStore } from '@/store/usePetStore';
 import type { ActionLog, ActionKey } from '@/types/pet';
-
-const ACTION_EMOJIS: Record<ActionKey, string> = {
-  comida: '🍖', agua: '💧', passeio: '🐾',
-  xixi: '🪣', coco: '💩', banho: '🛁',
-};
 
 const ACTION_LABELS: Record<ActionKey, string> = {
   comida: 'Comida', agua: 'Água', passeio: 'Passeio',
   xixi: 'Xixi', coco: 'Cocô', banho: 'Banho',
+};
+// Emoji 💩 removido (R3-6): cocô usa <ActionIcon/> SVG na badge.
+// Pra outras ações o emoji continua sendo identidade de marca.
+const NON_COCO_EMOJI: Record<Exclude<ActionKey, 'coco'>, string> = {
+  comida: '🍖', agua: '💧', passeio: '🐾',
+  xixi: '🪣', banho: '🛁',
 };
 
 // Formata timestamp em "DD/MM • HH:MM"
@@ -54,14 +57,22 @@ export default function PhotosScreen() {
 
   // Reúne todas as fotos: actionLogs com photo + medicalEvents com photo
   const photos = useMemo(() => {
-    const items: Array<{ uri: string; ts: number; label: string; emoji: string }> = [];
+    const items: Array<{
+      uri: string;
+      ts: number;
+      label: string;
+      action?: ActionKey;   // só pra logs de ação (pra render <ActionIcon/>)
+      emoji?: string;        // só pra eventos médicos OU ações não-cocô
+    }> = [];
     actionHistory.forEach((l) => {
       if (l.photo) {
         items.push({
           uri: l.photo,
           ts: l.timestamp,
           label: ACTION_LABELS[l.key],
-          emoji: ACTION_EMOJIS[l.key],
+          // Pra cocô passamos action; pras outras, emoji nativo
+          action: l.key,
+          emoji: l.key !== 'coco' ? NON_COCO_EMOJI[l.key] : undefined,
         });
       }
     });
@@ -71,6 +82,7 @@ export default function PhotosScreen() {
           uri: e.photo,
           ts: e.timestamp,
           label: 'Ocorrência',
+          action: undefined,
           emoji: '🩺',
         });
       }
@@ -179,7 +191,10 @@ export default function PhotosScreen() {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       setSelectedPhoto({
                         uri: p.uri,
-                        meta: `${p.emoji} ${p.label} · ${fmtTs(p.ts)}`,
+                        // Cocô não tem emoji (vira ActionIcon), só label
+                        meta: p.emoji
+                          ? `${p.emoji} ${p.label} · ${fmtTs(p.ts)}`
+                          : `${p.label} · ${fmtTs(p.ts)}`,
                       });
                     }}
                     accessible accessibilityRole="imagebutton"
@@ -196,18 +211,24 @@ export default function PhotosScreen() {
                     }}
                   >
                     <Image
-                      source={{ uri: p.uri }}
+                      source={{ uri: resolvePhotoUri(p.uri) }}
                       style={{ width: '100%', height: '100%' }}
                       resizeMode="cover"
                     />
                     <View style={{
                       position: 'absolute',
                       top: 4, left: 4,
-                      backgroundColor: 'rgba(0,0,0,0.5)',
+                      backgroundColor: 'rgba(0,0,0,0.55)',
                       borderRadius: 6,
-                      paddingHorizontal: 4, paddingVertical: 1,
+                      paddingHorizontal: 5, paddingVertical: 2,
+                      alignItems: 'center', justifyContent: 'center',
+                      minWidth: 22, minHeight: 22,
                     }}>
-                      <Text style={{ fontSize: 11 }}>{p.emoji}</Text>
+                      {p.action === 'coco' ? (
+                        <ActionIcon action="coco" size={12} color="#FFFFFF" />
+                      ) : (
+                        <Text style={{ fontSize: 11 }}>{p.emoji}</Text>
+                      )}
                     </View>
                   </ScalePress>
                 ))}
@@ -236,7 +257,7 @@ export default function PhotosScreen() {
           {selectedPhoto && (
             <>
               <Image
-                source={{ uri: selectedPhoto.uri }}
+                source={{ uri: resolvePhotoUri(selectedPhoto.uri) }}
                 style={{
                   width: Dimensions.get('window').width - 32,
                   height: Dimensions.get('window').width - 32,

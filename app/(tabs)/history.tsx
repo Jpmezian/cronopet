@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { useMotion } from '@/hooks/useMotion';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { resolvePhotoUri } from '@/lib/photoPath';
 import { usePetStore } from '@/store/usePetStore';
 import { ACTION_ICON, ACTION_LABEL } from '@/constants/actionIcons';
 import { BarChart3, SearchX } from 'lucide-react-native';
@@ -134,7 +135,7 @@ function TimelineItem({ log, index, isLast }: TimelineItemProps) {
               {/* Foto — se houver */}
               {log.photo && (
                 <Image
-                  source={{ uri: log.photo }}
+                  source={{ uri: resolvePhotoUri(log.photo) }}
                   style={{ width: '100%', height: 120 }}
                   resizeMode="cover"
                   accessible={false}

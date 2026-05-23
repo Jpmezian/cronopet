@@ -22,6 +22,7 @@ import React from 'react';
 import { Image, View, Text } from 'react-native';
 import { Dog, Cat, PawPrint } from 'lucide-react-native';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { resolvePhotoUri } from '@/lib/photoPath';
 import type { PetType } from '@/types/pet';
 
 interface PetPhotoProps {
@@ -69,7 +70,9 @@ export function PetPhoto({
   if (isUsablePhoto(foto)) {
     return (
       <Image
-        source={{ uri: foto }}
+        // resolvePhotoUri remonta a URI com o container UUID atual
+        // (iOS muda em todo update — sem isso a foto some). Ver R3-1+4.
+        source={{ uri: resolvePhotoUri(foto) }}
         style={[baseStyle, style]}
         accessible
         accessibilityRole="image"

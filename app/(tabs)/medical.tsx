@@ -12,6 +12,7 @@ import {
 import Animated from 'react-native-reanimated';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ScalePress } from '@/components/ui/ScalePress';
+import { resolvePhotoUri } from '@/lib/photoPath';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { WeightChart } from '@/components/medical/WeightChart';
 import { BreedHealthCard } from '@/components/medical/BreedHealthCard';
@@ -586,7 +587,7 @@ export default function MedicalScreen() {
                       }),
                     }}>
                       {e.photo && (
-                        <Image source={{ uri: e.photo }} style={{ width: '100%', height: 140 }} resizeMode="cover" />
+                        <Image source={{ uri: resolvePhotoUri(e.photo) }} style={{ width: '100%', height: 140 }} resizeMode="cover" />
                       )}
                       <View style={{ padding: 14, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                         <View style={{ flex: 1 }}>

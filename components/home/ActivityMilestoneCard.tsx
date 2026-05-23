@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, Platform } from 'react-native';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { ActionIcon } from '@/components/icons/ActionIcon';
 import type { ActionLog, ActionKey } from '@/types/pet';
 
 interface ActivityMilestoneCardProps {
@@ -20,10 +21,7 @@ const ACTION_MILESTONES: Record<ActionKey, number[]> = {
   banho:   [5, 10, 25, 50],
 };
 
-const ACTION_EMOJIS: Record<ActionKey, string> = {
-  comida: '🍖', agua: '💧', passeio: '🐾',
-  xixi: '🪣', coco: '💩', banho: '🛁',
-};
+// (Mantido pra labels; ícone vem do componente <ActionIcon /> agora — R3-6).
 
 const ACTION_LABELS: Record<ActionKey, string> = {
   comida:  'refeições',
@@ -38,7 +36,6 @@ interface PendingMilestone {
   id:     string;
   action: ActionKey;
   count:  number;
-  emoji:  string;
   label:  string;
 }
 
@@ -73,7 +70,6 @@ function findPendingMilestone(
       id,
       action: key,
       count:  topMilestone,
-      emoji:  ACTION_EMOJIS[key],
       label:  ACTION_LABELS[key],
     });
   });
@@ -149,14 +145,19 @@ export function ActivityMilestoneCard({
         >
           {milestone.count} {milestone.label} com {petNome}!
         </Text>
-        <Text style={{
-          color: actionTheme.coco.primary,
-          fontSize: 11,
-          marginTop: 2,
-          opacity: 0.85,
-        }}>
-          {milestone.emoji} Parabéns pela dedicação
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2, gap: 5, opacity: 0.85 }}>
+          <ActionIcon
+            action={milestone.action}
+            size={12}
+            color={actionTheme.coco.primary}
+          />
+          <Text style={{
+            color: actionTheme.coco.primary,
+            fontSize: 11,
+          }}>
+            Parabéns pela dedicação
+          </Text>
+        </View>
       </View>
     </View>
   );

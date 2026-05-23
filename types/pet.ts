@@ -24,6 +24,11 @@ export interface PetProfile {
   neutered?:         boolean;
   baselineActivity?: BaselineActivity;
   petSize?:          PetSize;
+
+  /** Anotações gerais do tutor (R3-8): alergias, medicações, manias,
+   *  particularidades. Texto livre, sai no PDF veterinário e fica
+   *  acessível em edit-profile. Limitado por security/sanitizeNote. */
+  notes?: string;
 }
 
 /** Chaves das ações diárias rastreáveis */

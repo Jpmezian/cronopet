@@ -42,6 +42,13 @@ function daysBetween(fromDateStr: string, toDateStr: string): number {
 /**
  * Copia URI para Documents + remove EXIF via expo-image-manipulator.
  * Async porque o manipulator é assíncrono.
+ *
+ * Retorna apenas o FILENAME RELATIVO (ex.: "cronopet_photo_123.jpg"),
+ * não a URI absoluta. Isso é o fix do R3-1+4 — iOS muda o container
+ * UUID em todo update, então URI absoluta vira inválida. Componentes
+ * que renderizam <Image> precisam passar pela função `resolvePhotoUri`
+ * de lib/photoPath.ts pra reconstruir a URI atual em runtime.
+ * URLs http(s) passam direto.
  */
 async function persistAndStripPhoto(uri: string): Promise<string> {
   if (!uri) return uri;
@@ -57,15 +64,16 @@ async function persistAndStripPhoto(uri: string): Promise<string> {
     );
     const stripped = result.uri;
 
-    // Copiar para Documents (permanente)
-    const docDir = Paths.document;
-    if (stripped.startsWith(docDir.uri)) return stripped;
-    const dest = new File(Paths.document, `cronopet_photo_${Date.now()}.jpg`);
+    // Copiar para Documents (permanente — sobrevive a updates)
+    const filename = `cronopet_photo_${Date.now()}.jpg`;
+    const dest = new File(Paths.document, filename);
     new File(stripped).copy(dest);
-    return dest.uri;
+    // Armazena só o filename relativo. O resolver no runtime monta
+    // o path completo com o container UUID atual.
+    return filename;
   } catch {
-    // Fallback graciosamente — se reencode falhou, mantém URL original
-    // (cenário: URL remota offline, arquivo local corrompido)
+    // Fallback graciosamente — mantém input original. Pode ser uma
+    // URL http(s) (ex.: Unsplash legacy) que resolve sem ajuste.
     return uri;
   }
 }
@@ -84,7 +92,7 @@ interface PetStore extends PetState {
   updatePetProfile:   (nome: string, tipo: PetType, raca: string, foto: string, nascimento?: string) => Promise<void>;
   setPetNutrition:    (fields: Partial<Pick<PetProfile,
     'idealWeightKg' | 'nutritionGoal' | 'bodyCondition' |
-    'neutered' | 'baselineActivity' | 'petSize'
+    'neutered' | 'baselineActivity' | 'petSize' | 'notes'
   >>) => void;
 
   // Ações diárias
@@ -363,14 +371,19 @@ export const usePetStore = create<PetStore>()(
 
       // ── Preferências nutricionais ──────────────────────────
       setPetNutrition: (fields) => {
-        set((s) => ({ pet: { ...s.pet, ...fields } }));
+        // Sanitiza notes ao gravar (XSS guard + length cap). Outros campos
+        // são primitivos type-safe pelo TS.
+        const safeFields = fields.notes !== undefined
+          ? { ...fields, notes: sanitizeNote(fields.notes ?? '') || undefined }
+          : fields;
+        set((s) => ({ pet: { ...s.pet, ...safeFields } }));
         // SECURITY: só logar quais CAMPOS foram atualizados, não os valores.
         Sentry.addBreadcrumb({
           category: 'nutrition',
           message: 'setPetNutrition',
           level: 'info',
           data: {
-            fieldsUpdated: Object.keys(fields).filter((k) => (fields as any)[k] !== undefined),
+            fieldsUpdated: Object.keys(safeFields).filter((k) => (safeFields as any)[k] !== undefined),
           },
         });
       },

@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router';
 import { Pencil, Flame, Dog, Cat, PawPrint } from 'lucide-react-native';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { ScalePress } from '@/components/ui/ScalePress';
+import { resolvePhotoUri } from '@/lib/photoPath';
 import type { PetType } from '@/types/pet';
 
 interface PetHeroProps {
@@ -70,7 +71,7 @@ export function PetHero({ nome, foto, tipo, raca, idadeLabel, streak }: PetHeroP
           inicial do nome. Sem dependência de network, sempre on-brand. */}
       {hasPhoto ? (
         <Image
-          source={{ uri: foto }}
+          source={{ uri: resolvePhotoUri(foto) }}
           style={{ width: '100%', height: 280 }}
           resizeMode="cover"
           accessible

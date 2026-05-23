@@ -222,14 +222,17 @@ export const CASES: TestCase[] = [
     expectFires: ['exercise_deficit'],
   },
   {
-    name: '16. Shih Tzu sem banho há 90 dias → warning bath_overdue',
+    // R3-2: bath_overdue desativado em produção (feedback TestFlight —
+    // falso-positivo: frequência varia demais por raça/clima/lifestyle).
+    // Caso de teste mantido como "não dispara" pra documentar o estado.
+    name: '16. Shih Tzu sem banho há 90 dias → NÃO dispara (heurística off)',
     fixture: {
       pet: dog('Shih Tzu', { ageYears: 4 }),
       weightHistory: [],
       actionHistory: [bath(90)],
       medicalEvents: [],
     },
-    expectFires: ['bath_overdue'],
+    expectFires: [],
   },
   {
     name: '17. Pug em dia de 33°C → alert heat_risk',

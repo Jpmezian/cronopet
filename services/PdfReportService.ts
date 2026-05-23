@@ -116,54 +116,60 @@ export async function generateVetReport(
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; color: #2C2B27; background: #fff; font-size: 13px; }
+    /* R3-9 (TestFlight): texto com cor "bege amarelado" estava ilegível
+       no PDF. Cores warm-tertiary (#A09684, #7A6F5F) caíam abaixo de
+       4.5:1 sobre branco. Migramos texto secundário pra ash-brown
+       escuro (#5C493D = 8.2:1) e texto de apoio pra graphite com
+       opacidade (#403A33 = ~10:1). Mantemos a paleta brand, só
+       elevamos o nível dos tons. */
+    body { font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif; color: #1C1917; background: #fff; font-size: 13px; }
     .page { max-width: 680px; margin: 0 auto; padding: 32px 28px; }
 
     .header { display: flex; align-items: center; gap: 20px; border-bottom: 3px solid #2C2B27; padding-bottom: 20px; margin-bottom: 24px; }
-    .pet-photo { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #E0D9C4; }
-    .pet-photo-placeholder { width: 80px; height: 80px; border-radius: 50%; background: #F2F4DC; display: flex; align-items: center; justify-content: center; font-size: 36px; }
+    .pet-photo { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #C9BFB1; }
+    .pet-photo-placeholder { width: 80px; height: 80px; border-radius: 50%; background: #E0D9C4; display: flex; align-items: center; justify-content: center; font-size: 36px; }
     .header-info h1 { font-size: 26px; font-weight: 700; }
-    .header-info p { color: #7A6F5F; font-size: 13px; margin-top: 4px; }
-    .badge { display: inline-block; background: #2C2B27; color: #fff; border-radius: 8px; padding: 4px 12px; font-size: 11px; font-weight: 600; margin-top: 6px; }
+    .header-info p { color: #5C493D; font-size: 13px; margin-top: 4px; }
+    .badge { display: inline-block; background: #1C1917; color: #fff; border-radius: 8px; padding: 4px 12px; font-size: 11px; font-weight: 600; margin-top: 6px; }
 
-    .disclaimer { background: #fef3c7; border: 1px solid #fde68a; border-radius: 12px; padding: 12px 16px; margin-bottom: 24px; font-size: 12px; color: #92400e; line-height: 1.6; }
+    .disclaimer { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 12px; padding: 12px 16px; margin-bottom: 24px; font-size: 12px; color: #78350f; line-height: 1.6; }
 
     .section { margin-bottom: 28px; }
-    .section-title { font-size: 16px; font-weight: 700; border-left: 4px solid #2C2B27; padding-left: 12px; margin-bottom: 14px; }
+    .section-title { font-size: 16px; font-weight: 700; color: #1C1917; border-left: 4px solid #04A29B; padding-left: 12px; margin-bottom: 14px; }
 
     table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    th { background: #F2F4DC; padding: 8px 12px; text-align: left; font-weight: 600; color: #5C493D; }
-    td { padding: 8px 12px; border-bottom: 1px solid #F2F4DC; }
+    th { background: #E0D9C4; padding: 8px 12px; text-align: left; font-weight: 700; color: #2C2B27; }
+    td { padding: 8px 12px; border-bottom: 1px solid #E0D9C4; color: #1C1917; }
     tr:last-child td { border-bottom: none; }
 
     .day-block { margin-bottom: 16px; }
-    .day-title { font-size: 13px; font-weight: 700; color: #5C493D; margin-bottom: 6px; background: #F2F4DC; padding: 6px 10px; border-radius: 8px; }
-    .log-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #F4F7E5; }
-    .log-label { font-weight: 600; font-size: 13px; min-width: 90px; }
-    .log-time { color: #A09684; font-size: 12px; }
-    .log-note { color: #7A6F5F; font-size: 12px; font-style: italic; margin-top: 2px; }
+    .day-title { font-size: 13px; font-weight: 700; color: #2C2B27; margin-bottom: 6px; background: #E0D9C4; padding: 6px 10px; border-radius: 8px; }
+    .log-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px solid #E0D9C4; }
+    .log-label { font-weight: 700; font-size: 13px; min-width: 90px; color: #1C1917; }
+    .log-time { color: #5C493D; font-size: 12px; font-weight: 600; }
+    .log-note { color: #2C2B27; font-size: 12px; font-style: italic; margin-top: 2px; }
     .log-photo { width: 120px; height: 80px; object-fit: cover; border-radius: 8px; margin-top: 6px; }
 
-    .vaccine-card { background: #EAFAF1; border: 1px solid #9BE4C6; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+    .vaccine-card { background: #EAFAF1; border: 1px solid #5DC3A8; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
     .vaccine-name { font-weight: 700; font-size: 14px; color: #024A47; }
-    .vaccine-detail { font-size: 12px; color: #036E69; margin-top: 4px; line-height: 1.7; }
+    .vaccine-detail { font-size: 12px; color: #036E69; margin-top: 4px; line-height: 1.7; font-weight: 500; }
 
     .appt-card { border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
-    .appt-future { background: #F0FAF8; border: 1px solid #B3E5DD; }
-    .appt-past { background: #F2F4DC; border: 1px solid #E0D9C4; }
-    .appt-name { font-weight: 700; font-size: 14px; color: #036E69; }
-    .appt-past .appt-name { color: #5C493D; }
-    .appt-detail { font-size: 12px; color: #7A6F5F; margin-top: 4px; line-height: 1.7; }
+    .appt-future { background: #E5F7F3; border: 1px solid #5DC3A8; }
+    .appt-past { background: #E0D9C4; border: 1px solid #C9BFB1; }
+    .appt-name { font-weight: 700; font-size: 14px; color: #024A47; }
+    .appt-past .appt-name { color: #2C2B27; }
+    .appt-detail { font-size: 12px; color: #2C2B27; margin-top: 4px; line-height: 1.7; }
 
-    .weight-row { display: flex; gap: 16px; padding: 8px 0; border-bottom: 1px solid #F2F4DC; align-items: center; }
-    .weight-val { font-size: 16px; font-weight: 700; color: #04A29B; min-width: 70px; }
-    .weight-meta { font-size: 12px; color: #7A6F5F; }
+    .weight-row { display: flex; gap: 16px; padding: 8px 0; border-bottom: 1px solid #E0D9C4; align-items: center; }
+    .weight-val { font-size: 16px; font-weight: 700; color: #024A47; min-width: 70px; }
+    .weight-meta { font-size: 12px; color: #2C2B27; font-weight: 500; }
 
-    .medical-card { background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
-    .medical-type { font-weight: 700; font-size: 14px; color: #991b1b; }
-    .medical-detail { font-size: 12px; color: #dc2626; margin-top: 4px; line-height: 1.7; }
+    .medical-card { background: #fee2e2; border: 1px solid #f87171; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+    .medical-type { font-weight: 700; font-size: 14px; color: #7f1d1d; }
+    .medical-detail { font-size: 12px; color: #991b1b; margin-top: 4px; line-height: 1.7; font-weight: 500; }
 
-    .footer { border-top: 1px solid #E0D9C4; padding-top: 16px; margin-top: 32px; text-align: center; color: #A09684; font-size: 11px; }
+    .footer { border-top: 1px solid #C9BFB1; padding-top: 16px; margin-top: 32px; text-align: center; color: #2C2B27; font-size: 11px; font-weight: 500; }
   </style>
 </head>
 <body>
@@ -202,6 +208,14 @@ export async function generateVetReport(
        O conteúdo continua disponível NO APP (BreedHealthCard) pra
        o tutor saber a que ficar atento, mas não vai no relatório
        clínico que vai pra mão do profissional. -->
+
+  ${pet.notes && pet.notes.trim() ? `
+  <!-- Anotações do tutor (R3-8) — alergias, medicações, manias -->
+  <div class="section">
+    <div class="section-title">📝 Anotações do tutor</div>
+    <p style="font-size:13px;color:#1f2937;line-height:1.55;white-space:pre-wrap">${E(pet.notes.trim())}</p>
+  </div>
+  ` : ''}
 
   <!-- Resumo (30 dias) -->
   <div class="section">

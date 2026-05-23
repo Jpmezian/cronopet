@@ -9,19 +9,24 @@ import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import { resolvePhotoUri } from '@/lib/photoPath';
+import { ActionIcon } from '@/components/icons/ActionIcon';
 import { usePetStore } from '@/store/usePetStore';
 import { useToastStore } from '@/store/useToastStore';
 import type { ActionKey, Acceptance, Consistency, Appearance } from '@/types/pet';
 
 // ─── Metadados das ações ──────────────────────────────────────
 
-const ACTION_META: Record<ActionKey, { emoji: string; label: string }> = {
-  comida:  { emoji: '🍖', label: 'Comida'  },
-  agua:    { emoji: '💧', label: 'Água'    },
-  passeio: { emoji: '🐾', label: 'Passeio' },
-  xixi:    { emoji: '🪣', label: 'Xixi'    },
-  coco:    { emoji: '💩', label: 'Cocô'    },
-  banho:   { emoji: '🛁', label: 'Banho'   },
+// Só labels — o ícone vem do <ActionIcon> que centraliza PoopIcon vs emojis.
+// Antes este arquivo tinha emoji: '💩' direto, ficou inconsistente quando
+// migramos o ícone do cocô pra SVG (R3-6).
+const ACTION_LABEL: Record<ActionKey, string> = {
+  comida:  'Comida',
+  agua:    'Água',
+  passeio: 'Passeio',
+  xixi:    'Xixi',
+  coco:    'Cocô',
+  banho:   'Banho',
 };
 
 function acceptanceLabel(acceptance: Acceptance): string {
@@ -87,7 +92,7 @@ export default function LogDetailScreen() {
     [actionHistory, id],
   );
 
-  const meta  = log ? ACTION_META[log.key]  : null;
+  const meta  = log ? ACTION_LABEL[log.key]  : null;
   const theme = log ? actionTheme[log.key]  : null;
 
   const [note, setNote]               = useState(log?.note ?? '');
@@ -135,7 +140,7 @@ export default function LogDetailScreen() {
   const handleDelete = () => {
     Alert.alert(
       'Excluir registro',
-      `Deseja excluir este registro de ${meta.label.toLowerCase()}? Esta ação não pode ser desfeita.`,
+      `Deseja excluir este registro de ${meta.toLowerCase()}? Esta ação não pode ser desfeita.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -216,7 +221,7 @@ export default function LogDetailScreen() {
               backgroundColor: colors.bgCard,
               alignItems: 'center', justifyContent: 'center',
             }}>
-              <Text style={{ fontSize: 30 }}>{meta.emoji}</Text>
+              <ActionIcon action={log.key} size={30} color={theme.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{
@@ -224,7 +229,7 @@ export default function LogDetailScreen() {
                 fontSize: 17,
                 color: theme.primary,
               }}>
-                {meta.label}
+                {meta}
               </Text>
               <Text style={{
                 fontSize: 13,
@@ -247,12 +252,12 @@ export default function LogDetailScreen() {
               }),
             }}>
               <Image
-                source={{ uri: log.photo }}
+                source={{ uri: resolvePhotoUri(log.photo) }}
                 style={{ width: '100%', height: 220 }}
                 resizeMode="cover"
                 accessible={true}
                 accessibilityRole="image"
-                accessibilityLabel={`Foto do registro de ${meta.label}`}
+                accessibilityLabel={`Foto do registro de ${meta}`}
               />
             </View>
           )}
@@ -492,7 +497,7 @@ export default function LogDetailScreen() {
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {log.subActions.map((s) => {
-                  const subMeta = ACTION_META[s as ActionKey];
+                  const subLabel = ACTION_LABEL[s as ActionKey];
                   const subTheme = actionTheme[s as ActionKey];
                   return (
                     <View
@@ -506,18 +511,20 @@ export default function LogDetailScreen() {
                         paddingVertical: 6,
                         flexDirection: 'row',
                         alignItems: 'center',
-                        gap: 4,
+                        gap: 6,
                       }}
                     >
-                      <Text style={{ fontSize: 14 }} importantForAccessibility="no">
-                        {subMeta?.emoji ?? s}
-                      </Text>
+                      <ActionIcon
+                        action={s as ActionKey}
+                        size={14}
+                        color={subTheme?.primary ?? colors.textSecondary}
+                      />
                       <Text style={{
                         fontSize: 13,
                         fontWeight: '600',
                         color: subTheme?.primary ?? colors.textSecondary,
                       }}>
-                        {subMeta?.label ?? s}
+                        {subLabel ?? s}
                       </Text>
                     </View>
                   );
