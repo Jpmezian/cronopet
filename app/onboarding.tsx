@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, TextInput, SafeAreaView,
-  Image, Platform, KeyboardAvoidingView, ScrollView,
+  Platform, KeyboardAvoidingView, ScrollView,
   useWindowDimensions,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -16,6 +16,7 @@ import { usePetStore } from '@/store/usePetStore';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { breedsForType, fuzzyBreeds, canonicalizeBreed } from '@/data/breeds';
 import { ScalePress } from '@/components/ui/ScalePress';
+import { PetPhoto } from '@/components/PetPhoto';
 import { IllustrationWelcome } from '@/components/onboarding/IllustrationWelcome';
 import { IllustrationRoutine } from '@/components/onboarding/IllustrationRoutine';
 import { IllustrationSetup } from '@/components/onboarding/IllustrationSetup';
@@ -23,7 +24,9 @@ import type { PetType } from '@/types/pet';
 
 // ─── Constantes ───────────────────────────────────────────────
 const BRAND_PRIMARY  = '#04A29B';
-const DEFAULT_FOTO = 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600&q=80';
+// DEFAULT_FOTO removida em 2026-05-22 — era URL Unsplash apontando pra
+// um RATO ("photo-1587300003388-59208cc962cb"). Pet sem foto agora
+// renderiza <PetPhoto/> fallback (ícone Dog/Cat/PawPrint + cor da marca).
 type Step = 0 | 1 | 2;
 
 // ─── Tela principal ───────────────────────────────────────────
@@ -100,9 +103,11 @@ export default function OnboardingScreen() {
     const racaInput = raca.trim();
     const canonical = racaInput ? canonicalizeBreed(racaInput, tipo) : null;
     const racaFinal = canonical ?? racaInput ?? '';
+    // Foto vazia ("") quando user não escolhe → PetPhoto renderiza fallback
+    // estilizado em toda a UI. Antes ficava DEFAULT_FOTO Unsplash (rato).
     await completeOnboarding(
       nome.trim(), tipo, racaFinal || 'Sem raça definida',
-      foto ?? DEFAULT_FOTO,
+      foto ?? '',
       nascimento.trim() || undefined,
     );
     router.replace('/(tabs)');
@@ -176,12 +181,23 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
   const darkCardBg = isDark ? colors.bgCard : colors.textPrimary;
   const textEntering = isReduced ? FadeIn.duration(200) : FadeInRight.duration(280);
 
+  // Bug fix 2026-05-22: sem ScrollView, iPhone com tela menor (SE 1ª/2ª
+  // gen, mini) tinha texto + 3 cards + CTA estourando a altura disponível
+  // e elementos saíam da tela sem possibilidade de arrastar. ScrollView
+  // com flexGrow:1 + justifyContent:space-between preserva o layout
+  // quando cabe e libera o scroll quando não cabe.
   return (
-    <View style={{
-      flex: 1, paddingHorizontal: 24,
-      paddingTop: 24, paddingBottom: 28,
-      justifyContent: 'space-between',
-    }}>
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{
+        flexGrow: 1,
+        paddingHorizontal: 24,
+        paddingTop: 24, paddingBottom: 28,
+        justifyContent: 'space-between',
+        gap: 20,
+      }}
+      showsVerticalScrollIndicator={false}
+    >
       {/* Texto animado */}
       <Animated.View entering={textEntering}>
         <Text style={{
@@ -244,7 +260,7 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
           Começar agora →
         </Text>
       </ScalePress>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -268,12 +284,21 @@ function StepPetType({
   const darkCardBg = isDark ? colors.bgCard : colors.textPrimary;
   const textEntering = isReduced ? FadeIn.duration(200) : FadeInRight.duration(280);
 
+  // Bug fix 2026-05-22: idem StepWelcome — overflow em iPhone com tela
+  // menor. ScrollView com flexGrow + space-between mantém visual quando
+  // cabe, libera scroll quando estoura.
   return (
-    <View style={{
-      flex: 1, paddingHorizontal: 24,
-      paddingTop: 24, paddingBottom: 28,
-      justifyContent: 'space-between',
-    }}>
+    <ScrollView
+      style={{ flex: 1 }}
+      contentContainerStyle={{
+        flexGrow: 1,
+        paddingHorizontal: 24,
+        paddingTop: 24, paddingBottom: 28,
+        justifyContent: 'space-between',
+        gap: 20,
+      }}
+      showsVerticalScrollIndicator={false}
+    >
       <Animated.View entering={textEntering}>
         <Text style={{ color: colors.textTertiary, fontSize: 13, fontWeight: '500' }}>
           Passo 1 de 2
@@ -344,7 +369,7 @@ function StepPetType({
           Continuar →
         </Text>
       </ScalePress>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -366,11 +391,10 @@ function StepPetProfile({
   tipo, nome, raca, foto, nascimento, racaSuggestions,
   onChangeName, onChangeRaca, onSelectRaca, onChangeNascimento, onPickPhoto, onFinish,
 }: StepPetProfileProps) {
-  const { colors, actionTheme, isDark } = useThemeColors();
+  const { colors, isDark } = useThemeColors();
   const isReduced  = useReducedMotion();
   const darkCardBg = isDark ? colors.bgCard : colors.textPrimary;
   const isValid    = nome.trim().length > 0;
-  const photoUri   = foto ?? DEFAULT_FOTO;
   const tipoLabel  = tipo === 'cachorro' ? 'cachorro' : tipo === 'gato' ? 'gato' : 'pet';
   const textEntering = isReduced ? FadeIn.duration(200) : FadeInRight.duration(280);
 
@@ -403,7 +427,7 @@ function StepPetProfile({
         </Text>
       </Animated.View>
 
-      {/* Foto picker */}
+      {/* Foto picker — PetPhoto cuida do fallback se foto vazia */}
       <View style={{ alignItems: 'center', marginBottom: 24 }}>
         <ScalePress
           onPress={onPickPhoto}
@@ -412,13 +436,7 @@ function StepPetProfile({
           accessibilityLabel={`Foto do ${tipoLabel}. ${foto ? 'Toque para alterar.' : 'Toque para escolher.'}`}
           style={{ position: 'relative' }}
         >
-          <Image
-            source={{ uri: photoUri }}
-            style={{ width: 96, height: 96, borderRadius: 48 }}
-            accessible
-            accessibilityRole="image"
-            accessibilityLabel={`Foto atual do ${tipoLabel}`}
-          />
+          <PetPhoto foto={foto} tipo={tipo} nome={nome} size={96} />
           <View style={{
             position: 'absolute', bottom: 0, right: 0,
             backgroundColor: BRAND_PRIMARY, width: 32, height: 32,

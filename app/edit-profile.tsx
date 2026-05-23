@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, TextInput, SafeAreaView,
-  Image, Platform, ScrollView, ActivityIndicator,
+  Platform, ScrollView, ActivityIndicator,
 } from 'react-native';
 // Shared element transitions not available in Reanimated v4.1.7 — kept for future upgrade
 import * as ImagePicker from 'expo-image-picker';
@@ -13,6 +13,7 @@ import type { PetType } from '@/types/pet';
 import * as Haptics from 'expo-haptics';
 import { ChevronLeft, Camera } from 'lucide-react-native';
 import { ScalePress } from '@/components/ui/ScalePress';
+import { PetPhoto } from '@/components/PetPhoto';
 
 // ─── Constantes de marca ─────────────────────────────────────
 // Cores fixas de identidade visual que não variam com o tema
@@ -157,10 +158,12 @@ export default function EditProfileScreen() {
         {/* Foto */}
         <View style={{ alignItems: 'center', paddingVertical: 24 }}>
           <ScalePress onPress={handlePickPhoto}>
-            <Image
-              source={{ uri: foto }}
-              style={{ width: 120, height: 120, borderRadius: 60, borderWidth: 3, borderColor: colors.border }}
-              resizeMode="cover"
+            <PetPhoto
+              foto={foto}
+              tipo={tipo}
+              nome={nome}
+              size={120}
+              style={{ borderWidth: 3, borderColor: colors.border }}
             />
             <View style={{
               position: 'absolute', bottom: 0, right: 0,

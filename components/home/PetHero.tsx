@@ -1,30 +1,58 @@
 import React from 'react';
-import { View, Text, Image, Platform, StyleSheet } from 'react-native';
+import { View, Text, Image, Platform } from 'react-native';
 import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { Pencil, Flame } from 'lucide-react-native';
+import { Pencil, Flame, Dog, Cat, PawPrint } from 'lucide-react-native';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { ScalePress } from '@/components/ui/ScalePress';
-
-const BRAND_PRIMARY = '#04A29B';
+import type { PetType } from '@/types/pet';
 
 interface PetHeroProps {
   nome:       string;
   foto:       string;
+  tipo:       PetType;
   raca?:      string;
   idadeLabel?: string;  // ex: "2 anos"
   streak:     number;
 }
 
-export function PetHero({ nome, foto, raca, idadeLabel, streak }: PetHeroProps) {
+/**
+ * Decide se foto é real ou cai no fallback. Mesma lógica de
+ * components/PetPhoto.ts — duplicada propositalmente pra evitar
+ * import circular (PetHero não usa PetPhoto, semântica diferente:
+ * PetHero é banner grande de fundo).
+ */
+function isUsablePhoto(foto?: string | null): foto is string {
+  if (!foto || typeof foto !== 'string') return false;
+  const t = foto.trim();
+  if (t.length === 0) return false;
+  if (t.includes('1587300003388-59208cc962cb')) return false; // rato Unsplash
+  return true;
+}
+
+export function PetHero({ nome, foto, tipo, raca, idadeLabel, streak }: PetHeroProps) {
   const router = useRouter();
-  const { colors, isDark } = useThemeColors();
+  const { colors, actionTheme, isDark } = useThemeColors();
+  const hasPhoto = isUsablePhoto(foto);
 
   const subtitle = [
     raca && raca !== 'Sem raça definida' ? raca : null,
     idadeLabel,
   ].filter(Boolean).join(' · ');
+
+  // Fallback colors + icon por tipo (mesmo pattern do <PetPhoto/>)
+  const fallbackBg = tipo === 'gato'
+    ? actionTheme.xixi.bg
+    : tipo === 'outro'
+    ? actionTheme.banho.bg
+    : actionTheme.passeio.bg;
+  const fallbackFg = tipo === 'gato'
+    ? actionTheme.xixi.primary
+    : tipo === 'outro'
+    ? actionTheme.banho.primary
+    : actionTheme.passeio.primary;
+  const FallbackIcon = tipo === 'gato' ? Cat : tipo === 'cachorro' ? Dog : PawPrint;
 
   return (
     <View style={{
@@ -36,15 +64,47 @@ export function PetHero({ nome, foto, raca, idadeLabel, streak }: PetHeroProps) 
         shadowOpacity: isDark ? 0.3 : 0.08, shadowRadius: 12,
       }),
     }}>
-      {/* Foto do pet */}
-      <Image
-        source={{ uri: foto }}
-        style={{ width: '100%', height: 220 }}
-        resizeMode="cover"
-        accessible
-        accessibilityRole="image"
-        accessibilityLabel={`Foto de ${nome}`}
-      />
+      {/* Foto do pet — ou fallback estilizado quando não tem foto.
+          ANTES: ficava um rato Unsplash quando usuário pulava a etapa.
+          AGORA: banner color-coded por tipo + ícone Lucide gigante +
+          inicial do nome. Sem dependência de network, sempre on-brand. */}
+      {hasPhoto ? (
+        <Image
+          source={{ uri: foto }}
+          style={{ width: '100%', height: 220 }}
+          resizeMode="cover"
+          accessible
+          accessibilityRole="image"
+          accessibilityLabel={`Foto de ${nome}`}
+        />
+      ) : (
+        <View
+          style={{
+            width: '100%', height: 220,
+            backgroundColor: fallbackBg,
+            alignItems: 'center', justifyContent: 'center',
+          }}
+          accessible
+          accessibilityRole="image"
+          accessibilityLabel={`Avatar de ${nome}`}
+        >
+          <FallbackIcon size={88} color={fallbackFg} strokeWidth={1.6} />
+          {!!nome && (
+            <Text
+              style={{
+                marginTop: 8,
+                fontSize: 38, fontWeight: '800',
+                color: fallbackFg,
+                fontFamily: 'Nunito_800ExtraBold',
+                opacity: 0.85,
+              }}
+              importantForAccessibility="no"
+            >
+              {nome.trim().charAt(0).toUpperCase()}
+            </Text>
+          )}
+        </View>
+      )}
 
       {/* Gradient overlay no bottom para legibilidade do texto */}
       <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 130 }}>

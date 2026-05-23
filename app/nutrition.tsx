@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
   View, Text, SafeAreaView, ScrollView,
-  TextInput, Platform, Image, Modal, KeyboardAvoidingView,
+  TextInput, Platform, Modal, KeyboardAvoidingView,
   Pressable,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
@@ -12,6 +12,7 @@ import {
 } from 'lucide-react-native';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { ScalePress } from '@/components/ui/ScalePress';
+import { PetPhoto } from '@/components/PetPhoto';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { ChipGroup } from '@/components/ui/ChipGroup';
 import type { ChipOption } from '@/components/ui/ChipGroup';
@@ -265,10 +266,12 @@ export default function NutritionScreen() {
             shadowOpacity: isDark ? 0.22 : 0.05, shadowRadius: 6,
           }),
         }}>
-          <Image
-            source={{ uri: pet.foto }}
-            style={{ width: 52, height: 52, borderRadius: 26, marginRight: 12 }}
-            accessibilityLabel={`Foto de ${pet.nome}`}
+          <PetPhoto
+            foto={pet.foto}
+            tipo={pet.tipo}
+            nome={pet.nome}
+            size={52}
+            style={{ marginRight: 12 }}
           />
           <View style={{ flex: 1 }}>
             <Text style={{

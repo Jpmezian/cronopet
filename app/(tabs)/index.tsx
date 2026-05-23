@@ -14,6 +14,7 @@ import { useWeather } from '@/hooks/useWeather';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { requestPermissionsAsync } from '@/services/NotificationService';
 import { ScalePress } from '@/components/ui/ScalePress';
+import { PetPhoto } from '@/components/PetPhoto';
 import { DailyProgress } from '@/components/home/DailyProgress';
 import { ActionButton } from '@/components/home/ActionButton';
 import type { ActionConfig } from '@/components/home/ActionButton';
@@ -674,6 +675,7 @@ export default function PetDashboard() {
         <PetHero
           nome={pet.nome}
           foto={pet.foto}
+          tipo={pet.tipo}
           raca={pet.raca}
           idadeLabel={pet.nascimento ? getPetAge(pet.nascimento) : undefined}
           streak={streak}
@@ -1309,18 +1311,7 @@ export default function PetDashboard() {
             borderRadius: 16, padding: 14, marginBottom: 12,
             borderWidth: 1, borderColor: actionTheme.passeio.border,
           }}>
-            {pet.foto ? (
-              <Image
-                source={{ uri: pet.foto }}
-                style={{ width: 44, height: 44, borderRadius: 22 }}
-                resizeMode="cover"
-                accessible={false}
-              />
-            ) : (
-              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: actionTheme.passeio.bg, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ fontSize: 22 }}>🐾</Text>
-              </View>
-            )}
+            <PetPhoto foto={pet.foto} tipo={pet.tipo} nome={pet.nome} size={44} />
             <View style={{ flex: 1 }}>
               <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 15, color: actionTheme.passeio.primary }}>
                 {pet.nome}
