@@ -2,7 +2,7 @@ import React, { useEffect, useCallback, useState, useMemo, useRef } from 'react'
 import {
   View, Text, Image, Pressable, SafeAreaView,
   Platform, Modal, TextInput, ScrollView, ActivityIndicator,
-  KeyboardAvoidingView,
+  KeyboardAvoidingView, AppState,
 } from 'react-native';
 // Shared element transitions not available in Reanimated v4.1.7 — kept for future upgrade
 import * as Notifications from 'expo-notifications';
@@ -25,6 +25,7 @@ import {
   Trophy, CalendarDays, Scale, TrendingUp,
 } from 'lucide-react-native';
 import { PoopIcon } from '@/components/icons/PoopIcon';
+import { getLocalToday, tsToLocalYMD } from '@/lib/dateLocal';
 import { NotificationAskSheet } from '@/components/ui/NotificationAskSheet';
 import { WelcomeTour } from '@/components/onboarding/WelcomeTour';
 import { MilestoneSheet } from '@/components/ui/MilestoneSheet';
@@ -320,7 +321,18 @@ export default function PetDashboard() {
     }
   }, [notifStatus]);
 
-  useEffect(() => { checkAndResetDay(); }, [checkAndResetDay]);
+  // R4-2: chama no mount + sempre que o app volta de background.
+  // Sem o AppState listener, user que deixava o app aberto às 23h e
+  // voltava às 01h continuava com "todayDate=ontem" até reabrir o app
+  // do zero. Combinado com o fix UTC→local em getTodayString, garante
+  // virada de dia confiável.
+  useEffect(() => {
+    checkAndResetDay();
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') checkAndResetDay();
+    });
+    return () => sub.remove();
+  }, [checkAndResetDay]);
 
   useEffect(() => {
     Notifications.getPermissionsAsync()
@@ -330,14 +342,14 @@ export default function PetDashboard() {
 
   // ── Contagens de hoje + métricas de wellness ─────────────
   const { todayCounts, todayFoodGrams, todayWalkMinutes } = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getLocalToday();
     const counts: Record<ActionKey, number> = {
       comida: 0, agua: 0, passeio: 0, xixi: 0, coco: 0, banho: 0,
     };
     let foodGrams = 0;
     let walkMinutes = 0;
     actionHistory.forEach((log) => {
-      if (new Date(log.timestamp).toISOString().slice(0, 10) === today) {
+      if (tsToLocalYMD(log.timestamp) === today) {
         counts[log.key] = (counts[log.key] ?? 0) + 1;
         if (log.subActions) {
           log.subActions.forEach((sub) => { counts[sub] = (counts[sub] ?? 0) + 1; });
@@ -385,7 +397,7 @@ export default function PetDashboard() {
   const { daysComplete, daysActive } = useMemo(() => {
     const byDay: Record<string, Set<ActionKey>> = {};
     actionHistory.forEach((log) => {
-      const day = new Date(log.timestamp).toISOString().slice(0, 10);
+      const day = tsToLocalYMD(log.timestamp);
       if (!byDay[day]) byDay[day] = new Set();
       byDay[day].add(log.key);
     });
@@ -429,7 +441,7 @@ export default function PetDashboard() {
     for (let i = 6; i >= 0; i--) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
-      const ds = d.toISOString().slice(0, 10);
+      const ds = tsToLocalYMD(d.getTime());
       const dayLogs = actionHistory.filter(
         (l) => new Date(l.timestamp).toISOString().slice(0, 10) === ds,
       );
@@ -457,7 +469,7 @@ export default function PetDashboard() {
     for (let i = 13; i >= 7; i--) {
       const d = new Date(now);
       d.setDate(d.getDate() - i);
-      const ds = d.toISOString().slice(0, 10);
+      const ds = tsToLocalYMD(d.getTime());
       const dayLogs = actionHistory.filter(
         (l) => new Date(l.timestamp).toISOString().slice(0, 10) === ds,
       );

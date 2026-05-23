@@ -13,6 +13,7 @@ import Animated from 'react-native-reanimated';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { resolvePhotoUri } from '@/lib/photoPath';
+import { getLocalToday } from '@/lib/dateLocal';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { WeightChart } from '@/components/medical/WeightChart';
 import { BreedHealthCard } from '@/components/medical/BreedHealthCard';
@@ -115,7 +116,7 @@ export default function MedicalScreen() {
   // Modal: peso
   const [weightModal, setWeightModal]     = useState(false);
   const [weightPeso, setWeightPeso]       = useState('');
-  const [weightData, setWeightData]       = useState(() => new Date().toISOString().slice(0, 10));
+  const [weightData, setWeightData]       = useState(() => getLocalToday());
   const [weightNota, setWeightNota]       = useState('');
 
   // ── PDF ───────────────────────────────────────────────────────
@@ -207,7 +208,7 @@ export default function MedicalScreen() {
     addWeightEntry(peso, weightData.trim(), weightNota || undefined);
     setWeightModal(false);
     setWeightPeso(''); setWeightNota('');
-    setWeightData(new Date().toISOString().slice(0, 10));
+    setWeightData(getLocalToday());
   }, [weightPeso, weightData, weightNota, addWeightEntry]);
 
   const confirmRemoveWeight = useCallback((id: string) => {
@@ -233,7 +234,7 @@ export default function MedicalScreen() {
       return db.localeCompare(da);
     }), [appointments]);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getLocalToday();
 
   // ── Input style compartilhado ────────────────────────────────
   const inputStyle = {

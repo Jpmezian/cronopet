@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, Image, Platform } from 'react-native';
-import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { Pencil, Flame, Dog, Cat, PawPrint } from 'lucide-react-native';
@@ -107,23 +106,11 @@ export function PetHero({ nome, foto, tipo, raca, idadeLabel, streak }: PetHeroP
         </View>
       )}
 
-      {/* Gradient overlay no bottom — sutil pra legibilidade do texto sem
-          mascarar 60% da foto. Antes: 130px com 0.85 no fim → ficava uma
-          "barra preta" cobrindo a cara dos pets em retrato. Agora: 110px
-          com 0.65 no fim, começa mais tarde (offset 0.55) e desce mais
-          suave. Cobre só o que precisa pra texto branco passar AA. */}
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 110 }}>
-        <Svg width="100%" height="100%">
-          <Defs>
-            <LinearGradient id="heroGrad" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0"    stopColor="rgba(0,0,0,0)"    />
-              <Stop offset="0.55" stopColor="rgba(0,0,0,0.25)" />
-              <Stop offset="1"    stopColor="rgba(0,0,0,0.65)" />
-            </LinearGradient>
-          </Defs>
-          <Rect width="100%" height="100%" fill="url(#heroGrad)" />
-        </Svg>
-      </View>
+      {/* R4-1: gradient FULL-WIDTH removido. Reclamação repetida do
+          TestFlight: "ainda tem barra preta grande". Agora cada
+          elemento (nome+raça, streak, editar) tem o próprio chip com
+          backdrop escuro SÓ atrás do conteúdo — a foto fica 100%
+          visível. WCAG AA mantido pelo contraste do chip. */}
 
       {/* Streak badge (top-right) — ícone Lucide Flame em coral, sem emoji */}
       <View style={{
@@ -153,18 +140,24 @@ export function PetHero({ nome, foto, tipo, raca, idadeLabel, streak }: PetHeroP
         </Text>
       </View>
 
-      {/* Info overlay (bottom-left) */}
+      {/* Info overlay (bottom-left) — chip com backdrop escuro pill
+          em vez de gradient full-width. Cobre só o necessário pro
+          texto branco passar AA. */}
       <View style={{
         position: 'absolute',
-        bottom: 16, left: 18, right: 70,
+        bottom: 14, left: 14, right: 70,
+        backgroundColor: 'rgba(0,0,0,0.55)',
+        borderRadius: 16,
+        paddingHorizontal: 12, paddingVertical: 8,
+        alignSelf: 'flex-start',
       }}>
         <Text
           numberOfLines={1}
           style={{
             color: '#ffffff',
             fontFamily: 'Nunito_800ExtraBold',
-            fontSize: 24, fontWeight: '800',
-            lineHeight: 28,
+            fontSize: 22, fontWeight: '800',
+            lineHeight: 26,
           }}
         >
           {nome}
@@ -173,9 +166,9 @@ export function PetHero({ nome, foto, tipo, raca, idadeLabel, streak }: PetHeroP
           <Text
             numberOfLines={1}
             style={{
-              color: 'rgba(255,255,255,0.85)',
+              color: 'rgba(255,255,255,0.92)',
               fontSize: 12, fontWeight: '500',
-              marginTop: 2,
+              marginTop: 1,
             }}
           >
             {subtitle}

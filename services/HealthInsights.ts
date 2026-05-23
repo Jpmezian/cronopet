@@ -27,6 +27,7 @@ import type {
   ActionLog, WeightEntry, MedicalEvent, PetProfile,
 } from '@/types/pet';
 import { getBreedHealthProfile, type BreedHealthProfile } from '@/data/breed-conditions';
+import { tsToLocalYMD } from '@/lib/dateLocal';
 
 // ─── Tipos públicos ────────────────────────────────────────────────────
 
@@ -653,7 +654,7 @@ function detectExerciseDeficit(ctx: Ctx): HealthInsight[] {
   // Conta dias distintos com passeio (não logs — alguém pode logar 2× no
   // mesmo dia). Se < 3 dias distintos, ainda é cedo pra avaliar padrão.
   const walkDays = new Set(
-    walks.map((l) => new Date(l.timestamp).toISOString().slice(0, 10))
+    walks.map((l) => tsToLocalYMD(l.timestamp))
   );
   if (walkDays.size < 3) return [];
 

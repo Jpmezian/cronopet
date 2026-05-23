@@ -3,6 +3,7 @@ import * as Sharing from 'expo-sharing';
 import { File } from 'expo-file-system';
 import type { ActionLog, MedicalEvent, Vaccine, PetProfile, Appointment, WeightEntry } from '@/types/pet';
 import { escapeHtml } from '@/lib/security';
+import { getLocalToday } from '@/lib/dateLocal';
 // getBreedHealthProfile/CATEGORY_LABELS/SEVERITY_LABELS REMOVIDOS no
 // R2-9 — feedback do TestFlight de que predisposição racial no PDF
 // pode ofender o veterinário (parece que o app tá ensinando ele).
@@ -106,7 +107,7 @@ export async function generateVetReport(
 
   // byDay / weightSorted / apptSorted vêm de `stats` (computeReportStats)
   const { byDay, weightSorted, apptSorted } = stats;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getLocalToday();
 
   const html = `
 <!DOCTYPE html>

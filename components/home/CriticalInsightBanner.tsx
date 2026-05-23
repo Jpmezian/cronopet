@@ -28,6 +28,7 @@ import { ScalePress } from '@/components/ui/ScalePress';
 import { useToastStore } from '@/store/useToastStore';
 import { usePetStore } from '@/store/usePetStore';
 import { personalizeInsight } from '@/lib/insightPersonalization';
+import { tsToLocalYMD } from '@/lib/dateLocal';
 import type { HealthInsight } from '@/services/HealthInsights';
 import type { PetProfile } from '@/types/pet';
 
@@ -45,7 +46,7 @@ function suggestAppointmentDate(): string {
     const day = d.getDay();
     if (day !== 0 && day !== 6) added += 1;
   }
-  return d.toISOString().slice(0, 10);
+  return tsToLocalYMD(d.getTime());
 }
 
 export function CriticalInsightBanner({ insights, pet }: Props) {

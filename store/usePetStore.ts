@@ -6,6 +6,7 @@ import * as Sentry from '@sentry/react-native';
 import { zustandMMKVStorage } from './storage';
 import { sanitizeName, sanitizeNote, INPUT_LIMITS } from '@/lib/security';
 import { getBreedSize } from '@/data/breed-meta';
+import { getLocalToday, tsToLocalYMD } from '@/lib/dateLocal';
 import { track } from '@/services/analytics';
 import {
   scheduleDailyReminder,
@@ -23,7 +24,9 @@ import type { CronoPetUser } from '@/types/auth';
 // ─── Helpers ───────────────────────────────────────────────────
 
 function getTodayString(): string {
-  return new Date().toISOString().slice(0, 10);
+  // R4-2: usa fuso LOCAL pra evitar bug onde registros das 21h BRT
+  // viravam "amanhã UTC" e ficavam grudados em "hoje" no dia seguinte.
+  return getLocalToday();
 }
 
 function makeId(): string {
@@ -80,7 +83,8 @@ async function persistAndStripPhoto(uri: string): Promise<string> {
 
 /** Um dia é completo quando tem ≥1 comida E ≥1 água */
 function isDayComplete(logs: ActionLog[], dateStr: string): boolean {
-  const day = logs.filter((l) => new Date(l.timestamp).toISOString().slice(0, 10) === dateStr);
+  // R4-2: compara em LOCAL — ver lib/dateLocal.ts
+  const day = logs.filter((l) => tsToLocalYMD(l.timestamp) === dateStr);
   return day.some((l) => l.key === 'comida') && day.some((l) => l.key === 'agua');
 }
 

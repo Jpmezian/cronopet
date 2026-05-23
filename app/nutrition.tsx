@@ -37,6 +37,7 @@ import {
 } from '@/data/breed-conditions';
 import { getBreedSize, PET_SIZE_LABELS, PET_SIZE_WEIGHT_RANGE } from '@/data/breed-meta';
 import { estimateWeight } from '@/data/estimateWeight';
+import { getLocalToday } from '@/lib/dateLocal';
 import type {
   NutritionGoal, BodyCondition, BaselineActivity, PetSize,
 } from '@/types/pet';
@@ -136,7 +137,7 @@ export default function NutritionScreen() {
       showToast('error', 'Digite um peso válido');
       return;
     }
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getLocalToday();
     addWeightEntry(peso, today);
     setWeightInput('');
     setWeightModalVisible(false);

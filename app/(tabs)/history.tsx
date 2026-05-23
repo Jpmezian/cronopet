@@ -10,6 +10,7 @@ import { ScalePress } from '@/components/ui/ScalePress';
 import { useMotion } from '@/hooks/useMotion';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { resolvePhotoUri } from '@/lib/photoPath';
+import { getLocalToday, tsToLocalYMD } from '@/lib/dateLocal';
 import { usePetStore } from '@/store/usePetStore';
 import { ACTION_ICON, ACTION_LABEL } from '@/constants/actionIcons';
 import { BarChart3, SearchX } from 'lucide-react-native';
@@ -34,7 +35,7 @@ type FilterKey = ActionKey | 'all';
 // ─── Helpers ─────────────────────────────────────────────────
 
 function toDateKey(ts: number): string {
-  return new Date(ts).toISOString().slice(0, 10);
+  return tsToLocalYMD(ts);
 }
 
 function formatTime(ts: number): string {
@@ -42,8 +43,8 @@ function formatTime(ts: number): string {
 }
 
 function getDateLabel(dateStr: string): string {
-  const today     = new Date().toISOString().slice(0, 10);
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const today     = getLocalToday();
+  const yesterday = tsToLocalYMD(Date.now() - 86400000);
   if (dateStr === today)     return 'Hoje';
   if (dateStr === yesterday) return 'Ontem';
   const [y, m, d] = dateStr.split('-').map(Number);
