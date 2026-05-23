@@ -53,6 +53,30 @@ function daysBetween(fromDateStr: string, toDateStr: string): number {
  * de lib/photoPath.ts pra reconstruir a URI atual em runtime.
  * URLs http(s) passam direto.
  */
+/**
+ * Best-effort: deleta o arquivo físico de uma foto persistida quando o
+ * log/evento que a referenciava é removido. Aceita o valor armazenado
+ * (filename relativo OU URI legacy absoluta OU URL remota). URLs remotas
+ * são ignoradas (não foram baixadas pra cá). Erro de delete não throw.
+ */
+function deletePhotoFile(stored: string): void {
+  if (!stored) return;
+  if (stored.startsWith('http://') || stored.startsWith('https://')) return;
+  try {
+    // Reaproveita o resolver pra reconstruir o full path em runtime
+    const filename = stored.startsWith('file://')
+      ? stored.slice(stored.lastIndexOf('/') + 1)
+      : stored;
+    if (!filename) return;
+    const target = new File(Paths.document, filename);
+    // expo-file-system 19 não throw se arquivo já não existir
+    target.delete();
+  } catch (err) {
+    // Engole — best-effort. Sentry registra pra detectar padrões.
+    Sentry.captureException(err, { tags: { op: 'deletePhotoFile' } });
+  }
+}
+
 async function persistAndStripPhoto(uri: string): Promise<string> {
   if (!uri) return uri;
   try {
@@ -486,6 +510,12 @@ export const usePetStore = create<PetStore>()(
       },
 
       removeActionLog: (id) => {
+        // R7-A1: deletar arquivo físico se o log tinha foto. Antes vazava
+        // — log removido do store mas o JPG ficava órfão no Documents.
+        // Best-effort: erro de delete não bloqueia (file pode já não existir).
+        const current = get();
+        const log = current.actionHistory.find((l) => l.id === id);
+        if (log?.photo) deletePhotoFile(log.photo);
         set((s) => ({ actionHistory: s.actionHistory.filter((l) => l.id !== id) }));
       },
 
@@ -556,6 +586,9 @@ export const usePetStore = create<PetStore>()(
       },
 
       removeMedicalEvent: (id) => {
+        // R7-A1: cleanup foto física (ver removeActionLog)
+        const event = get().medicalEvents.find((e) => e.id === id);
+        if (event?.photo) deletePhotoFile(event.photo);
         set((s) => ({ medicalEvents: s.medicalEvents.filter((e) => e.id !== id) }));
       },
 

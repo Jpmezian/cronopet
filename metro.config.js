@@ -1,6 +1,7 @@
 const { getDefaultConfig } = require('expo/metro-config');
-const { withNativeWind } = require('nativewind/metro');
 
+// R7-B: NativeWind removido (sem callsites reais). Voltamos pro
+// metro config default — sem withNativeWind wrap, sem global.css.
 const config = getDefaultConfig(__dirname);
 
-module.exports = withNativeWind(config, { input: './global.css' });
+module.exports = config;
