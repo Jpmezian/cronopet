@@ -71,7 +71,7 @@ export function PetHero({ nome, foto, tipo, raca, idadeLabel, streak }: PetHeroP
       {hasPhoto ? (
         <Image
           source={{ uri: foto }}
-          style={{ width: '100%', height: 220 }}
+          style={{ width: '100%', height: 280 }}
           resizeMode="cover"
           accessible
           accessibilityRole="image"
@@ -80,7 +80,7 @@ export function PetHero({ nome, foto, tipo, raca, idadeLabel, streak }: PetHeroP
       ) : (
         <View
           style={{
-            width: '100%', height: 220,
+            width: '100%', height: 280,
             backgroundColor: fallbackBg,
             alignItems: 'center', justifyContent: 'center',
           }}
@@ -106,14 +106,18 @@ export function PetHero({ nome, foto, tipo, raca, idadeLabel, streak }: PetHeroP
         </View>
       )}
 
-      {/* Gradient overlay no bottom para legibilidade do texto */}
-      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 130 }}>
+      {/* Gradient overlay no bottom — sutil pra legibilidade do texto sem
+          mascarar 60% da foto. Antes: 130px com 0.85 no fim → ficava uma
+          "barra preta" cobrindo a cara dos pets em retrato. Agora: 110px
+          com 0.65 no fim, começa mais tarde (offset 0.55) e desce mais
+          suave. Cobre só o que precisa pra texto branco passar AA. */}
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 110 }}>
         <Svg width="100%" height="100%">
           <Defs>
             <LinearGradient id="heroGrad" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0"   stopColor="rgba(0,0,0,0)"   />
-              <Stop offset="0.4" stopColor="rgba(0,0,0,0.4)" />
-              <Stop offset="1"   stopColor="rgba(0,0,0,0.85)" />
+              <Stop offset="0"    stopColor="rgba(0,0,0,0)"    />
+              <Stop offset="0.55" stopColor="rgba(0,0,0,0.25)" />
+              <Stop offset="1"    stopColor="rgba(0,0,0,0.65)" />
             </LinearGradient>
           </Defs>
           <Rect width="100%" height="100%" fill="url(#heroGrad)" />

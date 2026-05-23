@@ -17,6 +17,10 @@ export interface ChipOption<T extends string> {
   /** @deprecated use Icon. Mantido temporariamente pra retrocompat. */
   emoji?: string;
   label: string;
+  /** Texto secundário pequeno embaixo do label. Útil pra esclarecer
+   *  unidades ou faixas ("até 10kg", "10–25kg"). Feedback TestFlight #5:
+   *  usuários não sabiam o que era "Pequeno" / "Médio" / "Grande". */
+  sublabel?: string;
 }
 
 interface ChipGroupProps<T extends string> {
@@ -82,13 +86,26 @@ export function ChipGroup<T extends string>({
                   {opt.emoji}
                 </Text>
               ) : null}
-              <Text style={{
-                fontSize: compact ? 12 : 13,
-                fontWeight: active ? '700' : '500',
-                color: active ? accentColor : colors.textSecondary,
-              }}>
-                {opt.label}
-              </Text>
+              <View>
+                <Text style={{
+                  fontSize: compact ? 12 : 13,
+                  fontWeight: active ? '700' : '500',
+                  color: active ? accentColor : colors.textSecondary,
+                }}>
+                  {opt.label}
+                </Text>
+                {opt.sublabel ? (
+                  <Text style={{
+                    fontSize: compact ? 9 : 10,
+                    fontWeight: '500',
+                    color: active ? accentColor : colors.textTertiary,
+                    opacity: active ? 0.85 : 1,
+                    marginTop: 1,
+                  }}>
+                    {opt.sublabel}
+                  </Text>
+                ) : null}
+              </View>
             </ScalePress>
           </View>
         );

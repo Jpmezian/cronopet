@@ -2,10 +2,13 @@
 // ═══ Hook de tokens visuais — paleta oficial CronoPet        ═══
 // ═══════════════════════════════════════════════════════════════
 //
-// Light e dark mode espelham a paleta da marca (Celadon, Verdigris,
-// Beige, Ash Brown, Graphite). Neutros seguem a escala terra-quente
-// definida em `constants/colors.ts` — não usamos stone/zinc/slate.
+// Suporta 3 paletas (feedback TestFlight #12):
+//   • cronopet      — marca (Celadon/Verdigris/Beige/Ash Brown/Graphite).
+//                     Light/dark seguem `themeMode` (system/light/dark).
+//   • light-neutral — cinza-azulado claro, "padrão iOS Notes" sem warm.
+//   • dark-neutral  — cinza-azulado escuro.
 //
+// Quando paletteMode é neutral, `themeMode` é ignorado (paleta força modo).
 // Ações do pet (comida/água/passeio/etc) mantêm a paleta funcional
 // auditada WCAG, intencionalmente independente da marca: são códigos
 // visuais que o tutor aprende a associar a cada ação.
@@ -14,11 +17,13 @@ import { useColorScheme } from 'react-native';
 import { usePetStore } from '@/store/usePetStore';
 import {
   brand, neutral, neutralDark, card, cardDark, verdigrisDeep, actions,
+  neutralLightStandard, cardLightStandard,
+  neutralDarkStandard, cardDarkStandard,
 } from '@/constants/colors';
 
-// ─── Tokens neutros (light) ────────────────────────────────────
+// ─── CronoPet (marca) — light ──────────────────────────────────
 
-const light = {
+const lightCronopet = {
   bgScreen:  neutral[50],     // #FBFDF3 — Beige whitewashed
   bgCard:    card,            // #FFFEF8 — off-white quente
   bgInput:   neutral[100],    // #F2F4DC — Beige diluído
@@ -31,15 +36,14 @@ const light = {
 
   border: neutral[200],
 
-  // Primária da marca como cor ativa (era preto puro antes)
   tabActive:   brand.verdigris,
   tabInactive: neutral[400],
   tabBar:      card,
 } as const;
 
-// ─── Tokens neutros (dark) ─────────────────────────────────────
+// ─── CronoPet (marca) — dark ───────────────────────────────────
 
-const dark = {
+const darkCronopet = {
   bgScreen:  neutralDark[50],
   bgCard:    cardDark,
   bgInput:   neutralDark[100],
@@ -52,10 +56,51 @@ const dark = {
 
   border: neutralDark[200],
 
-  // No dark, Celadon brilha mais que Verdigris — vira tab active
   tabActive:   brand.celadon,
   tabInactive: neutralDark[400],
   tabBar:      cardDark,
+} as const;
+
+// ─── Neutro — light ────────────────────────────────────────────
+
+const lightNeutral = {
+  bgScreen:  '#F8FAFC',      // slate-50 — quase branco
+  bgCard:    cardLightStandard,
+  bgInput:   neutralLightStandard[100],
+  bgMuted:   neutralLightStandard[200],
+
+  textPrimary:   neutralLightStandard[900],
+  textSecondary: neutralLightStandard[500],
+  textTertiary:  neutralLightStandard[400],
+  textDisabled:  neutralLightStandard[300],
+
+  border: neutralLightStandard[200],
+
+  // Cor ativa neutra — azul slate-600 (não brand)
+  tabActive:   '#0F172A',
+  tabInactive: neutralLightStandard[400],
+  tabBar:      cardLightStandard,
+} as const;
+
+// ─── Neutro — dark ─────────────────────────────────────────────
+
+const darkNeutral = {
+  bgScreen:  neutralDarkStandard[50],
+  bgCard:    cardDarkStandard,
+  bgInput:   neutralDarkStandard[100],
+  bgMuted:   neutralDarkStandard[200],
+
+  textPrimary:   neutralDarkStandard[900],
+  textSecondary: neutralDarkStandard[500],
+  textTertiary:  neutralDarkStandard[400],
+  textDisabled:  neutralDarkStandard[300],
+
+  border: neutralDarkStandard[200],
+
+  // Cor ativa neutra dark — slate-50 (quase branco)
+  tabActive:   '#F8FAFC',
+  tabInactive: neutralDarkStandard[400],
+  tabBar:      cardDarkStandard,
 } as const;
 
 // ─── Ações do pet (paleta funcional intocada) ──────────────────
@@ -70,8 +115,9 @@ const actionsDark = {
 } as const;
 
 // Light = importado direto de constants/colors (single source of truth,
-// CLAUDE.md proíbe hardcode duplicado). Antes era duplicação literal de
-// 6 entradas — caí no erro de "deixei aqui pra ficar perto do dark".
+// CLAUDE.md proíbe hardcode duplicado). Aplicável tanto pra CronoPet
+// quanto pra paleta neutra — ações do pet são identidade funcional
+// independente do estilo visual escolhido.
 const actionsLight = actions;
 
 // ─── Brand tokens (independentes de tema) ──────────────────────
@@ -87,23 +133,26 @@ const brandTokens = {
   textBlack:   brand.graphite,
 } as const;
 
-// ─── Hook ──────────────────────────────────────────────────────
+// ─── Tipos públicos ────────────────────────────────────────────
 
-// Os 3 tipos type-only (ThemeColors, ActionTheme, BrandTokens) foram
-// removidos em 2026-05-17 — não tinham consumidor externo. Se algum
-// componente precisar tipar props que recebem o retorno do hook, use
-// `ReturnType<typeof useThemeColors>`.
+export type PaletteMode = 'cronopet' | 'light-neutral' | 'dark-neutral';
+export type ThemeMode   = 'system' | 'light' | 'dark';
+
+// ─── Helpers de decisão ────────────────────────────────────────
 
 /**
- * Decisão pura: dado o modo escolhido pelo usuário + scheme do sistema,
- * retorna se a UI deve renderizar em dark mode. Extraído pra testabilidade.
+ * Decisão pura: dado o modo escolhido + scheme do sistema, retorna
+ * se a UI deve renderizar em dark mode. Extraído pra testabilidade.
  *
- *   themeMode='dark'   → sempre dark (override do user)
- *   themeMode='light'  → sempre light (override do user)
+ *   themeMode='dark'   → sempre dark
+ *   themeMode='light'  → sempre light
  *   themeMode='system' → segue o sistema (null/undefined cai em light)
+ *
+ * Quando paletteMode é neutral-*, esta função é ignorada — a paleta
+ * já força light/dark e o themeMode fica inerte.
  */
 export function pickIsDark(
-  themeMode: 'system' | 'light' | 'dark',
+  themeMode: ThemeMode,
   systemScheme: 'light' | 'dark' | null | undefined,
 ): boolean {
   if (themeMode === 'dark')  return true;
@@ -111,16 +160,40 @@ export function pickIsDark(
   return systemScheme === 'dark';
 }
 
+/**
+ * Resolve qual conjunto de tokens (colors + isDark) usar dado os 2
+ * modos. Pura — sem hooks. Inline no hook abaixo.
+ */
+function resolveTheme(
+  paletteMode: PaletteMode,
+  themeMode: ThemeMode,
+  systemScheme: 'light' | 'dark' | null | undefined,
+) {
+  if (paletteMode === 'light-neutral') {
+    return { colors: lightNeutral, isDark: false } as const;
+  }
+  if (paletteMode === 'dark-neutral') {
+    return { colors: darkNeutral, isDark: true } as const;
+  }
+  // 'cronopet' — usa themeMode pra decidir light/dark
+  const isDark = pickIsDark(themeMode, systemScheme);
+  return { colors: isDark ? darkCronopet : lightCronopet, isDark } as const;
+}
+
+// ─── Hook ──────────────────────────────────────────────────────
+
 export function useThemeColors() {
-  const scheme    = useColorScheme();
-  const themeMode = usePetStore((s) => s.themeMode);
-  const isDark    = pickIsDark(themeMode, scheme);
+  const scheme      = useColorScheme();
+  const themeMode   = usePetStore((s) => s.themeMode);
+  const paletteMode = usePetStore((s) => s.paletteMode);
+  const { colors, isDark } = resolveTheme(paletteMode, themeMode, scheme);
 
   return {
-    colors:      isDark ? dark : light,
+    colors,
     actionTheme: isDark ? actionsDark : actionsLight,
     brand:       brandTokens,
     isDark,
+    paletteMode,
     scheme,
   } as const;
 }

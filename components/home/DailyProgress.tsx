@@ -7,8 +7,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import {
-  Utensils, Droplet, Footprints, Droplets, Sprout, Bath, Check,
+  Utensils, Droplet, Footprints, Droplets, Bath, Check,
 } from 'lucide-react-native';
+import { PoopIcon } from '@/components/icons/PoopIcon';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import type { ActionKey, PetType } from '@/types/pet';
 
@@ -24,7 +25,7 @@ const GOAL_META: Record<ActionKey, { Icon: ComponentType<GoalIconProps>; label: 
   agua:    { Icon: Droplet,    label: 'Água'    },
   passeio: { Icon: Footprints, label: 'Passeio' },
   xixi:    { Icon: Droplets,   label: 'Xixi'    },
-  coco:    { Icon: Sprout,     label: 'Cocô'    },
+  coco:    { Icon: PoopIcon,   label: 'Cocô'    },
   banho:   { Icon: Bath,       label: 'Banho'   },
 };
 

@@ -17,8 +17,9 @@ import { requestPermissionsAsync } from '@/services/NotificationService';
 interface NotificationAskSheetProps {
   visible: boolean;
   petNome: string;
-  onConfirm: () => void;  // chamado após aceitar (e disparar permissão nativa)
-  onDismiss: () => void;  // chamado ao fechar sem aceitar
+  /** Chamado após o sistema responder. `granted` é o status real (não assumido). */
+  onConfirm: (granted: boolean) => void;
+  onDismiss: () => void;
 }
 
 /**
@@ -46,9 +47,18 @@ export function NotificationAskSheet({
   }, [visible]);
 
   const handleConfirm = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await requestPermissionsAsync();
-    onConfirm();
+    // Antes: chamava onConfirm() incondicionalmente, assumindo granted.
+    // Caller fazia setNotifStatus('granted') sem saber se a permissão foi
+    // de fato concedida — daí scheduleDailyReminder rodava em pet sem
+    // permissão e podia throw, crashando o app. Agora propagamos o
+    // status real. requestPermissionsAsync já é try/catch-safe.
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch {
+      // Haptics pode falhar em dispositivos antigos — não bloqueia o fluxo
+    }
+    const granted = await requestPermissionsAsync();
+    onConfirm(granted);
   };
 
   const overlayColor = isDark ? 'rgba(0,0,0,0.6)' : 'rgba(28,25,23,0.4)';

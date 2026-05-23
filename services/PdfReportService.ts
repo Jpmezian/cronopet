@@ -3,7 +3,10 @@ import * as Sharing from 'expo-sharing';
 import { File } from 'expo-file-system';
 import type { ActionLog, MedicalEvent, Vaccine, PetProfile, Appointment, WeightEntry } from '@/types/pet';
 import { escapeHtml } from '@/lib/security';
-import { getBreedHealthProfile, CATEGORY_LABELS, SEVERITY_LABELS } from '@/data/breed-conditions';
+// getBreedHealthProfile/CATEGORY_LABELS/SEVERITY_LABELS REMOVIDOS no
+// R2-9 — feedback do TestFlight de que predisposição racial no PDF
+// pode ofender o veterinário (parece que o app tá ensinando ele).
+// O conteúdo continua no app, mas não no relatório clínico.
 import { analyzeHealth, type HealthInsight } from '@/services/HealthInsights';
 import {
   fmtDateTime, fmtISO, calcAge, tolWord, riskWord, computeReportStats,
@@ -76,8 +79,9 @@ export async function generateVetReport(
   });
   const { recentLogs, counts, totalFoodGrams, totalWalkMinutes, abnormalCount } = stats;
 
-  // Perfil da raça (educativo) e insights heurísticos detectados
-  const breedProfile = pet.raca ? getBreedHealthProfile(pet.raca, pet.tipo) : null;
+  // Insights heurísticos detectados a partir dos dados do tutor.
+  // Perfil da raça foi removido do PDF (R2-9) — vai pro vet apenas
+  // o que é evidência observável: padrões e estatísticas dos logs.
   const healthInsights = analyzeHealth({
     pet: { tipo: pet.tipo, raca: pet.raca, idealWeightKg: pet.idealWeightKg },
     actionHistory,
@@ -188,9 +192,16 @@ export async function generateVetReport(
     As informações aqui contidas servem exclusivamente como apoio para facilitar o acompanhamento clínico profissional.
   </div>
 
-  ${renderHealthInsightsSection(healthInsights)}
+  ${renderHealthInsightsSection(healthInsights.filter((i) => i.category !== 'breed'))}
 
-  ${renderBreedProfileSection(breedProfile)}
+  <!-- Predisposições raciais e perfil-de-raça removidos do PDF em
+       2026-05-23 (feedback R2-9): tutores ficavam apresentando "o
+       cachorro é cavalier então tem predisposição a doença mitral"
+       como diagnóstico ao veterinário, o que pode soar invasivo /
+       como se o app estivesse tentando ensinar o vet a trabalhar.
+       O conteúdo continua disponível NO APP (BreedHealthCard) pra
+       o tutor saber a que ficar atento, mas não vai no relatório
+       clínico que vai pra mão do profissional. -->
 
   <!-- Resumo (30 dias) -->
   <div class="section">
@@ -383,55 +394,10 @@ function renderHealthInsightsSection(insights: HealthInsight[]): string {
   `;
 }
 
-/**
- * Renderiza o perfil da raça com predisposições conhecidas.
- * Usado pelo veterinário pra contextualizar sintomas com risco genético.
- */
-function renderBreedProfileSection(profile: ReturnType<typeof getBreedHealthProfile>): string {
-  if (!profile) return '';
-
-  const sevTone = (s: 'monitor' | 'common' | 'serious') =>
-    s === 'serious' ? { bg: '#fee2e2', text: '#991b1b' }
-    : s === 'common' ? { bg: '#fef3c7', text: '#92400e' }
-    : { bg: '#F2F4DC', text: '#57534e' };
-
-  const preds = profile.predispositions.length > 0 ? profile.predispositions.map((p) => {
-    const t = sevTone(p.severity);
-    const onset = p.ageOnsetYears != null ? `· tipicamente ~${p.ageOnsetYears} ano${p.ageOnsetYears === 1 ? '' : 's'}` : '';
-    return `
-    <div style="border-left:3px solid #e5e7eb;padding:8px 12px;margin-bottom:8px;background:#fafafa;border-radius:4px">
-      <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;margin-bottom:3px">
-        <div style="font-size:13px;font-weight:700;color:#111827;flex:1">${E(p.condition)}</div>
-        <span style="background:${t.bg};color:${t.text};padding:2px 7px;border-radius:8px;font-size:9px;font-weight:700;letter-spacing:0.3px;white-space:nowrap">${SEVERITY_LABELS[p.severity].toUpperCase()}</span>
-      </div>
-      <div style="font-size:10px;color:#6b7280;margin-bottom:3px">${E(CATEGORY_LABELS[p.category])} ${onset}</div>
-      <div style="font-size:11px;color:#374151;line-height:1.45">${E(p.brief)}</div>
-    </div>`;
-  }).join('') : '<p style="font-size:12px;color:#6b7280;font-style:italic">Sem predisposições raciais documentadas no banco do app.</p>';
-
-  return `
-  <!-- Perfil da raça -->
-  <div class="section">
-    <div class="section-title">🧬 Perfil da raça — ${E(profile.displayName)}</div>
-    <table style="margin-bottom:14px">
-      <tbody>
-        <tr><td style="width:35%"><strong>Peso ideal adulto</strong></td><td>${profile.weightRange.min}–${profile.weightRange.max} kg</td></tr>
-        <tr><td><strong>Expectativa de vida</strong></td><td>${profile.lifeExpectancyYears.min}–${profile.lifeExpectancyYears.max} anos</td></tr>
-        ${profile.exerciseMinPerDay > 0 ? `<tr><td><strong>Exercício recomendado</strong></td><td>~${profile.exerciseMinPerDay} min/dia</td></tr>` : ''}
-        ${profile.bathFrequencyDays > 0 ? `<tr><td><strong>Frequência de banho</strong></td><td>a cada ~${profile.bathFrequencyDays} dias</td></tr>` : ''}
-        <tr><td><strong>Tolerância ao calor</strong></td><td>${tolWord(profile.heatTolerance)}</td></tr>
-        <tr><td><strong>Risco de obesidade</strong></td><td>${riskWord(profile.obesityRisk)}</td></tr>
-      </tbody>
-    </table>
-    <p style="font-size:12px;color:#374151;margin-bottom:12px">${E(profile.ownerNote)}</p>
-
-    <h3 style="font-size:13px;font-weight:700;color:#111827;margin:14px 0 8px 0">Predisposições conhecidas da raça</h3>
-    ${preds}
-    <p style="font-size:10px;color:#9ca3af;margin-top:10px;font-style:italic">
-      Predisposição genética é probabilidade, não diagnóstico. Confirme sempre com avaliação clínica.
-    </p>
-  </div>
-  `;
-}
-
-// tolWord/riskWord vêm de pdfReportHelpers.ts (importados no topo).
+// renderBreedProfileSection: REMOVIDO em 2026-05-23 (feedback R2-9).
+// Vet pode interpretar "esta raça tem predisposição a X" como o app
+// querendo ensinar o profissional. O conteúdo continua acessível ao
+// tutor via BreedHealthCard no app, mas não vai pro PDF clínico.
+//
+// tolWord/riskWord vêm de pdfReportHelpers.ts — mantidos no import
+// porque outros lugares podem usar no futuro (e o knip cuida disso).

@@ -632,12 +632,33 @@ function detectBreedRiskMatch(ctx: Ctx): HealthInsight[] {
 function detectExerciseDeficit(ctx: Ctx): HealthInsight[] {
   if (!ctx.breedProfile || ctx.breedProfile.exerciseMinPerDay === 0) return [];
 
+  // Antes esta heurística era hostil pra usuário novo: registrou 1
+  // passeio de 30min → 30/7 = 4.3 min/dia → alerta "deficit grave!".
+  // Bug de TestFlight. Agora exigimos:
+  //   (a) Pet existe há ≥ 7 dias (usa timestamp do log mais antigo)
+  //   (b) Pelo menos 3 dias-com-passeio na janela (não 3 logs do mesmo dia)
+  // Caso contrário não há baseline pra falar "média baixa" — calar.
+  const oldestLog = ctx.logs.length > 0
+    ? Math.min(...ctx.logs.map((l) => l.timestamp))
+    : ctx.now;
+  const daysOfUse = (ctx.now - oldestLog) / DAY_MS;
+  if (daysOfUse < 7) return []; // Pet novo no app — sem baseline confiável
+
   const cutoff = ctx.now - 7 * DAY_MS;
   const walks = ctx.logs.filter((l) => l.key === 'passeio' && l.timestamp >= cutoff);
-  if (walks.length === 0 && ctx.logs.length < 7) return []; // Não tem baseline
+
+  // Conta dias distintos com passeio (não logs — alguém pode logar 2× no
+  // mesmo dia). Se < 3 dias distintos, ainda é cedo pra avaliar padrão.
+  const walkDays = new Set(
+    walks.map((l) => new Date(l.timestamp).toISOString().slice(0, 10))
+  );
+  if (walkDays.size < 3) return [];
 
   const totalMinutes = walks.reduce((sum, l) => sum + (l.duration ?? 30), 0);
-  const dailyAvg = totalMinutes / 7;
+  // Divide pelo nº de dias REAIS com passeio, não pelos 7 da janela.
+  // Tutor que passeia 3× na semana com 60min cada vê "60 min/dia nos
+  // dias de passeio", não "26 min/dia" (média diluída e falsa).
+  const dailyAvg = totalMinutes / walkDays.size;
   const recommended = ctx.breedProfile.exerciseMinPerDay;
   const ratio = dailyAvg / recommended;
 
@@ -649,7 +670,7 @@ function detectExerciseDeficit(ctx: Ctx): HealthInsight[] {
     severity: sev,
     category: 'exercise',
     title: 'Pet está se exercitando menos que o ideal',
-    message: `Média de ${Math.round(dailyAvg)} min/dia nos últimos 7 dias. ${ctx.breedProfile.displayName} precisa de ~${recommended} min/dia.`,
+    message: `Média de ${Math.round(dailyAvg)} min nos dias de passeio (${walkDays.size}/7 dias). ${ctx.breedProfile.displayName} precisa de ~${recommended} min/dia.`,
     suggestion: ratio < 0.3
       ? 'Falta de exercício leva a obesidade, ansiedade e problemas comportamentais. Tente aumentar gradualmente.'
       : 'Aumente um pouco o tempo dos passeios — faz diferença pro corpo e pra cabeça.',

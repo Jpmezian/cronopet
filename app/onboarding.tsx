@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View, Text, TextInput, SafeAreaView,
+  View, Text, TextInput, SafeAreaView, Image,
   Platform, KeyboardAvoidingView, ScrollView,
   useWindowDimensions,
 } from 'react-native';
@@ -198,6 +198,43 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
       }}
       showsVerticalScrollIndicator={false}
     >
+      {/* Logo brand — feedback TestFlight R2-6: marca precisa aparecer
+          no onboarding. Apple HIG / Strava / Linear todos têm logo
+          apenas no splash + boas-vindas. Aqui usamos o splash-icon
+          (mesmo asset do ícone do iOS) num círculo branded. */}
+      <Animated.View entering={textEntering} style={{ alignItems: 'center', gap: 10 }}>
+        <View style={{
+          width: 72, height: 72, borderRadius: 22,
+          overflow: 'hidden',
+          ...(isDark ? {
+            shadowColor: '#9BE4C6',
+            shadowOffset: { width: 0, height: 0 },
+            shadowOpacity: 0.5, shadowRadius: 12,
+          } : {
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.10, shadowRadius: 10,
+          }),
+        }}>
+          <Image
+            source={require('@/assets/images/icon.png')}
+            style={{ width: 72, height: 72 }}
+            resizeMode="cover"
+            accessible
+            accessibilityRole="image"
+            accessibilityLabel="Logo CronoPet"
+          />
+        </View>
+        <Text style={{
+          color: colors.tabActive,
+          fontFamily: 'Nunito_800ExtraBold',
+          fontSize: 14, fontWeight: '800',
+          letterSpacing: 1.2,
+        }}>
+          CRONOPET
+        </Text>
+      </Animated.View>
+
       {/* Texto animado */}
       <Animated.View entering={textEntering}>
         <Text style={{

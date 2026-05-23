@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Pressable, StyleProp, ViewStyle, GestureResponderEvent,
-  AccessibilityRole, AccessibilityState,
+  AccessibilityRole, AccessibilityState, Insets,
 } from 'react-native';
 import Animated, {
   useSharedValue, useAnimatedStyle, withSpring, withTiming,
@@ -15,6 +15,9 @@ interface ScalePressProps {
   children: React.ReactNode;
   disabled?: boolean;
   scaleValue?: number;
+  /** Expande a área de toque sem mudar o tamanho visual.
+   *  Use pra atingir 44×44pt em ícones pequenos (WCAG SC 2.5.8). */
+  hitSlop?: Insets | number;
 
   // ── Acessibilidade ─────────────────────────────────────────
   accessible?: boolean;
@@ -40,6 +43,7 @@ export function ScalePress({
   children,
   disabled = false,
   scaleValue = 0.96,
+  hitSlop,
   accessible,
   accessibilityRole,
   accessibilityLabel,
@@ -78,6 +82,7 @@ export function ScalePress({
       onPress={disabled ? undefined : onPress}
       onLongPress={disabled ? undefined : onLongPress}
       disabled={disabled}
+      hitSlop={hitSlop}
       style={{ opacity: disabled ? 0.5 : 1 }}
       accessible={accessible}
       accessibilityRole={accessibilityRole}

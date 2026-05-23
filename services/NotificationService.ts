@@ -41,11 +41,30 @@ async function ensureChannels(): Promise<void> {
  * @returns true se a permissão foi concedida.
  */
 export async function requestPermissionsAsync(): Promise<boolean> {
-  await ensureChannels();
-  const { status: existing } = await Notifications.getPermissionsAsync();
-  if (existing === 'granted') return true;
-  const { status } = await Notifications.requestPermissionsAsync();
-  return status === 'granted';
+  // Hardening pós-crash TestFlight (1 reporter): qualquer step pode throw
+  // (ex.: notification channel manager indisponível em SE 1st gen,
+  // Modo Foco bloqueando a API, simulator sem entitlements, OS rejeitando
+  // permission request com error em vez de status='denied'). Sem try/catch
+  // o app crashava ao ativar lembretes pela 1ª vez. Agora: falha = false,
+  // user vê toast "Permissão negada" e nada trava. Sentry registra pra
+  // investigar casos repetidos.
+  try {
+    await ensureChannels();
+    const { status: existing } = await Notifications.getPermissionsAsync();
+    if (existing === 'granted') return true;
+    const { status } = await Notifications.requestPermissionsAsync();
+    return status === 'granted';
+  } catch (err) {
+    // Lazy require pra não criar dependência circular no module load
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const Sentry = require('@sentry/react-native');
+      Sentry.captureException(err, { tags: { op: 'requestPermissionsAsync' } });
+    } catch {
+      // Sentry indisponível — engole, não propaga
+    }
+    return false;
+  }
 }
 
 /**

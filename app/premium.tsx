@@ -756,15 +756,21 @@ function ViewPitch({ petNome, onStartTrial }: { petNome: string; onStartTrial: (
       tone:  'comida' as const,
     },
     {
+      emoji: '🔔',
+      title: 'Avisos automáticos de saúde',
+      desc:  'O app analisa a rotina e te avisa quando algo sai do padrão (apetite caiu, hidratação baixa, padrão de fezes mudou, exercício insuficiente). Sem diagnóstico — só sinais pra você ficar atento.',
+      tone:  'xixi' as const,
+    },
+    {
       emoji: '📊',
       title: 'Histórico ilimitado',
       desc:  'Guarda registros desde o primeiro dia. Perfeito para o check-up anual do veterinário.',
-      tone:  'xixi' as const,
+      tone:  'passeio' as const,
     },
     {
       emoji: '💾',
       title: 'Exportação avançada',
-      desc:  'PDF vet-friendly + JSON para sistemas veterinários. Dados seus, quando quiser.',
+      desc:  'PDF pronto pra levar ao veterinário + backup completo dos seus dados (caso queira trocar de celular ou guardar histórico fora do app).',
       tone:  'coco' as const,
     },
   ];
@@ -920,10 +926,11 @@ function ViewPitch({ petNome, onStartTrial }: { petNome: string; onStartTrial: (
           { feat: 'Plano nutricional + rações',         free: true, pro: true },
           { feat: 'Relatório PDF veterinário',          free: true, pro: true },
           { feat: 'Card compartilhável (story)',        free: true, pro: true },
+          { feat: 'Avisos automáticos de saúde',        free: false, pro: true },
           { feat: 'Múltiplos pets',                     free: false, pro: true },
           { feat: 'Família compartilhada',              free: false, pro: true },
           { feat: 'Backup em nuvem',                    free: false, pro: true },
-          { feat: 'Exportação JSON',                    free: false, pro: true },
+          { feat: 'Backup completo dos dados',          free: false, pro: true },
         ].map((r, i) => (
           <View
             key={r.feat}

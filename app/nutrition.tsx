@@ -8,12 +8,13 @@ import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import {
   ChevronLeft, Check, Info, Scale, TrendingDown,
-  TrendingUp, Minus, ChefHat,
+  TrendingUp, Minus, ChefHat, Stethoscope,
 } from 'lucide-react-native';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { PetPhoto } from '@/components/PetPhoto';
 import { SectionHeader } from '@/components/ui/SectionHeader';
+import { NutritionTrustBanner } from '@/components/nutrition/NutritionTrustBanner';
 import { ChipGroup } from '@/components/ui/ChipGroup';
 import type { ChipOption } from '@/components/ui/ChipGroup';
 import { usePetStore } from '@/store/usePetStore';
@@ -35,6 +36,7 @@ import {
   getBreedHealthProfile, getBreedFoodHints,
 } from '@/data/breed-conditions';
 import { getBreedSize, PET_SIZE_LABELS, PET_SIZE_WEIGHT_RANGE } from '@/data/breed-meta';
+import { estimateWeight } from '@/data/estimateWeight';
 import type {
   NutritionGoal, BodyCondition, BaselineActivity, PetSize,
 } from '@/types/pet';
@@ -60,11 +62,14 @@ const ACTIVITY_OPTS: ChipOption<BaselineActivity>[] = [
   { value: 'high',     emoji: '🏃', label: 'Alta' },
 ];
 
+// Feedback TestFlight #5: portes sem contexto confundiam usuários
+// ("o que conta como médio?"). Faixas de peso seguem categorização
+// FEDIAF/NRC para cães; gatos sempre caem em 'small'.
 const SIZE_OPTS: ChipOption<PetSize>[] = [
-  { value: 'small',  label: 'Pequeno' },
-  { value: 'medium', label: 'Médio' },
-  { value: 'large',  label: 'Grande' },
-  { value: 'giant',  label: 'Gigante' },
+  { value: 'small',  label: 'Pequeno', sublabel: 'até 10 kg'    },
+  { value: 'medium', label: 'Médio',   sublabel: '10–25 kg'     },
+  { value: 'large',  label: 'Grande',  sublabel: '25–45 kg'     },
+  { value: 'giant',  label: 'Gigante', sublabel: 'mais de 45 kg' },
 ];
 
 // ─── Tons de tier → cor do actionTheme ───────────────────────
@@ -325,6 +330,13 @@ export default function NutritionScreen() {
           <WeightMissingCard
             colors={colors}
             actionTheme={actionTheme}
+            weightEstimate={estimateWeight(pet.raca, pet.tipo, pet.nascimento)}
+            onUseEstimate={(kg) => {
+              // Pré-preenche o modal com o peso estimado pra user só confirmar
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setWeightInput(kg.toString().replace('.', ','));
+              setWeightModalVisible(true);
+            }}
             onRegister={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               setWeightModalVisible(true);
@@ -478,6 +490,12 @@ export default function NutritionScreen() {
           subtitle={`${recommendedFoods.length} opções para seu objetivo`}
         />
 
+        {/* Banner de transparência ANTES da lista (feedback TestFlight #9+10):
+            usuários sentiam falta de algo que confirmasse "esta recomendação
+            é confiável e independente". O disclaimer no rodapé era pequeno
+            demais pra carregar essa garantia. */}
+        <NutritionTrustBanner />
+
         <View style={{ gap: 12 }}>
           {recommendedFoods.map((food) => (
             <FoodCard
@@ -558,14 +576,17 @@ export default function NutritionScreen() {
             borderTopWidth: 1,
             borderTopColor: colors.border,
           }}>
-            <Text style={{
-              color: actionTheme.comida.primary,
-              fontSize: 11,
-              fontWeight: '700',
-              lineHeight: 16,
-            }}>
-              ⚕️ Disclaimer veterinário
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Stethoscope size={12} color={actionTheme.comida.primary} strokeWidth={2.2} />
+              <Text style={{
+                color: actionTheme.comida.primary,
+                fontSize: 11,
+                fontWeight: '700',
+                lineHeight: 16,
+              }}>
+                Disclaimer veterinário
+              </Text>
+            </View>
             <Text style={{
               color: colors.textTertiary,
               fontSize: 11,
@@ -789,12 +810,19 @@ function InfoBanner({
 // ─── WeightMissingCard ───────────────────────────────────────
 
 function WeightMissingCard({
-  colors, actionTheme, onRegister,
+  colors, actionTheme, weightEstimate, onUseEstimate, onRegister,
 }: {
   colors: ReturnType<typeof useThemeColors>['colors'];
   actionTheme: ReturnType<typeof useThemeColors>['actionTheme'];
+  weightEstimate: ReturnType<typeof estimateWeight>;
+  onUseEstimate: (kg: number) => void;
   onRegister: () => void;
 }) {
+  // Feedback TestFlight R2-4: se temos raça + idade, sugerimos uma faixa
+  // razoável pra o user não precisar adivinhar. Mostra como sugestão
+  // editável — user pode aceitar e ajustar depois de pesar de verdade.
+  const hasEstimate = weightEstimate !== null;
+
   return (
     <View style={{
       backgroundColor: actionTheme.comida.bg,
@@ -821,13 +849,46 @@ function WeightMissingCard({
         lineHeight: 18,
         marginBottom: 14,
       }}>
-        Registre o peso do seu pet para calcular as metas calóricas personalizadas. Você pode registrar agora mesmo e continuar aqui.
+        {hasEstimate
+          ? `Sem pesar ainda? Pela raça e idade, uma faixa típica é ${weightEstimate.rangeKg.min}–${weightEstimate.rangeKg.max} kg (médio ~${weightEstimate.estimateKg} kg). Use a sugestão pra começar — você ajusta depois.`
+          : 'Registre o peso do seu pet para calcular as metas calóricas personalizadas. Você pode registrar agora mesmo e continuar aqui.'
+        }
       </Text>
+
+      {hasEstimate && (
+        <ScalePress
+          onPress={() => onUseEstimate(weightEstimate.estimateKg)}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel={`Usar peso estimado de ${weightEstimate.estimateKg} quilos`}
+          style={{
+            backgroundColor: actionTheme.comida.bg,
+            borderWidth: 1.5,
+            borderColor: actionTheme.comida.primary,
+            borderRadius: 12,
+            paddingVertical: 11,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 8,
+          }}
+        >
+          <Text style={{
+            color: actionTheme.comida.primary,
+            fontFamily: 'Nunito_700Bold',
+            fontSize: 13,
+            fontWeight: '700',
+          }}>
+            Usar estimativa: {weightEstimate.estimateKg} kg
+          </Text>
+        </ScalePress>
+      )}
+
       <ScalePress
         onPress={onRegister}
         accessible
         accessibilityRole="button"
-        accessibilityLabel="Registrar peso agora"
+        accessibilityLabel="Registrar peso real agora"
         style={{
           backgroundColor: actionTheme.comida.primary,
           borderRadius: 12,

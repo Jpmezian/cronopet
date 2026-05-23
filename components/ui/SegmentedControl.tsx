@@ -42,45 +42,55 @@ export function SegmentedControl({
     >
       {segments.map((label, index) => {
         const active = index === selectedIndex;
+        // Wrapper externo com flex:1 garante divisão IGUAL entre segments.
+        // Antes: flex:1 ia direto no ScalePress, mas ScalePress aplica style
+        // no Animated.View INTERNO — o Pressable externo ficava sem flex e
+        // cada segmento ocupava só o tamanho do texto ("Ocorrências" maior
+        // que "Peso" criava desalinhamento). Feedback TestFlight R2-1.
         return (
-          <ScalePress
-            key={label}
-            onPress={() => onChange(index)}
-            accessible={true}
-            accessibilityRole="button"
-            accessibilityLabel={label}
-            accessibilityState={{ selected: active }}
-            scaleValue={0.97}
-            style={{
-              flex: 1,
-              backgroundColor: active ? resolvedAccentBg : 'transparent',
-              borderRadius: 10,
-              paddingVertical: 8,
-              paddingHorizontal: 4,
-              alignItems: 'center',
-              ...(active && Platform.OS === 'ios'
-                ? {
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 1 },
-                    shadowOpacity: 0.08,
-                    shadowRadius: 4,
-                  }
-                : active && Platform.OS === 'android'
-                ? { elevation: 2 }
-                : {}),
-            }}
-          >
-            <Text
+          <View key={label} style={{ flex: 1 }}>
+            <ScalePress
+              onPress={() => onChange(index)}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={label}
+              accessibilityState={{ selected: active }}
+              scaleValue={0.97}
               style={{
-                fontSize: 13,
-                fontWeight: active ? '700' : '500',
-                color: active ? resolvedAccentColor : colors.textSecondary,
+                backgroundColor: active ? resolvedAccentBg : 'transparent',
+                borderRadius: 10,
+                paddingVertical: 8,
+                paddingHorizontal: 4,
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 36,
+                ...(active && Platform.OS === 'ios'
+                  ? {
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.08,
+                      shadowRadius: 4,
+                    }
+                  : active && Platform.OS === 'android'
+                  ? { elevation: 2 }
+                  : {}),
               }}
-              numberOfLines={1}
             >
-              {label}
-            </Text>
-          </ScalePress>
+              <Text
+                style={{
+                  fontSize: 13,
+                  fontWeight: active ? '700' : '500',
+                  color: active ? resolvedAccentColor : colors.textSecondary,
+                  textAlign: 'center',
+                }}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.85}
+              >
+                {label}
+              </Text>
+            </ScalePress>
+          </View>
         );
       })}
     </View>

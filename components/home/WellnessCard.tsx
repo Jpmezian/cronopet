@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Platform } from 'react-native';
-import { Flame } from 'lucide-react-native';
+import { Flame, BookOpen } from 'lucide-react-native';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { calculateWellnessEstimate } from '@/data/calories';
 import { CalorieBadge } from '@/components/home/CalorieBadge';
@@ -48,21 +48,46 @@ export function WellnessCard({ todayFoodGrams, todayWalkMinutes, latestWeightKg 
         }),
       }}
     >
-      {/* Header */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-        <View style={{
-          width: 32, height: 32, borderRadius: 10,
-          backgroundColor: statusTheme.bg,
-          alignItems: 'center', justifyContent: 'center',
-        }}>
-          <Flame size={18} color={statusTheme.primary} strokeWidth={2} />
+      {/* Header com badge da fonte ao lado do título — feedback TestFlight
+          #6: usuários queriam saber "de onde vem essa estimativa". Antes
+          ficava só no disclaimer minúsculo embaixo. Agora a fonte (NRC
+          2006) aparece na mesma linha do título, antes mesmo dos números. */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+          <View style={{
+            width: 32, height: 32, borderRadius: 10,
+            backgroundColor: statusTheme.bg,
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            <Flame size={18} color={statusTheme.primary} strokeWidth={2} />
+          </View>
+          <Text style={{
+            color: colors.textPrimary, fontFamily: 'Nunito_700Bold',
+            fontSize: 16, fontWeight: '700',
+          }}>
+            Estimativa de Calorias
+          </Text>
         </View>
-        <Text style={{
-          color: colors.textPrimary, fontFamily: 'Nunito_700Bold',
-          fontSize: 16, fontWeight: '700',
-        }}>
-          Estimativa de Calorias
-        </Text>
+        <View
+          accessible
+          accessibilityRole="text"
+          accessibilityLabel="Baseado em fórmula do National Research Council, edição 2006"
+          style={{
+            flexDirection: 'row', alignItems: 'center', gap: 4,
+            backgroundColor: colors.bgInput,
+            paddingHorizontal: 8, paddingVertical: 3,
+            borderRadius: 999,
+          }}
+        >
+          <BookOpen size={10} color={colors.textSecondary} strokeWidth={2.4} />
+          <Text style={{
+            color: colors.textSecondary,
+            fontSize: 10, fontWeight: '700',
+            letterSpacing: 0.3,
+          }}>
+            NRC 2006
+          </Text>
+        </View>
       </View>
 
       <View style={{ marginBottom: 10 }}>
@@ -75,9 +100,9 @@ export function WellnessCard({ todayFoodGrams, todayWalkMinutes, latestWeightKg 
         />
       </View>
 
-      {/* Disclaimer */}
+      {/* Disclaimer expandido — explica origem da fórmula e o que ela é/não é */}
       <Text style={{ color: colors.textTertiary, fontSize: 11, lineHeight: 16 }}>
-        Estimativa informativa baseada em médias. Consulte seu veterinário para orientação nutricional.
+        Cálculo baseado no <Text style={{ fontWeight: '700' }}>National Research Council (NRC 2006)</Text>: fórmula RER × fator de atividade. Estimativa informativa, não substitui orientação veterinária.
       </Text>
     </View>
   );

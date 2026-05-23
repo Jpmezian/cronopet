@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import {
-  View, Text, SafeAreaView, ScrollView,
+  View, Text, SafeAreaView, ScrollView, Image,
   Platform, Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -9,7 +9,7 @@ import { useThemeColors } from '@/hooks/useThemeColors';
 import * as Haptics from 'expo-haptics';
 import * as SecureStore from 'expo-secure-store';
 import * as Sentry from '@sentry/react-native';
-import { ChevronLeft, Trash2, Sun, Moon, Monitor } from 'lucide-react-native';
+import { ChevronLeft, Trash2, Sun, Moon, Monitor, Palette, Sparkles } from 'lucide-react-native';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { signOut } from '@/services/AuthService';
 import { clearSupabaseAuthStorage } from '@/services/supabase';
@@ -26,8 +26,11 @@ const ERROR_2 = '#ef4444';  // red-500  — subtitle destrutivo
 export default function SettingsScreen() {
   const router = useRouter();
 
-  const themeMode    = usePetStore((s) => s.themeMode);
-  const setThemeMode = usePetStore((s) => s.setThemeMode);
+  const themeMode      = usePetStore((s) => s.themeMode);
+  const setThemeMode   = usePetStore((s) => s.setThemeMode);
+  const paletteMode    = usePetStore((s) => s.paletteMode);
+  const setPaletteMode = usePetStore((s) => s.setPaletteMode);
+  const setHasCompletedTour = usePetStore((s) => s.setHasCompletedTour);
   const { colors, actionTheme, isDark } = useThemeColors();
 
   const notificationHour    = usePetStore((s) => s.notificationHour);
@@ -118,54 +121,154 @@ export default function SettingsScreen() {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40, gap: 24 }}>
 
         {/* ── Aparência ───────────────────────────────── */}
+        {/* Feedback TestFlight #12: além de claro/escuro o user agora
+            escolhe entre paleta CronoPet (brand) ou neutra. Quando
+            CronoPet está selecionado, mostra o subseletor light/dark/
+            system. Quando neutral está selecionado, a paleta já força
+            o modo claro ou escuro — subseletor desaparece. */}
         <View style={{
           backgroundColor: colors.bgCard, borderRadius: 20, padding: 20,
+          gap: 18,
           ...(Platform.OS === 'android' ? { elevation: 2 } : {
             shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
             shadowOpacity: 0.06, shadowRadius: 8,
           }),
         }}>
-          <Text style={{ color: colors.textPrimary, fontFamily: 'Nunito_700Bold', fontSize: 17, marginBottom: 16 }}>
-            Aparência
-          </Text>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            {([
-              { mode: 'system', Icon: Monitor, label: 'Sistema' },
-              { mode: 'light',  Icon: Sun,     label: 'Claro'   },
-              { mode: 'dark',   Icon: Moon,    label: 'Escuro'  },
-            ] as const).map(({ mode, Icon, label }) => {
-              const active = themeMode === mode;
-              return (
-                <ScalePress
-                  key={mode}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setThemeMode(mode);
-                  }}
-                  style={{ flex: 1 }}
-                  accessible
-                  accessibilityRole="button"
-                  accessibilityLabel={`Tema ${label}${active ? ', selecionado' : ''}`}
-                >
-                  <View style={{
-                    borderRadius: 14, paddingVertical: 12,
-                    alignItems: 'center', gap: 6,
-                    backgroundColor: active ? colors.textPrimary : colors.bgInput,
-                    borderWidth: 2,
-                    borderColor: active ? colors.textPrimary : colors.border,
-                  }}>
-                    <Icon size={20} color={active ? '#ffffff' : colors.textSecondary} strokeWidth={2} />
-                    <Text style={{
-                      fontSize: 12, fontWeight: '600',
-                      color: active ? '#ffffff' : colors.textSecondary,
+          <View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <Palette size={18} color={colors.textPrimary} strokeWidth={2} />
+              <Text style={{ color: colors.textPrimary, fontFamily: 'Nunito_700Bold', fontSize: 17 }}>
+                Aparência
+              </Text>
+            </View>
+            <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 14 }}>
+              Escolha o estilo visual do app
+            </Text>
+
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {([
+                {
+                  mode:    'cronopet' as const,
+                  label:   'CronoPet',
+                  desc:    'Paleta da marca',
+                  swatch:  ['#04A29B', '#9BE4C6', '#E9F1CF'],
+                },
+                {
+                  mode:    'light-neutral' as const,
+                  label:   'Claro',
+                  desc:    'Cinza neutro',
+                  swatch:  ['#FFFFFF', '#F1F5F9', '#0F172A'],
+                },
+                {
+                  mode:    'dark-neutral' as const,
+                  label:   'Escuro',
+                  desc:    'Cinza neutro',
+                  swatch:  ['#0F172A', '#1E293B', '#F8FAFC'],
+                },
+              ]).map(({ mode, label, desc, swatch }) => {
+                const active = paletteMode === mode;
+                return (
+                  <ScalePress
+                    key={mode}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      setPaletteMode(mode);
+                    }}
+                    style={{ flex: 1 }}
+                    accessible
+                    accessibilityRole="button"
+                    accessibilityLabel={`Paleta ${label}, ${desc}${active ? ', selecionada' : ''}`}
+                  >
+                    <View style={{
+                      borderRadius: 14, padding: 10,
+                      alignItems: 'center', gap: 8,
+                      backgroundColor: active ? colors.bgInput : colors.bgCard,
+                      borderWidth: 2,
+                      borderColor: active ? colors.tabActive : colors.border,
                     }}>
-                      {label}
-                    </Text>
-                  </View>
-                </ScalePress>
-              );
-            })}
+                      {/* Mini swatch 3 cores */}
+                      <View style={{ flexDirection: 'row', gap: 2 }}>
+                        {swatch.map((c, i) => (
+                          <View
+                            key={i}
+                            style={{
+                              width: 14, height: 14, borderRadius: 4,
+                              backgroundColor: c,
+                              borderWidth: 1,
+                              borderColor: 'rgba(0,0,0,0.08)',
+                            }}
+                          />
+                        ))}
+                      </View>
+                      <View style={{ alignItems: 'center' }}>
+                        <Text style={{
+                          fontSize: 12, fontWeight: '700',
+                          color: active ? colors.textPrimary : colors.textSecondary,
+                          fontFamily: 'Nunito_700Bold',
+                        }}>
+                          {label}
+                        </Text>
+                        <Text style={{
+                          fontSize: 10, color: colors.textTertiary,
+                          marginTop: 1,
+                        }}>
+                          {desc}
+                        </Text>
+                      </View>
+                    </View>
+                  </ScalePress>
+                );
+              })}
+            </View>
           </View>
+
+          {/* Subseletor claro/escuro só aparece pra paleta CronoPet —
+              porque as neutras já fixam o modo. */}
+          {paletteMode === 'cronopet' && (
+            <View>
+              <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 10 }}>
+                Modo (CronoPet)
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {([
+                  { mode: 'system', Icon: Monitor, label: 'Sistema' },
+                  { mode: 'light',  Icon: Sun,     label: 'Claro'   },
+                  { mode: 'dark',   Icon: Moon,    label: 'Escuro'  },
+                ] as const).map(({ mode, Icon, label }) => {
+                  const active = themeMode === mode;
+                  return (
+                    <ScalePress
+                      key={mode}
+                      onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        setThemeMode(mode);
+                      }}
+                      style={{ flex: 1 }}
+                      accessible
+                      accessibilityRole="button"
+                      accessibilityLabel={`Modo ${label}${active ? ', selecionado' : ''}`}
+                    >
+                      <View style={{
+                        borderRadius: 12, paddingVertical: 10,
+                        alignItems: 'center', gap: 4,
+                        backgroundColor: active ? colors.textPrimary : colors.bgInput,
+                        borderWidth: 1.5,
+                        borderColor: active ? colors.textPrimary : colors.border,
+                      }}>
+                        <Icon size={16} color={active ? colors.bgCard : colors.textSecondary} strokeWidth={2} />
+                        <Text style={{
+                          fontSize: 11, fontWeight: '600',
+                          color: active ? colors.bgCard : colors.textSecondary,
+                        }}>
+                          {label}
+                        </Text>
+                      </View>
+                    </ScalePress>
+                  );
+                })}
+              </View>
+            </View>
+          )}
         </View>
 
         {/* ── Notificações ────────────────────────────── */}
@@ -353,10 +456,60 @@ export default function SettingsScreen() {
               shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 8, shadowOffset: { width: 0, height: 2 },
             }),
           }}>
+            {/* Brand mark — feedback R2-8 (UX research): logo NÃO vai
+                em chrome interno (tab bar, header), mas Settings>Sobre
+                é o lugar canônico. Strava/Linear/Apple Health seguem
+                esse mesmo padrão. */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+              <Image
+                source={require('@/assets/images/icon.png')}
+                style={{ width: 44, height: 44, borderRadius: 12 }}
+                resizeMode="cover"
+                accessible
+                accessibilityRole="image"
+                accessibilityLabel="Logo CronoPet"
+              />
+              <View>
+                <Text style={{
+                  color: colors.textPrimary,
+                  fontFamily: 'Nunito_800ExtraBold',
+                  fontSize: 17, fontWeight: '800',
+                }}>
+                  CronoPet
+                </Text>
+                <Text style={{
+                  color: colors.textTertiary, fontSize: 12,
+                }}>
+                  cronopet.app
+                </Text>
+              </View>
+            </View>
+            <View style={{ height: 1, backgroundColor: colors.border }} />
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <Text style={{ color: colors.textSecondary, fontSize: 14 }}>Versão</Text>
               <Text style={{ color: colors.textPrimary, fontWeight: '600', fontSize: 14 }}>1.0.0</Text>
             </View>
+            <View style={{ height: 1, backgroundColor: colors.border }} />
+            <ScalePress
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setHasCompletedTour(false);
+                router.push('/(tabs)');
+              }}
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel="Ver tour de boas-vindas novamente"
+              accessibilityHint="Reabre o tutorial inicial com as principais funcionalidades"
+              style={{
+                flexDirection: 'row', alignItems: 'center',
+                gap: 10, paddingVertical: 4,
+              }}
+            >
+              <Sparkles size={16} color={colors.tabActive} strokeWidth={2.2} />
+              <Text style={{ color: colors.tabActive, fontSize: 14, fontWeight: '600' }}>
+                Ver tour de boas-vindas
+              </Text>
+            </ScalePress>
             <View style={{ height: 1, backgroundColor: colors.border }} />
             <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 20 }}>
               O CronoPet não se responsabiliza pela saúde do seu animal e não substitui a avaliação de um médico veterinário. Este app é apenas um apoio para organizar a rotina e informações do seu pet.

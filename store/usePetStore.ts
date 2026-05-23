@@ -5,6 +5,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import * as Sentry from '@sentry/react-native';
 import { zustandMMKVStorage } from './storage';
 import { sanitizeName, sanitizeNote, INPUT_LIMITS } from '@/lib/security';
+import { getBreedSize } from '@/data/breed-meta';
 import { track } from '@/services/analytics';
 import {
   scheduleDailyReminder,
@@ -221,6 +222,27 @@ interface PetStore extends PetState {
   themeMode: 'system' | 'light' | 'dark';
   setThemeMode: (mode: 'system' | 'light' | 'dark') => void;
 
+  /**
+   * Estilo visual global. Adicionado em 2026-05-22 por feedback
+   * TestFlight #12. Opções:
+   *   - 'cronopet'      — paleta brand (Celadon/Verdigris/Beige).
+   *                       Light/dark seguem themeMode acima.
+   *   - 'light-neutral' — paleta cinza-azulado clara (sempre claro).
+   *   - 'dark-neutral'  — paleta cinza-azulado escura (sempre escuro).
+   *
+   * Quando paletteMode é 'light-neutral' ou 'dark-neutral', o themeMode
+   * é ignorado (paleta já força light/dark). Default 'cronopet' preserva
+   * a experiência atual pra quem não tocar no setting.
+   */
+  paletteMode: 'cronopet' | 'light-neutral' | 'dark-neutral';
+  setPaletteMode: (mode: 'cronopet' | 'light-neutral' | 'dark-neutral') => void;
+
+  /** Tour de boas-vindas (5 cards explicando as features). Aparece
+   *  1 vez só, após o onboarding. Setado true quando o user conclui
+   *  ou pula. Feedback TestFlight #13. */
+  hasCompletedTour: boolean;
+  setHasCompletedTour: (v: boolean) => void;
+
   _hasHydrated: boolean;
   setHasHydrated: (v: boolean) => void;
 }
@@ -261,9 +283,13 @@ export const usePetStore = create<PetStore>()(
       familyGroupId: null,
       syncStatus:    'idle',
       themeMode: 'system',
+      paletteMode: 'cronopet',
+      hasCompletedTour: false,
       _hasHydrated:  false,
 
       setThemeMode: (mode) => set({ themeMode: mode }),
+      setPaletteMode: (mode) => set({ paletteMode: mode }),
+      setHasCompletedTour: (v) => set({ hasCompletedTour: v }),
       setHasHydrated:   (v) => set({ _hasHydrated: v }),
       setUser:          (user)   => set({ user }),
       setFamilyGroupId: (id)     => set({ familyGroupId: id }),
@@ -303,16 +329,36 @@ export const usePetStore = create<PetStore>()(
       // ── Edição de perfil ───────────────────────────────────
       updatePetProfile: async (nome, tipo, raca, foto, nascimento) => {
         const fotoFinal = await persistAndStripPhoto(foto);
-        set((s) => ({
-          pet: {
-            ...s.pet,
-            nome: sanitizeName(nome, INPUT_LIMITS.PET_NAME_MAX),
-            tipo,
-            raca: sanitizeName(raca, INPUT_LIMITS.BREED_MAX),
-            foto: fotoFinal,
-            nascimento,
-          },
-        }));
+        set((s) => {
+          // Feedback TestFlight #7: ao mudar a raça, se o porte estava
+          // auto-derivado da raça anterior (não foi mexido manualmente),
+          // recalcular pra refletir a nova raça. Heurística: se o petSize
+          // atual bate com o que getBreedSize() retornaria pra raça antiga,
+          // foi auto-derivado e pode ser regenerado. Caso o user tenha
+          // mexido em nutrition e escolhido um porte diferente, respeitar.
+          const sanitizedRaca = sanitizeName(raca, INPUT_LIMITS.BREED_MAX);
+          const racaChanged = sanitizedRaca !== s.pet.raca || tipo !== s.pet.tipo;
+          let nextPetSize = s.pet.petSize;
+          if (racaChanged) {
+            const wasAutoDerived =
+              s.pet.petSize === undefined ||
+              s.pet.petSize === getBreedSize(s.pet.raca, s.pet.tipo);
+            if (wasAutoDerived) {
+              nextPetSize = getBreedSize(sanitizedRaca, tipo);
+            }
+          }
+          return {
+            pet: {
+              ...s.pet,
+              nome: sanitizeName(nome, INPUT_LIMITS.PET_NAME_MAX),
+              tipo,
+              raca: sanitizedRaca,
+              foto: fotoFinal,
+              nascimento,
+              petSize: nextPetSize,
+            },
+          };
+        });
       },
 
       // ── Preferências nutricionais ──────────────────────────

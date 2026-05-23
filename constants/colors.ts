@@ -79,6 +79,38 @@ export const neutralDark = {
 
 export const cardDark = '#36342F';
 
+// ─── Paleta neutra alternativa (light + dark) ──────────────────
+// Adicionada em 2026-05-22 por feedback TestFlight #12: alguns users
+// querem uma UI mais "padrão iOS/Material" sem o tom warm beige da
+// marca. Não substitui a CronoPet — é opção paralela em settings.
+// Cinzas neutros puros (zero saturação), pra dar "feel" mais clínico.
+
+export const neutralLightStandard = {
+  900: '#0F172A',   // slate-900 — texto primário
+  700: '#475569',   // slate-600 — texto medium
+  500: '#64748B',   // slate-500 — texto secundário
+  400: '#94A3B8',   // slate-400 — texto terciário
+  300: '#CBD5E1',   // slate-300 — disabled
+  200: '#E2E8F0',   // slate-200 — border
+  100: '#F1F5F9',   // slate-100 — bg-input
+  50:  '#FFFFFF',   // branco puro — bg-screen
+} as const;
+
+export const cardLightStandard = '#FFFFFF';
+
+export const neutralDarkStandard = {
+  900: '#F8FAFC',   // slate-50 — texto primário
+  700: '#CBD5E1',   // slate-300 — texto medium
+  500: '#94A3B8',   // slate-400 — texto secundário
+  400: '#64748B',   // slate-500 — texto terciário
+  300: '#475569',   // slate-600 — disabled
+  200: '#334155',   // slate-700 — border
+  100: '#1E293B',   // slate-800 — bg-input
+  50:  '#0F172A',   // slate-900 — bg-screen
+} as const;
+
+export const cardDarkStandard = '#1E293B';
+
 // ─── Ações do pet — light mode (auditadas WCAG) ────────────────
 // Manter inalterado: é identidade visual funcional de cada ação.
 // Tutor aprende: comida=âmbar, água=azul, passeio=verde, xixi=violeta.

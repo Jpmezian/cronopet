@@ -20,17 +20,20 @@ import { ActionButton } from '@/components/home/ActionButton';
 import type { ActionConfig } from '@/components/home/ActionButton';
 import {
   Settings, Check, ChevronDown, Plus, Crown,
-  Utensils, Droplet, Footprints, Droplets, Sprout, Bath,
+  Utensils, Droplet, Footprints, Droplets, Bath,
   CheckCircle2, MinusCircle, XCircle, Waves, Square,
   Trophy, CalendarDays, Scale, TrendingUp,
 } from 'lucide-react-native';
+import { PoopIcon } from '@/components/icons/PoopIcon';
 import { NotificationAskSheet } from '@/components/ui/NotificationAskSheet';
+import { WelcomeTour } from '@/components/onboarding/WelcomeTour';
 import { MilestoneSheet } from '@/components/ui/MilestoneSheet';
 import { PremiumTriggerSheet } from '@/components/ui/PremiumTriggerSheet';
 import { usePremiumTriggers } from '@/hooks/usePremiumTriggers';
 import { WellnessCard } from '@/components/home/WellnessCard';
 import { NutritionEntryCard } from '@/components/home/NutritionEntryCard';
 import { HealthInsightsCard } from '@/components/home/HealthInsightsCard';
+import { InsightsPremiumGate } from '@/components/home/InsightsPremiumGate';
 import { CriticalInsightBanner } from '@/components/home/CriticalInsightBanner';
 import { analyzeHealth } from '@/services/HealthInsights';
 import { useSmartHealthNotifications } from '@/hooks/useSmartHealthNotifications';
@@ -138,22 +141,24 @@ export default function PetDashboard() {
   const modalOverlay = isDark ? 'rgba(0,0,0,0.55)'    : 'rgba(28,25,23,0.35)';
 
   // ── Ações do pet — dinâmicas via actionTheme ─────────────────
-  // Migração 2026-05-15: emojis removidos. Cada ação usa um ícone Lucide
-  // com semântica clara (Utensils=comida, Droplet=água, Footprints=passeio,
-  // Droplets=xixi (gota dupla, distinto da água), Sprout=cocô (broto enrolado
-  // — abstrato e fofo, evita pictograma vulgar), Bath=banho).
+  // Migração 2026-05-15: emojis removidos. Cada ação usa um ícone com
+  // semântica clara: Utensils=comida, Droplet=água, Footprints=passeio,
+  // Droplets=xixi (gota dupla, distinto da água), PoopIcon=cocô (SVG
+  // custom — feedback TestFlight "Sprout não faz sentido"; agora silhueta
+  // clássica de tufo, reconhecível sem precisar emoji), Bath=banho.
   const ALL_ACTIONS = useMemo<ActionConfig[]>(() => [
     { key: 'comida',  Icon: Utensils,   label: 'Comida',  color: actionTheme.comida.primary,  bg: actionTheme.comida.bg,  border: actionTheme.comida.border  },
     { key: 'agua',    Icon: Droplet,    label: 'Água',    color: actionTheme.agua.primary,    bg: actionTheme.agua.bg,    border: actionTheme.agua.border    },
     { key: 'passeio', Icon: Footprints, label: 'Passeio', color: actionTheme.passeio.primary, bg: actionTheme.passeio.bg, border: actionTheme.passeio.border },
     { key: 'xixi',    Icon: Droplets,   label: 'Xixi',    color: actionTheme.xixi.primary,    bg: actionTheme.xixi.bg,    border: actionTheme.xixi.border    },
-    { key: 'coco',    Icon: Sprout,     label: 'Cocô',    color: actionTheme.coco.primary,    bg: actionTheme.coco.bg,    border: actionTheme.coco.border    },
+    { key: 'coco',    Icon: PoopIcon,   label: 'Cocô',    color: actionTheme.coco.primary,    bg: actionTheme.coco.bg,    border: actionTheme.coco.border    },
     { key: 'banho',   Icon: Bath,       label: 'Banho',   color: actionTheme.banho.primary,   bg: actionTheme.banho.bg,   border: actionTheme.banho.border   },
   ], [actionTheme]);
 
   // ── Store ────────────────────────────────────────────────────
   const pet                = usePetStore((s) => s.pet);
   const streak             = usePetStore((s) => s.streak);
+  const isPremium          = usePetStore((s) => s.isPremium);
   const actionHistory      = usePetStore((s) => s.actionHistory);
   const addActionLog       = usePetStore((s) => s.addActionLog);
   const checkAndResetDay   = usePetStore((s) => s.checkAndResetDay);
@@ -164,6 +169,14 @@ export default function PetDashboard() {
 
   const weather = useWeather();
   const [notifStatus, setNotifStatus] = useState<string | null>(null);
+
+  // Welcome tour (feedback TestFlight #13): aparece UMA vez após o
+  // onboarding inicial. State global no store pra persistir e nunca
+  // reaparecer (a menos que user resete via settings).
+  const hasCompletedTour    = usePetStore((s) => s.hasCompletedTour);
+  const setHasCompletedTour = usePetStore((s) => s.setHasCompletedTour);
+  const hasOnboarded        = usePetStore((s) => s.hasOnboarded);
+  const showTour            = hasOnboarded && !hasCompletedTour;
 
   const [modalAction, setModalAction] = useState<ActionConfig | null>(null);
   const [logNote, setLogNote]         = useState('');
@@ -530,17 +543,23 @@ export default function PetDashboard() {
   }, [lastActionTime, actionHistory.length]);
 
   const handleEnableNotifications = useCallback(async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const granted = await requestPermissionsAsync();
-    Haptics.notificationAsync(
-      granted
-        ? Haptics.NotificationFeedbackType.Success
-        : Haptics.NotificationFeedbackType.Warning,
-    );
+    // Antes haptics era chamado direto — em devices antigos podia throw
+    // antes do request, abortando o fluxo todo. Agora envolvemos tudo.
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch { /* haptic ausente — segue */ }
+    const granted = await requestPermissionsAsync(); // já é try/catch-safe
+    try {
+      Haptics.notificationAsync(
+        granted
+          ? Haptics.NotificationFeedbackType.Success
+          : Haptics.NotificationFeedbackType.Warning,
+      );
+    } catch { /* segue */ }
     setNotifStatus(granted ? 'granted' : 'denied');
     showToast(
       granted ? 'success' : 'warning',
-      granted ? 'Lembretes ativados!' : 'Permissão negada',
+      granted ? 'Lembretes ativados!' : 'Permissão negada — você pode mudar em Ajustes',
     );
   }, [showToast]);
 
@@ -770,6 +789,33 @@ export default function PetDashboard() {
           ))}
         </View>
 
+        {/* Weather — feedback TestFlight R2-3: antes ficava entre nutrição
+            e resumo semanal, sem conexão semântica nenhuma. Aqui, logo
+            abaixo dos botões de ação, fica claro o uso: "Vai registrar
+            passeio? Olha o clima primeiro". Posição contextual. */}
+        {weather.loading ? (
+          <View style={{ backgroundColor: colors.bgInput, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={{ fontSize: 22, marginRight: 12 }}>🌤️</Text>
+            <Text style={{ color: colors.textTertiary, fontWeight: '700', fontSize: 13 }}>Obtendo clima...</Text>
+          </View>
+        ) : weather.asfaltoQuente ? (
+          <View style={{ backgroundColor: errorBg, borderWidth: 1, borderColor: errorBorder, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={{ fontSize: 22, marginRight: 12 }}>🌡️</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: errorText, fontWeight: '700', fontSize: 13 }}>Asfalto quente — evite passeios agora</Text>
+              <Text style={{ color: errorSubtext, fontSize: 12, marginTop: 2 }}>{weather.temp}°C · risco de queimadura nas patas</Text>
+            </View>
+          </View>
+        ) : weather.temp !== null ? (
+          <View style={{ backgroundColor: actionTheme.passeio.bg, borderWidth: 1, borderColor: actionTheme.passeio.border, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={{ fontSize: 22, marginRight: 12 }}>🌤️</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: actionTheme.passeio.primary, fontWeight: '700', fontSize: 13 }}>Clima ideal pra passeio</Text>
+              <Text style={{ color: actionTheme.passeio.primary, fontSize: 12, marginTop: 2 }}>{weather.temp}°C · {weather.descricao}</Text>
+            </View>
+          </View>
+        ) : null}
+
         {/* IA de Bem-Estar (Calorias) — se aplicável */}
         {showWellnessCard && (
           <WellnessCard
@@ -782,12 +828,23 @@ export default function PetDashboard() {
         {/* ═══════════ Seção INSIGHTS ═══════════ */}
         <SectionHeader title="INSIGHTS" />
 
-        {/* Sinais de saúde — heurística de padrões clínicos */}
+        {/* Sinais de saúde — heurística de padrões clínicos.
+            R2-10: feature agora é Pro. Free vê gate com preview do
+            1º insight (titulo truncado) + CTA pra paywall. Pro vê o
+            card completo com todos os insights. CriticalInsightBanner
+            (acima) continua livre — alertas críticos sempre passam. */}
         {healthInsights.length > 0 && (
-          <HealthInsightsCard
-            insights={healthInsights}
-            onDismiss={dismissInsight}
-          />
+          isPremium ? (
+            <HealthInsightsCard
+              insights={healthInsights}
+              onDismiss={dismissInsight}
+            />
+          ) : (
+            <InsightsPremiumGate
+              insightCount={healthInsights.length}
+              previewInsight={healthInsights[0]}
+            />
+          )
         )}
 
         {/* Marco de atividade (ex: "100 passeios com Lolo!") */}
@@ -807,30 +864,6 @@ export default function PetDashboard() {
           currentGoal={pet.nutritionGoal ?? null}
           hasWeight={latestWeight !== null}
         />
-
-        {/* Weather */}
-        {weather.loading ? (
-          <View style={{ backgroundColor: colors.bgInput, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}>
-            <Text style={{ fontSize: 22, marginRight: 12 }}>🌤️</Text>
-            <Text style={{ color: colors.textTertiary, fontWeight: '700', fontSize: 13 }}>Obtendo clima...</Text>
-          </View>
-        ) : weather.asfaltoQuente ? (
-          <View style={{ backgroundColor: errorBg, borderWidth: 1, borderColor: errorBorder, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}>
-            <Text style={{ fontSize: 22, marginRight: 12 }}>🌡️</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: errorText, fontWeight: '700', fontSize: 13 }}>Asfalto Quente! Evite passeios agora.</Text>
-              <Text style={{ color: errorSubtext, fontSize: 12, marginTop: 2 }}>{weather.temp}°C — risco de queimaduras nas patas</Text>
-            </View>
-          </View>
-        ) : (
-          <View style={{ backgroundColor: actionTheme.passeio.bg, borderWidth: 1, borderColor: actionTheme.passeio.border, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, flexDirection: 'row', alignItems: 'center' }}>
-            <Text style={{ fontSize: 22, marginRight: 12 }}>🌤️</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: actionTheme.passeio.primary, fontWeight: '700', fontSize: 13 }}>Clima ideal para passeio!</Text>
-              <Text style={{ color: actionTheme.passeio.primary, fontSize: 12, marginTop: 2 }}>{weather.temp}°C — {weather.descricao}</Text>
-            </View>
-          </View>
-        )}
 
         {/* Resumo Semanal */}
         <ScalePress
@@ -1364,12 +1397,26 @@ export default function PetDashboard() {
       </Modal>
 
       {/* ── Soft Ask de Notificações ── */}
+      {/* Welcome tour — aparece UMA vez após o onboarding. Persiste via store. */}
+      <WelcomeTour
+        visible={showTour}
+        petNome={pet.nome}
+        onComplete={() => setHasCompletedTour(true)}
+      />
+
       <NotificationAskSheet
         visible={showNotifAsk}
         petNome={pet.nome}
-        onConfirm={() => {
+        onConfirm={(granted) => {
+          // Antes setava 'granted' incondicional → quando user negava
+          // o diálogo nativo, o store assumia ok e tentava agendar
+          // (crashava em alguns devices). Agora reflete o status real.
           setShowNotifAsk(false);
-          setNotifStatus('granted');
+          setNotifStatus(granted ? 'granted' : 'denied');
+          showToast(
+            granted ? 'success' : 'warning',
+            granted ? 'Lembretes ativados!' : 'Permissão negada — você pode mudar em Ajustes',
+          );
         }}
         onDismiss={() => setShowNotifAsk(false)}
       />

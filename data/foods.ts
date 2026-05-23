@@ -15,7 +15,7 @@
 
 import type { LifeStage, NutritionGoal, PetSize } from '@/types/pet';
 
-const FOODS_DB_UPDATED_AT = '2026-04';
+export const FOODS_DB_UPDATED_AT = '2026-04';
 
 export type FoodTier = 'economic' | 'standard' | 'premium' | 'superpremium';
 
