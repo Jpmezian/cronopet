@@ -9,7 +9,7 @@ import { useThemeColors } from '@/hooks/useThemeColors';
 import * as Haptics from 'expo-haptics';
 import * as SecureStore from 'expo-secure-store';
 import * as Sentry from '@sentry/react-native';
-import { ChevronLeft, Trash2, Sun, Moon, Monitor, Palette, Sparkles } from 'lucide-react-native';
+import { ChevronLeft, Trash2, Sun, Moon, Monitor, Palette, Sparkles, LogOut } from 'lucide-react-native';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { openLegal } from '@/lib/legalLinks';
 import { signOut, deleteRemoteAccount } from '@/services/AuthService';
@@ -119,6 +119,29 @@ export default function SettingsScreen() {
       ],
     );
   }, [resetStore, router]);
+
+  // Sprint AUTH Fase 5: signOut simples (sem deletar dados).
+  // Sessão é invalidada, dados locais ficam. Próximo cold-start vai
+  // bater no auth guard e redirecionar pra /auth.
+  const handleSignOut = useCallback(() => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    Alert.alert(
+      'Sair da conta',
+      'Você vai precisar fazer login novamente pra acessar o app. Seus dados ficam preservados.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Sair',
+          style: 'destructive',
+          onPress: async () => {
+            try { await signOut(); }
+            catch (err) { Sentry.captureException(err, { tags: { op: 'signOut' } }); }
+            router.replace('/auth');
+          },
+        },
+      ],
+    );
+  }, [router]);
 
   const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -454,6 +477,24 @@ export default function SettingsScreen() {
                 Todos os dados do CronoPet ficam armazenados somente no seu dispositivo. Nenhuma informação é enviada para servidores externos. As fotos têm os metadados de localização (EXIF) removidos automaticamente.
               </Text>
             </View>
+            <ScalePress
+              onPress={handleSignOut}
+              style={{
+                padding: 20, flexDirection: 'row', alignItems: 'center', gap: 12,
+                borderBottomWidth: 1, borderBottomColor: colors.border,
+              }}
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel="Sair da conta"
+              accessibilityHint="Desconecta sua conta. Dados ficam preservados."
+            >
+              <LogOut size={18} color={colors.textSecondary} strokeWidth={2} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: 14 }}>Sair da conta</Text>
+                <Text style={{ color: colors.textTertiary, fontSize: 12, marginTop: 2 }}>Desconecta sua sessão. Você poderá fazer login de novo a qualquer hora.</Text>
+              </View>
+              <Text style={{ color: colors.textTertiary, fontSize: 16 }}>›</Text>
+            </ScalePress>
             <ScalePress
               onPress={handleDeleteAccount}
               style={{ padding: 20, flexDirection: 'row', alignItems: 'center', gap: 12 }}

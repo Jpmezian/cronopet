@@ -161,7 +161,17 @@ export default function OnboardingScreen() {
             )}
             {displayStep === 1 && (
               <StepAuth
-                onSuccess={() => animateToStep(2)}
+                onSuccess={({ hadCloudPet }) => {
+                  if (hadCloudPet) {
+                    // User já tem pet no Supabase (trocou de celular).
+                    // hydrateFromCloud já populou o pet no store.
+                    // Pula StepPetType + StepPetProfile e marca onboarding.
+                    usePetStore.getState().markOnboarded();
+                    router.replace('/(tabs)');
+                  } else {
+                    animateToStep(2);
+                  }
+                }}
                 onBack={() => animateToStep(0)}
               />
             )}

@@ -197,6 +197,9 @@ interface PetStore extends PetState {
     appointments:  Appointment[];
     weightHistory: WeightEntry[];
   }) => void;
+  /** Marca onboarding como completo sem mexer no pet. Usado quando user
+   *  já tem pet no cloud (trocou de celular) — pula StepPetType+Setup. */
+  markOnboarded: () => void;
   appendRemoteLog: (log: ActionLog) => void;
 
   resetStore: () => void;
@@ -695,6 +698,14 @@ export const usePetStore = create<PetStore>()(
           if (s.actionHistory.some((l) => l.id === log.id)) return s;
           return { actionHistory: [...s.actionHistory, log] };
         });
+      },
+
+      // Sprint AUTH Fase 5: usado pelo onboarding quando user signa in
+      // num device novo e hydrateFromCloud retorna pet existente → pula
+      // direto pro dashboard sem forçar criar pet de novo.
+      markOnboarded: () => {
+        set({ hasOnboarded: true, todayDate: getTodayString() });
+        track({ name: 'onboarding_completed', props: { petType: get().pet.tipo, viaHydration: true } as any });
       },
 
       // ── Reset completo ────────────────────────────────────

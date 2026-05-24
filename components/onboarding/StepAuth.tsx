@@ -20,6 +20,7 @@ import Animated, { FadeIn, FadeInRight, useReducedMotion } from 'react-native-re
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { signIn, signUp } from '@/services/AuthService';
+import { hydrateFromCloud } from '@/services/SyncService';
 import { isValidEmail, checkPasswordStrength } from '@/lib/security';
 import { translateSupabaseError } from '@/lib/supabaseErrors';
 
@@ -28,8 +29,11 @@ type AuthTab = 'signup' | 'signin';
 interface StepAuthProps {
   /** Nome do tutor (pré-preenchido do welcome, ou string vazia). Usado no signUp. */
   defaultName?: string;
-  /** Callback chamado após auth com sucesso. Caller avança o step. */
-  onSuccess: () => void;
+  /** Callback chamado após auth com sucesso.
+   *  hadCloudPet=true → user já tem pet no Supabase (caso "trocou de
+   *  celular"); caller pode pular criação de pet e ir direto pro
+   *  dashboard. hadCloudPet=false → fluxo normal (criar pet). */
+  onSuccess: (info: { hadCloudPet: boolean }) => void;
   /** Callback pra voltar ao step anterior (welcome). */
   onBack: () => void;
 }
@@ -86,17 +90,29 @@ export function StepAuth({ defaultName = '', onSuccess, onBack }: StepAuthProps)
     try {
       if (tab === 'signup') {
         await signUp(email, password, nome.trim());
-        // Supabase pode exigir confirmação de email. Avisa o user.
+        // Signup novo nunca tem pet no cloud (trigger 011 acabou de
+        // criar o group vazio). Avisa do email de confirmação e segue.
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Alert.alert(
           'Conta criada!',
-          'Enviamos um e-mail de confirmação para você. Pode ignorar e continuar usando o app — confirme quando puder pra ter Pro/família.',
-          [{ text: 'Continuar', onPress: onSuccess }],
+          'Enviamos um e-mail de confirmação para você. Pode ignorar e continuar — confirme quando puder pra ter Pro/família.',
+          [{ text: 'Continuar', onPress: () => onSuccess({ hadCloudPet: false }) }],
         );
       } else {
         await signIn(email, password);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        onSuccess();
+        // Sprint AUTH Fase 5: detectar se cloud já tem pet pra pular
+        // a criação no onboarding. Timeout 3s — se hydrate demorar,
+        // assume sem pet e segue fluxo normal (PetType + Setup).
+        let hadCloudPet = false;
+        try {
+          const snapshot = await Promise.race([
+            hydrateFromCloud(),
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000)),
+          ]);
+          hadCloudPet = !!(snapshot?.pet && snapshot.pet.nome);
+        } catch { /* fallback hadCloudPet=false */ }
+        onSuccess({ hadCloudPet });
       }
     } catch (err) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

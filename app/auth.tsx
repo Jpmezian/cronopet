@@ -45,6 +45,8 @@ export default function AuthScreen() {
             // navegação ignorada (botão Voltar mostra mas no-op confortável)
             onBack={() => { /* no-op: sem onde voltar */ }}
           />
+          {/* No standalone, hadCloudPet é ignorado: já está pós-onboarding,
+              vai direto pras tabs com store hidratado pelo AuthService. */}
         </View>
       </SafeAreaView>
     </View>
