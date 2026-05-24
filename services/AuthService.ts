@@ -85,20 +85,37 @@ export async function signUp(
   if (error) throw error;
   if (!data.user) throw new Error('Cadastro falhou — tente novamente.');
 
-  // Cria perfil público (best-effort, pode já existir)
-  await supabase.from('profiles').upsert({
-    id:    data.user.id,
-    email: email.trim().toLowerCase(),
-    nome,
-  }).throwOnError();
+  // NÃO fazer upsert manual em `profiles` aqui (bug build #15):
+  //   - O trigger `handle_new_user` JÁ insere profile com nome+email
+  //     do raw_user_meta_data (SECURITY DEFINER bypass RLS, sempre roda).
+  //   - Com email-confirmation ON (default), signUp NÃO cria session
+  //     imediata → role corrente = anon → upsert quebra na RLS.
+  //   - Trigger é authoritative; app não deve duplicar trabalho.
+  //
+  // NÃO chamar hydrateStoreFromCloud aqui:
+  //   - Signup novo = personal group recém-criado pelo trigger,
+  //     sem pets/logs/etc. Não há nada pra hidratar.
+  //   - Sem session = chamadas Supabase falhariam silenciosamente.
+  //   - Próximo signIn ou getSession (após email confirmation) hidrata.
+  //
+  // NÃO chamar checkRemotePremiumGrant aqui:
+  //   - Edge Function tem verify_jwt=true → sem session = 401.
+  //   - applyDevPremiumIfMatch (hardcoded, síncrono) cobre founders
+  //     offline. Remote grant é re-checado no próximo getSession.
 
-  // Identifica nos analytics + purchases (não-bloqueante)
   identifyUser(data.user.id);
   identifyPurchasesUser(data.user.id).catch(() => {});
-  maybeApplyDevPremium(data.user.email);
-  hydrateStoreFromCloud();
+  // Apenas o hardcoded (síncrono, não precisa de rede/session)
+  applyDevPremiumIfMatch(data.user.email, getSetPremiumStatus());
 
   return { id: data.user.id, email: data.user.email!, nome };
+}
+
+/** Helper pra obter o setPremiumStatus do store (lazy import). */
+function getSetPremiumStatus() {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { usePetStore } = require('@/store/usePetStore');
+  return usePetStore.getState().setPremiumStatus;
 }
 
 // ─── Sign In ──────────────────────────────────────────────────
@@ -189,6 +206,11 @@ export async function getSession(): Promise<CronoPetUser | null> {
   // Garante que dev premium funcione também em cold start (não só
   // em login fresh). Idempotente — só seta se ainda não foi.
   maybeApplyDevPremium(u.email);
+  // Sprint AUTH fix bug #D: cold start em device novo (instalou app,
+  // tinha sessão MMKV persistida) precisa hidratar do cloud.
+  // Antes ficava só pra signIn fresh → user reinstalava, sessão voltava,
+  // mas pet/logs não vinham. Idempotente: merge preserva local edits.
+  hydrateStoreFromCloud();
   return { id: u.id, email: u.email!, nome: u.user_metadata?.nome };
 }
 
