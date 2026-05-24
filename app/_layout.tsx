@@ -97,6 +97,9 @@ export default function RootLayout() {
   const recordFirstAppOpen = usePetStore((s) => s.recordFirstAppOpen);
 
   const [storageReady, setStorageReady] = useState(false);
+  // hasSession: null = checking, true = logado, false = sem sessão.
+  // Usado pelo auth guard pra decidir redirect (/auth standalone).
+  const [hasSession, setHasSession] = useState<boolean | null>(null);
 
   // SECURITY: carregar chave de criptografia do Keychain ANTES de hidratar.
   // Sem essa chave, o MMKV seria criado unencrypted (modo degradado).
@@ -125,12 +128,13 @@ export default function RootLayout() {
     initPurchases().catch(() => {});
 
     // Cold-start auth: chama getSession (que internamente também
-    // dispara `maybeApplyDevPremium`) pra reativar premium dev em
-    // toda abertura do app, sem precisar logar/abrir tela /premium.
-    // Feedback R3-3: users já logados não viam o premium ativar
-    // porque o grant SÓ rodava em signIn fresh ou na tela /premium.
-    // Falha silenciosa se Supabase offline — não bloqueia nada.
-    getSession().catch(() => {});
+    // dispara `maybeApplyDevPremium` + `hydrateStoreFromCloud`) pra
+    // reativar premium dev e popular dados da nuvem em toda abertura.
+    // Resultado é guardado em hasSession pra o guard global decidir
+    // se manda pra /auth standalone.
+    getSession()
+      .then((user) => setHasSession(!!user))
+      .catch(() => setHasSession(false));
 
     // DEV-only: o sistema email-based só dispara após login. Como o
     // app suporta uso offline sem conta, em DEV builds liberamos Pro
@@ -155,27 +159,37 @@ export default function RootLayout() {
   }, [fontError]);
 
   useEffect(() => {
-    if (!fontsLoaded || !hasHydrated || !storageReady) return;
+    // Espera tudo carregar — fontes, hidratação do MMKV, storage encrypted
+    // E o check de sessão (hasSession=null = ainda checking)
+    if (!fontsLoaded || !hasHydrated || !storageReady || hasSession === null) return;
 
     if (guardRanRef.current) return;
     guardRanRef.current = true;
 
     const inOnboarding = (segments as string[])[0] === 'onboarding';
-    const inDev = (segments as string[])[0] === '(dev)';
+    const inAuth       = (segments as string[])[0] === 'auth';
+    const inDev        = (segments as string[])[0] === '(dev)';
 
+    // Sprint AUTH 2026-05-24: login obrigatório. Cenários:
+    //  - Nunca onboardou → /onboarding (que tem step de auth interno)
+    //  - Onboardou mas sem session → /auth (re-login standalone)
+    //  - Onboardou e com session → /(tabs) (fluxo normal)
+    //  - Onboardou e em /onboarding → /(tabs) (não repete)
     if (!hasOnboarded && !inOnboarding && !inDev) {
       router.replace('/onboarding');
-    } else if (hasOnboarded && inOnboarding) {
+    } else if (hasOnboarded && !hasSession && !inAuth && !inDev) {
+      router.replace('/auth');
+    } else if (hasOnboarded && hasSession && (inOnboarding || inAuth)) {
       router.replace('/(tabs)');
     }
 
     setIsNavigationReady(true);
     SplashScreen.hideAsync();
-  }, [fontsLoaded, hasHydrated, hasOnboarded, storageReady]);
+  }, [fontsLoaded, hasHydrated, hasOnboarded, hasSession, storageReady]);
 
   useEffect(() => {
     guardRanRef.current = false;
-  }, [hasOnboarded]);
+  }, [hasOnboarded, hasSession]);
 
   if (!isNavigationReady) return null;
 
@@ -186,6 +200,7 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
+        <Stack.Screen name="auth" options={{ animation: 'fade' }} />
         <Stack.Screen
           name="edit-profile"
           options={{

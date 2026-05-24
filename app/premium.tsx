@@ -26,6 +26,7 @@ import {
   subscribeToFamilyLogs, unsubscribeAll,
 } from '@/services/SyncService';
 import type { FamilyGroup, FamilyMember } from '@/types/auth';
+import { translateSupabaseError } from '@/lib/supabaseErrors';
 
 // ─── Tipos locais ─────────────────────────────────────────────
 
@@ -779,17 +780,7 @@ function ViewDashboard({
   );
 }
 
-// ─── Utils ────────────────────────────────────────────────────
-
-function translateSupabaseError(msg?: string): string {
-  if (!msg) return 'Erro desconhecido. Tente novamente.';
-  if (msg.includes('Invalid login credentials')) return 'E-mail ou senha incorretos.';
-  if (msg.includes('User already registered'))   return 'Este e-mail já está cadastrado.';
-  if (msg.includes('Password should be'))        return 'A senha deve ter pelo menos 6 caracteres.';
-  if (msg.includes('Unable to validate'))        return 'E-mail inválido.';
-  if (msg.includes('Email not confirmed'))       return 'Confirme seu e-mail antes de entrar.';
-  return msg;
-}
+// translateSupabaseError movido pra lib/supabaseErrors.ts (sprint AUTH 2026-05-24).
 
 // ─── View: Pitch (nova tela de vendas) ────────────────────────
 

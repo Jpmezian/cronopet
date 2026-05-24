@@ -20,6 +20,7 @@ import { PetPhoto } from '@/components/PetPhoto';
 import { IllustrationWelcome } from '@/components/onboarding/IllustrationWelcome';
 import { IllustrationRoutine } from '@/components/onboarding/IllustrationRoutine';
 import { IllustrationSetup } from '@/components/onboarding/IllustrationSetup';
+import { StepAuth } from '@/components/onboarding/StepAuth';
 import type { PetType } from '@/types/pet';
 
 // ─── Constantes ───────────────────────────────────────────────
@@ -27,7 +28,13 @@ const BRAND_PRIMARY  = '#04A29B';
 // DEFAULT_FOTO removida em 2026-05-22 — era URL Unsplash apontando pra
 // um RATO ("photo-1587300003388-59208cc962cb"). Pet sem foto agora
 // renderiza <PetPhoto/> fallback (ícone Dog/Cat/PawPrint + cor da marca).
-type Step = 0 | 1 | 2;
+//
+// Steps (após sprint AUTH 2026-05-24):
+//  0 = Welcome (intro + features)
+//  1 = Auth (signup/signin obrigatório — gate)
+//  2 = PetType (cachorro/gato/outro)
+//  3 = PetProfile (nome, raça, foto, nascimento)
+type Step = 0 | 1 | 2 | 3;
 
 // ─── Tela principal ───────────────────────────────────────────
 export default function OnboardingScreen() {
@@ -55,13 +62,14 @@ export default function OnboardingScreen() {
 
   // R5-2: reduzido de 0.46 → 0.36 no welcome/petType. O bottom sheet
   // estava com muito espaço sobrando porque o hero tomava quase metade
-  // da tela. Agora 36% no step 0 e 1, 30% no step 2 (form mais denso).
-  const HERO_H = height * (displayStep === 2 ? 0.30 : 0.36);
+  // da tela. Agora 36% no step 0 e 2, 30% nos steps com form denso (1 e 3).
+  const HERO_H = height * (displayStep === 1 || displayStep === 3 ? 0.30 : 0.36);
 
   const HERO_COLORS = [
-    actionTheme.agua.bg,
-    actionTheme.passeio.bg,
-    actionTheme.comida.bg,
+    actionTheme.agua.bg,      // 0 Welcome
+    actionTheme.xixi.bg,      // 1 Auth (roxo suave, contraste com pet steps)
+    actionTheme.passeio.bg,   // 2 PetType
+    actionTheme.comida.bg,    // 3 PetProfile
   ];
 
   const animateToStep = useCallback((nextStep: Step) => {
@@ -117,9 +125,11 @@ export default function OnboardingScreen() {
   }, [nome, tipo, raca, foto, nascimento, completeOnboarding, router]);
 
   // ── Ilustração do hero por step ──────────────────────────
+  // Step 1 (Auth) reusa IllustrationWelcome — mantém continuidade visual
+  // (o welcome convida, e a auth ainda é "boas-vindas" no contexto do user).
   const HeroIllustration = () => {
-    if (displayStep === 0) return <IllustrationWelcome />;
-    if (displayStep === 1) return <IllustrationRoutine />;
+    if (displayStep === 0 || displayStep === 1) return <IllustrationWelcome />;
+    if (displayStep === 2) return <IllustrationRoutine />;
     return <IllustrationSetup />;
   };
 
@@ -150,13 +160,19 @@ export default function OnboardingScreen() {
               />
             )}
             {displayStep === 1 && (
-              <StepPetType
-                tipo={tipo}
-                onSelect={(t) => { setTipo(t); setRaca(''); setRacaSuggestions([]); }}
-                onNext={() => animateToStep(2)}
+              <StepAuth
+                onSuccess={() => animateToStep(2)}
+                onBack={() => animateToStep(0)}
               />
             )}
             {displayStep === 2 && (
+              <StepPetType
+                tipo={tipo}
+                onSelect={(t) => { setTipo(t); setRaca(''); setRacaSuggestions([]); }}
+                onNext={() => animateToStep(3)}
+              />
+            )}
+            {displayStep === 3 && (
               <StepPetProfile
                 tipo={tipo}
                 nome={nome} raca={raca} foto={foto} nascimento={nascimento}
@@ -318,7 +334,7 @@ function StepPetType({
     >
       <Animated.View entering={textEntering}>
         <Text style={{ color: colors.textTertiary, fontSize: 13, fontWeight: '500' }}>
-          Passo 1 de 2
+          Passo 2 de 3
         </Text>
         <Text style={{
           color: colors.textPrimary, fontFamily: 'Nunito_800ExtraBold',
@@ -434,7 +450,7 @@ function StepPetProfile({
     >
       <Animated.View entering={textEntering}>
         <Text style={{ color: colors.textTertiary, fontSize: 13, fontWeight: '500' }}>
-          Passo 2 de 2
+          Passo 3 de 3
         </Text>
         <Text style={{
           color: colors.textPrimary, fontFamily: 'Nunito_800ExtraBold',
