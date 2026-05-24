@@ -2,12 +2,18 @@ import { supabase } from './supabase';
 import type { CronoPetUser } from '@/types/auth';
 import { identifyUser, resetAnalytics } from './analytics';
 import { identifyPurchasesUser, resetPurchases } from './purchases';
-import { applyDevPremiumIfMatch } from '@/lib/devPremium';
+import { applyDevPremiumIfMatch, checkRemotePremiumGrant } from '@/lib/devPremium';
 
 /**
- * Aplica premium dev se o email do user logado bater com a lista
- * hardcoded em `lib/devPremium.ts`. Helper interno chamado em
- * signUp/signIn/getSession pra cobrir todos os caminhos de auth.
+ * Aplica Premium fora do RevenueCat em 2 camadas:
+ *   1. Hardcoded síncrono (lib/devPremium.ts → founders/sócios).
+ *      Funciona offline. Cobre cold start em modo avião.
+ *   2. Remoto async (Edge Function check-premium-grant → tabela
+ *      premium_grants). Permite adicionar email via SQL sem rebuild.
+ *
+ * Fire-and-forget — não bloqueia o fluxo de auth. Se a chamada remota
+ * falhar (rede off, função fora do ar), o user fica com o último
+ * estado conhecido em MMKV + o hardcoded que já rodou.
  *
  * Lazy-importa o store pra evitar circular AuthService ↔ store.
  */
@@ -15,7 +21,16 @@ function maybeApplyDevPremium(email: string | undefined): void {
   if (!email) return;
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { usePetStore } = require('@/store/usePetStore');
-  applyDevPremiumIfMatch(email, usePetStore.getState().setPremiumStatus);
+  const setPremiumStatus = usePetStore.getState().setPremiumStatus;
+
+  // 1) Hardcoded fallback — síncrono, offline-safe
+  applyDevPremiumIfMatch(email, setPremiumStatus);
+
+  // 2) Backend grant — async, sobrescreve com dados mais recentes
+  //    Não usa await: não bloqueia signIn/signUp/getSession
+  checkRemotePremiumGrant(setPremiumStatus).catch(() => {
+    // já tratado dentro da função; engole pra TS feliz
+  });
 }
 
 // ─── Sign Up ──────────────────────────────────────────────────

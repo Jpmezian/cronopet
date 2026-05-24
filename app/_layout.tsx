@@ -18,6 +18,7 @@ import { initAnalytics, track } from '@/services/analytics';
 import { createPostHogClient, posthogBackend } from '@/services/analytics-posthog';
 import { initPurchases } from '@/services/purchases';
 import { getSession } from '@/services/AuthService';
+import { applyDevAutoGrant } from '@/lib/devPremium';
 // global.css removido junto com NativeWind (R7-B). Mantemos o arquivo
 // só pra preservar o gap visual no diff — sem side effects.
 
@@ -130,6 +131,12 @@ export default function RootLayout() {
     // porque o grant SÓ rodava em signIn fresh ou na tela /premium.
     // Falha silenciosa se Supabase offline — não bloqueia nada.
     getSession().catch(() => {});
+
+    // DEV-only: o sistema email-based só dispara após login. Como o
+    // app suporta uso offline sem conta, em DEV builds liberamos Pro
+    // automaticamente pra não bloquear teste de features pagas.
+    // No-op em production builds (Metro substitui __DEV__ por false).
+    applyDevAutoGrant(usePetStore.getState().setPremiumStatus);
   }, [storageReady]);
 
   // Registra first-open uma única vez (usado para trigger "7 dias de uso")

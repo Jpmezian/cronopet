@@ -28,3 +28,9 @@ verify_jwt = true
 # (user só consegue deletar SI MESMO — id vem do token).
 [functions.delete-account]
 verify_jwt = true
+
+# check-premium-grant: consulta tabela premium_grants pra ver se user
+# tem grant manual de Pro fora do RevenueCat (founder/sócio/beta/etc).
+# JWT obrigatório — email vem do token, não do body (anti-forge).
+[functions.check-premium-grant]
+verify_jwt = true
