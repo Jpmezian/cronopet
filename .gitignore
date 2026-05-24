@@ -54,3 +54,7 @@ relatorio.md
 # Supabase CLI local cache
 supabase/.temp/
 supabase/.branches/
+
+# Docs internos — mantidos localmente, não vão pro remote público
+LEGAL_RESEARCH_PROMPT.md
+PRODUCT_OVERVIEW.md
