@@ -13,6 +13,9 @@ import {
   scheduleStreakAtRiskReminder,
   cancelAllReminders,
 } from '@/services/NotificationService';
+import {
+  autoSyncPet, autoSyncActionLog, autoSyncDeleteActionLog,
+} from '@/services/SyncService';
 import type {
   ActionKey, ActionLog, PetState, PetType, PetProfile,
   MedicalEvent, MedicalEventType, Vaccine,
@@ -360,15 +363,16 @@ export const usePetStore = create<PetStore>()(
       // ── Onboarding ─────────────────────────────────────────
       completeOnboarding: async (nome, tipo, raca, foto, nascimento) => {
         const fotoFinal = await persistAndStripPhoto(foto);
+        const nextPet = {
+          nome: sanitizeName(nome, INPUT_LIMITS.PET_NAME_MAX),
+          tipo,
+          raca: sanitizeName(raca, INPUT_LIMITS.BREED_MAX),
+          foto: fotoFinal,
+          nascimento,
+        };
         set({
           hasOnboarded:      true,
-          pet:               {
-            nome: sanitizeName(nome, INPUT_LIMITS.PET_NAME_MAX),
-            tipo,
-            raca: sanitizeName(raca, INPUT_LIMITS.BREED_MAX),
-            foto: fotoFinal,
-            nascimento,
-          },
+          pet:               nextPet,
           streak:            0,
           streakShieldCount: 0,
           todayDate:         getTodayString(),
@@ -386,6 +390,8 @@ export const usePetStore = create<PetStore>()(
             hasBirthdate: !!nascimento,
           },
         });
+        // Sprint AUTH Fase 4: push pra nuvem se logado
+        autoSyncPet(nextPet);
       },
 
       // ── Edição de perfil ───────────────────────────────────
@@ -421,6 +427,8 @@ export const usePetStore = create<PetStore>()(
             },
           };
         });
+        // Sprint AUTH Fase 4: push pra nuvem se logado
+        autoSyncPet(get().pet);
       },
 
       // ── Preferências nutricionais ──────────────────────────
@@ -509,15 +517,9 @@ export const usePetStore = create<PetStore>()(
           },
         });
 
-        // Sync para nuvem (fire-and-forget) se membro de um grupo
-        const { familyGroupId, user } = current;
-        if (familyGroupId && user) {
-          import('@/services/SyncService')
-            .then(({ pushActionLog }) => pushActionLog(familyGroupId, user.id, newLog))
-            .catch((err) => {
-              Sentry.captureException(err, { tags: { op: 'pushActionLog' } });
-            });
-        }
+        // Sprint AUTH Fase 4: push pra nuvem se logado (cobre solo
+        // E modo família — helper resolve sessão + group automaticamente)
+        autoSyncActionLog(newLog);
 
         // Notificações fire-and-forget
         const { notificationHour, notificationMinute, pet } = current;
@@ -543,6 +545,8 @@ export const usePetStore = create<PetStore>()(
         const log = current.actionHistory.find((l) => l.id === id);
         if (log?.photo) deletePhotoFile(log.photo);
         set((s) => ({ actionHistory: s.actionHistory.filter((l) => l.id !== id) }));
+        // Sprint AUTH Fase 4: propagar delete pra nuvem se logado
+        autoSyncDeleteActionLog(id);
       },
 
       updateActionLog: (id, updates) => {

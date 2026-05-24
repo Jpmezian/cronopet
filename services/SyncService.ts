@@ -303,6 +303,77 @@ export function pushPet(groupId: string, pet: PetProfile): void {
     });
 }
 
+// ─── Auto-sync helpers (Sprint AUTH Fase 4) ──────────────────
+//
+// Wrappers fire-and-forget chamados pelo store em cada mutação. Cada
+// um faz: get session → get group → push. Se !session OU !group ou
+// erro → silencioso (Sentry registra). Não bloqueia a UI.
+//
+// Custo: ~2 round-trips Supabase por mutação (getSession + push).
+// getSession() é cached pelo SDK, então tipicamente é 1 RTT real.
+// Pra throughput crítico (bulk register), considerar batching no futuro.
+
+async function getSessionUser(): Promise<{ uid: string; groupId: string } | null> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return null;
+  // getMyFamilyGroup já chama getUser internamente — eficiente
+  const group = await getMyFamilyGroup();
+  if (!group) return null;
+  return { uid: user.id, groupId: group.id };
+}
+
+/** Auto-sync pet: chamado em completeOnboarding e updatePetProfile. */
+export function autoSyncPet(pet: PetProfile): void {
+  getSessionUser().then((ctx) => {
+    if (!ctx) return;
+    pushPet(ctx.groupId, pet);
+  }).catch(() => { /* silencioso */ });
+}
+
+/** Auto-sync action log: chamado em addActionLog. */
+export function autoSyncActionLog(log: ActionLog): void {
+  getSessionUser().then((ctx) => {
+    if (!ctx) return;
+    pushActionLog(ctx.groupId, ctx.uid, log);
+  }).catch(() => { /* silencioso */ });
+}
+
+/** Auto-sync delete de action log: chamado em removeActionLog. */
+export function autoSyncDeleteActionLog(logId: string): void {
+  getSessionUser().then((ctx) => {
+    if (!ctx) return;
+    supabase.from('action_logs').delete().eq('id', logId).then(({ error }) => {
+      if (error) {
+        Sentry.captureException(new Error(error.message), { tags: { op: 'autoSyncDeleteActionLog' } });
+      }
+    });
+  }).catch(() => { /* silencioso */ });
+}
+
+/** Auto-sync vacina (insert/update via upsert). */
+export function autoSyncVaccine(v: Vaccine): void {
+  getSessionUser().then((ctx) => {
+    if (!ctx) return;
+    pushVaccines(ctx.groupId, [v]).catch(() => {});
+  }).catch(() => { /* silencioso */ });
+}
+
+/** Auto-sync consulta. */
+export function autoSyncAppointment(a: Appointment): void {
+  getSessionUser().then((ctx) => {
+    if (!ctx) return;
+    pushAppointments(ctx.groupId, [a]).catch(() => {});
+  }).catch(() => { /* silencioso */ });
+}
+
+/** Auto-sync entrada de peso. */
+export function autoSyncWeightEntry(w: WeightEntry): void {
+  getSessionUser().then((ctx) => {
+    if (!ctx) return;
+    pushWeightHistory(ctx.groupId, [w]).catch(() => {});
+  }).catch(() => { /* silencioso */ });
+}
+
 /**
  * Hidratação completa após login (em device novo ou re-login).
  * Pulla: family_group → pet → action_logs → vaccines → appointments → weight.
