@@ -2,7 +2,7 @@ import React, { useEffect, useCallback, useState, useMemo, useRef } from 'react'
 import {
   View, Text, Image, Pressable, SafeAreaView,
   Platform, Modal, TextInput, ScrollView, ActivityIndicator,
-  KeyboardAvoidingView, AppState,
+  KeyboardAvoidingView, AppState, Alert, Linking,
 } from 'react-native';
 // Shared element transitions not available in Reanimated v4.1.7 — kept for future upgrade
 import * as Notifications from 'expo-notifications';
@@ -127,6 +127,29 @@ function notePlaceholder(key?: ActionKey): string {
 // ─── Limiares de urgência temporal ───────────────────────────
 const URGENT_WATER_MS = 6  * 60 * 60 * 1000;  // 6 horas
 const URGENT_FOOD_MS  = 10 * 60 * 60 * 1000;  // 10 horas
+
+// ─── Helper: alerta quando user nega permissão de notificação ─
+// Auditoria adversarial (finding #20): toast genérico "você pode
+// mudar em Ajustes" é fraco — user fica perdido no caminho. Alert
+// com action button leva direto pro app settings via Linking.
+function showNotificationDeniedAlert(): void {
+  Alert.alert(
+    'Lembretes desativados',
+    'Pra ativar lembretes de comida, água e passeio, libere a permissão de notificações de Ajustes do iOS/Android.',
+    [
+      { text: 'Agora não', style: 'cancel' },
+      {
+        text: 'Abrir Ajustes',
+        onPress: () => {
+          // openSettings funciona nos 2 OS — abre a tela de permissões
+          // do CronoPet diretamente. Falha silenciosa em caso raro
+          // (ex.: dispositivo bloqueado por MDM corporativo).
+          Linking.openSettings().catch(() => { /* no-op */ });
+        },
+      },
+    ],
+  );
+}
 
 // ─── Dashboard ────────────────────────────────────────────────
 
@@ -573,10 +596,11 @@ export default function PetDashboard() {
       );
     } catch { /* segue */ }
     setNotifStatus(granted ? 'granted' : 'denied');
-    showToast(
-      granted ? 'success' : 'warning',
-      granted ? 'Lembretes ativados!' : 'Permissão negada — você pode mudar em Ajustes',
-    );
+    if (granted) {
+      showToast('success', 'Lembretes ativados!');
+    } else {
+      showNotificationDeniedAlert();
+    }
   }, [showToast]);
 
   const openModal = useCallback((action: ActionConfig) => {
@@ -1434,10 +1458,11 @@ export default function PetDashboard() {
           // (crashava em alguns devices). Agora reflete o status real.
           setShowNotifAsk(false);
           setNotifStatus(granted ? 'granted' : 'denied');
-          showToast(
-            granted ? 'success' : 'warning',
-            granted ? 'Lembretes ativados!' : 'Permissão negada — você pode mudar em Ajustes',
-          );
+          if (granted) {
+            showToast('success', 'Lembretes ativados!');
+          } else {
+            showNotificationDeniedAlert();
+          }
         }}
         onDismiss={() => setShowNotifAsk(false)}
       />

@@ -88,7 +88,7 @@ export async function joinFamilyGroup(code: string): Promise<FamilyGroup> {
   }
 
   const row = Array.isArray(data) ? data[0] : data;
-  if (!row?.group_id) {
+  if (!row?.out_group_id) {
     throw new Error('Código inválido ou não encontrado.');
   }
 
@@ -97,7 +97,7 @@ export async function joinFamilyGroup(code: string): Promise<FamilyGroup> {
   const { data: group, error: gErr } = await supabase
     .from('family_groups')
     .select()
-    .eq('id', row.group_id)
+    .eq('id', row.out_group_id)
     .single();
   if (gErr || !group) throw new Error('Não foi possível carregar o grupo.');
 
