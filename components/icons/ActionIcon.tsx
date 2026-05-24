@@ -34,6 +34,7 @@ const ACTION_EMOJI: Record<Exclude<ActionKey, 'coco'>, string> = {
   passeio: '🐾',
   xixi:    '🪣',
   banho:   '🛁',
+  tosa:    '✂️',
 };
 
 export function ActionIcon({

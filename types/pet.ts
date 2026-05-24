@@ -32,7 +32,10 @@ export interface PetProfile {
 }
 
 /** Chaves das ações diárias rastreáveis */
-export type ActionKey = 'comida' | 'agua' | 'passeio' | 'xixi' | 'coco' | 'banho';
+// R8: 'tosa' adicionada como ação separada do 'banho'. Ambas são
+// grooming mas com frequências distintas (banho ~quinzenal, tosa
+// ~mensal/bimensal). Counter "dias desde último" pra cada na tab Saúde.
+export type ActionKey = 'comida' | 'agua' | 'passeio' | 'xixi' | 'coco' | 'banho' | 'tosa';
 
 /** Como o pet aceitou a comida/água (valor clínico importante) */
 export type Acceptance = 'full' | 'partial' | 'refused';

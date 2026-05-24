@@ -112,6 +112,7 @@ const actionsDark = {
   xixi:    { primary: '#A78BFA', bg: 'rgba(124, 58,237,  0.22)', border: 'rgba(124, 58,237,  0.40)' },
   coco:    { primary: '#D97706', bg: 'rgba(146, 64, 14,  0.22)', border: 'rgba(146, 64, 14,  0.40)' },
   banho:   { primary: '#38BDF8', bg: 'rgba( 3, 105,161,  0.22)', border: 'rgba( 3, 105,161,  0.40)' },
+  tosa:    { primary: '#F472B6', bg: 'rgba(190, 24, 93,  0.22)', border: 'rgba(190, 24, 93,  0.40)' },
 } as const;
 
 // Light = importado direto de constants/colors (single source of truth,

@@ -19,6 +19,7 @@ const ACTION_MILESTONES: Record<ActionKey, number[]> = {
   xixi:    [100, 500],
   coco:    [100, 500],
   banho:   [5, 10, 25, 50],
+  tosa:    [3, 6, 12, 24],
 };
 
 // (Mantido pra labels; ícone vem do componente <ActionIcon /> agora — R3-6).
@@ -30,6 +31,7 @@ const ACTION_LABELS: Record<ActionKey, string> = {
   xixi:    'registros de xixi',
   coco:    'registros de cocô',
   banho:   'banhos',
+  tosa:    'tosas',
 };
 
 interface PendingMilestone {
@@ -49,7 +51,7 @@ function findPendingMilestone(
 ): PendingMilestone | null {
   // Conta por ação
   const counts: Record<ActionKey, number> = {
-    comida: 0, agua: 0, passeio: 0, xixi: 0, coco: 0, banho: 0,
+    comida: 0, agua: 0, passeio: 0, xixi: 0, coco: 0, banho: 0, tosa: 0,
   };
   actionHistory.forEach((l) => {
     counts[l.key] = (counts[l.key] ?? 0) + 1;

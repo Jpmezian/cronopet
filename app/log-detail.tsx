@@ -27,6 +27,7 @@ const ACTION_LABEL: Record<ActionKey, string> = {
   xixi:    'Xixi',
   coco:    'Cocô',
   banho:   'Banho',
+  tosa:    'Tosa',
 };
 
 function acceptanceLabel(acceptance: Acceptance): string {

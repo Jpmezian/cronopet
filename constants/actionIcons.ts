@@ -21,6 +21,7 @@ import {
   Footprints,  // passeio — pegadas
   Droplets,    // xixi   — gotas plurais (distinto de água)
   Bath,        // banho  — banheira
+  Scissors,    // tosa   — tesoura
 } from 'lucide-react-native';
 import { PoopIcon } from '@/components/icons/PoopIcon';
 import type { ActionKey } from '@/types/pet';
@@ -38,6 +39,7 @@ export const ACTION_ICON: Record<ActionKey, ComponentType<IconProps>> = {
   xixi:    Droplets,
   coco:    PoopIcon,
   banho:   Bath,
+  tosa:    Scissors,
 };
 
 export const ACTION_LABEL: Record<ActionKey, string> = {
@@ -47,4 +49,5 @@ export const ACTION_LABEL: Record<ActionKey, string> = {
   xixi:    'Xixi',
   coco:    'Cocô',
   banho:   'Banho',
+  tosa:    'Tosa',
 };

@@ -7,7 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import {
   Trash2, Plus, Check, Stethoscope, Syringe, CalendarPlus, Scale,
-  Droplet, Footprints, ClipboardList, Thermometer, BicepsFlexed, UtensilsCrossed,
+  Droplet, Footprints, ClipboardList, Thermometer, BicepsFlexed, UtensilsCrossed, Scissors,
 } from 'lucide-react-native';
 import Animated from 'react-native-reanimated';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -18,6 +18,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { WeightChart } from '@/components/medical/WeightChart';
 import { BreedHealthCard } from '@/components/medical/BreedHealthCard';
 import { AIHealthAnalysis } from '@/components/medical/AIHealthAnalysis';
+import { GroomingCard } from '@/components/medical/GroomingCard';
 import { useMotion } from '@/hooks/useMotion';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { usePetStore } from '@/store/usePetStore';
@@ -326,10 +327,13 @@ export default function MedicalScreen() {
           </ScalePress>
         </View>
 
-        {/* ── Segmented Control ───────────────────────── */}
+        {/* ── Segmented Control ─────────────────────────
+            R8: adicionada aba "Higiene" pra banho + tosa com counter
+            "dias desde último". Banho saiu do dashboard diário porque
+            não é meta diária; aqui faz mais sentido. */}
         <View style={{ paddingHorizontal: 20, marginTop: 20 }}>
           <SegmentedControl
-            segments={['Consultas', 'Vacinas', 'Peso', 'Ocorrências']}
+            segments={['Consultas', 'Vacinas', 'Peso', 'Higiene', 'Ocorrências']}
             selectedIndex={activeTab}
             onChange={setActiveTab}
             accentColor={actionTheme.passeio.primary}
@@ -548,9 +552,24 @@ export default function MedicalScreen() {
         </Animated.View>
         )}
 
-        {/* ── Ocorrências de Saúde ─────────────────────── */}
+        {/* ── Higiene (banho + tosa) — R8 ──────────────── */}
         {activeTab === 3 && (
         <Animated.View entering={sectionEntering(3)} style={{ marginHorizontal: 20, marginTop: 28 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Scissors size={18} color={colors.textPrimary} strokeWidth={2.2} />
+              <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: 17, fontFamily: 'Nunito_700Bold' }}>
+                Higiene
+              </Text>
+            </View>
+          </View>
+          <GroomingCard actionHistory={actionHistory} />
+        </Animated.View>
+        )}
+
+        {/* ── Ocorrências de Saúde ─────────────────────── */}
+        {activeTab === 4 && (
+        <Animated.View entering={sectionEntering(4)} style={{ marginHorizontal: 20, marginTop: 28 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: 17, fontFamily: 'Nunito_700Bold' }}>🩺 Ocorrências</Text>
             <ScalePress

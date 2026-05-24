@@ -16,13 +16,13 @@ import type { ActionLog, ActionKey } from '@/types/pet';
 
 const ACTION_LABELS: Record<ActionKey, string> = {
   comida: 'Comida', agua: 'Água', passeio: 'Passeio',
-  xixi: 'Xixi', coco: 'Cocô', banho: 'Banho',
+  xixi: 'Xixi', coco: 'Cocô', banho: 'Banho', tosa: 'Tosa',
 };
 // Emoji 💩 removido (R3-6): cocô usa <ActionIcon/> SVG na badge.
 // Pra outras ações o emoji continua sendo identidade de marca.
 const NON_COCO_EMOJI: Record<Exclude<ActionKey, 'coco'>, string> = {
   comida: '🍖', agua: '💧', passeio: '🐾',
-  xixi: '🪣', banho: '🛁',
+  xixi: '🪣', banho: '🛁', tosa: '✂️',
 };
 
 // Formata timestamp em "DD/MM • HH:MM"

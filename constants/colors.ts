@@ -146,6 +146,13 @@ export const actions = {
     bg:      '#f0f9ff',
     border:  '#bae6fd',
   },
+  tosa: {
+    // R8: rosa-magenta pra distinguir de banho (azul). Evoca salão/
+    // estética sem ser feminino-genérico. WCAG: 5.41:1 sobre #fdf2f8 ✅
+    primary: '#be185d',   // pink-700
+    bg:      '#fdf2f8',
+    border:  '#fbcfe8',
+  },
 } as const;
 
 // ─── Status semântico ──────────────────────────────────────────

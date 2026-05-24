@@ -91,10 +91,10 @@ export default function SandboxScreen() {
 
   // ── Estado demo: ActionButton ─────────────────────────────
   const [actionCounts, setActionCounts] = useState<Record<ActionKey, number>>({
-    comida: 2, agua: 0, passeio: 1, xixi: 0, coco: 0, banho: 0,
+    comida: 2, agua: 0, passeio: 1, xixi: 0, coco: 0, banho: 0, tosa: 0,
   });
   const urgentActions: Record<ActionKey, boolean> = {
-    comida: false, agua: true, passeio: false, xixi: false, coco: false, banho: false,
+    comida: false, agua: true, passeio: false, xixi: false, coco: false, banho: false, tosa: false,
   };
 
   // ── Estado demo: DailyProgress ────────────────────────────
@@ -103,7 +103,7 @@ export default function SandboxScreen() {
     comida:  dailyState !== 'empty' ? 1 : 0,
     agua:    dailyState !== 'empty' ? 1 : 0,
     passeio: dailyState === 'complete' ? 1 : 0,
-    xixi: 0, coco: 0, banho: 0,
+    xixi: 0, coco: 0, banho: 0, tosa: 0,
   };
 
   // ── ActionConfigs via actionTheme (sem hardcode) ──────────
@@ -313,7 +313,7 @@ export default function SandboxScreen() {
           <DailyProgress todayCounts={progressCounts} petTipo="cachorro" />
 
           <View style={{ marginTop: 4 }}>
-            <DailyProgress todayCounts={{ comida: 1, agua: 0, passeio: 0, xixi: 0, coco: 0, banho: 0 }} petTipo="gato" />
+            <DailyProgress todayCounts={{ comida: 1, agua: 0, passeio: 0, xixi: 0, coco: 0, banho: 0, tosa: 0 }} petTipo="gato" />
           </View>
           <Text style={{ color: colors.textTertiary, fontSize: 12 }}>
             Linha inferior: tipo gato (2 metas)

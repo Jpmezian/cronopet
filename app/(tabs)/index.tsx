@@ -344,7 +344,7 @@ export default function PetDashboard() {
   const { todayCounts, todayFoodGrams, todayWalkMinutes } = useMemo(() => {
     const today = getLocalToday();
     const counts: Record<ActionKey, number> = {
-      comida: 0, agua: 0, passeio: 0, xixi: 0, coco: 0, banho: 0,
+      comida: 0, agua: 0, passeio: 0, xixi: 0, coco: 0, banho: 0, tosa: 0,
     };
     let foodGrams = 0;
     let walkMinutes = 0;
@@ -529,7 +529,7 @@ export default function PetDashboard() {
   // Calcula o último timestamp de cada ação (global, não só hoje)
   const lastActionTime = useMemo<Record<ActionKey, number | null>>(() => {
     const map: Record<ActionKey, number | null> = {
-      comida: null, agua: null, passeio: null, xixi: null, coco: null, banho: null,
+      comida: null, agua: null, passeio: null, xixi: null, coco: null, banho: null, tosa: null,
     };
     actionHistory.forEach((log) => {
       const prev = map[log.key];
@@ -542,7 +542,7 @@ export default function PetDashboard() {
   const urgentMap = useMemo<Record<ActionKey, boolean>>(() => {
     if (actionHistory.length === 0) {
       // Primeiro uso: sem urgência (evita falsos alertas)
-      return { comida: false, agua: false, passeio: false, xixi: false, coco: false, banho: false };
+      return { comida: false, agua: false, passeio: false, xixi: false, coco: false, banho: false, tosa: false };
     }
     const now = Date.now();
     const urgentWater = lastActionTime.agua   === null || (now - lastActionTime.agua)   > URGENT_WATER_MS;
@@ -554,6 +554,7 @@ export default function PetDashboard() {
       xixi:    false,
       coco:    false,
       banho:   false,
+      tosa:    false,
     };
   }, [lastActionTime, actionHistory.length]);
 
