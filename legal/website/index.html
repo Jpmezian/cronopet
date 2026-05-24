@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CronoPet</title>
+  <meta name="description" content="App de cuidado com pets — rotina, saúde, plano nutricional. Brasil, pt-BR.">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: #FBFDF3;
+      color: #1c1917;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    .container { max-width: 720px; margin: 0 auto; padding: 48px 24px; }
+    header { text-align: center; margin-bottom: 56px; }
+    .logo {
+      width: 88px; height: 88px; border-radius: 22px;
+      background: #04A29B;
+      display: inline-flex; align-items: center; justify-content: center;
+      color: white; font-size: 44px; font-weight: 800;
+      margin-bottom: 16px;
+      box-shadow: 0 6px 16px rgba(4, 162, 155, 0.3);
+    }
+    h1 {
+      font-size: 32px; font-weight: 800; color: #1c1917;
+      letter-spacing: -0.5px;
+    }
+    .tagline { color: #5C493D; font-size: 16px; margin-top: 4px; }
+
+    .links {
+      display: grid; gap: 12px;
+      margin: 40px 0;
+    }
+    .link-card {
+      background: white;
+      border: 1px solid #E0D9C4;
+      border-radius: 16px;
+      padding: 20px 22px;
+      text-decoration: none;
+      color: inherit;
+      display: flex; align-items: center; gap: 16px;
+      transition: all 0.15s ease;
+    }
+    .link-card:hover {
+      border-color: #04A29B;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(4, 162, 155, 0.12);
+    }
+    .link-icon {
+      width: 40px; height: 40px; border-radius: 12px;
+      background: #E9F1CF;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0;
+    }
+    .link-content { flex: 1; }
+    .link-title { font-weight: 700; font-size: 16px; color: #1c1917; }
+    .link-subtitle { font-size: 13px; color: #5C493D; margin-top: 2px; }
+    .link-chevron { color: #A09684; font-size: 20px; }
+
+    footer {
+      margin-top: 80px;
+      text-align: center;
+      color: #5C493D;
+      font-size: 13px;
+    }
+    footer a { color: #04A29B; text-decoration: none; font-weight: 600; }
+    footer a:hover { text-decoration: underline; }
+
+    .contact {
+      background: white;
+      border: 1px solid #E0D9C4;
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      margin-top: 24px;
+    }
+    .contact h2 { font-size: 18px; margin-bottom: 8px; color: #1c1917; }
+    .contact p { font-size: 14px; color: #5C493D; }
+    .contact a { color: #04A29B; text-decoration: none; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">🐾</div>
+      <h1>CronoPet</h1>
+      <p class="tagline">O melhor amigo do seu pet</p>
+    </header>
+
+    <div class="links">
+      <a href="/privacidade" class="link-card">
+        <div class="link-icon">🔐</div>
+        <div class="link-content">
+          <div class="link-title">Política de Privacidade</div>
+          <div class="link-subtitle">Como tratamos seus dados (LGPD)</div>
+        </div>
+        <span class="link-chevron">›</span>
+      </a>
+
+      <a href="/termos" class="link-card">
+        <div class="link-icon">📋</div>
+        <div class="link-content">
+          <div class="link-title">Termos de Uso</div>
+          <div class="link-subtitle">Regras e condições do app</div>
+        </div>
+        <span class="link-chevron">›</span>
+      </a>
+
+      <a href="/excluir-conta" class="link-card">
+        <div class="link-icon">🗑️</div>
+        <div class="link-content">
+          <div class="link-title">Excluir minha conta</div>
+          <div class="link-subtitle">Remover conta e dados (Apple §5.1.1(v) + Google)</div>
+        </div>
+        <span class="link-chevron">›</span>
+      </a>
+    </div>
+
+    <div class="contact">
+      <h2>Fale com a gente</h2>
+      <p>
+        <strong>Geral:</strong> <a href="mailto:contato@cronopet.com.br">contato@cronopet.com.br</a><br>
+        <strong>Privacidade (LGPD):</strong> <a href="mailto:privacidade@cronopet.com.br">privacidade@cronopet.com.br</a>
+      </p>
+    </div>
+
+    <footer>
+      <p>© 2026 CronoPet · operado por João Pedro Oliva</p>
+    </footer>
+  </div>
+</body>
+</html>

@@ -22,3 +22,9 @@ project_id = "qhbsmvuwuiupdqdrrdov"
 
 [functions.health-analysis]
 verify_jwt = true
+
+# delete-account: Apple §5.1.1(v) + Google. Apaga TODOS os dados do
+# user via CASCADE DELETE + auth.admin.deleteUser. JWT obrigatório
+# (user só consegue deletar SI MESMO — id vem do token).
+[functions.delete-account]
+verify_jwt = true
