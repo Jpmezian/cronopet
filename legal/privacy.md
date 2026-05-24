@@ -89,6 +89,19 @@ O pagamento é processado **integralmente** pela Apple (StoreKit) ou Google (Pla
 
 **Não vendemos dados. Não usamos pra publicidade. Não compartilhamos pra marketing de terceiros.**
 
+### 5.1 Transferência internacional de dados (LGPD art. 33)
+
+Alguns dos operadores acima processam dados em servidores localizados **fora do Brasil** (Estados Unidos majoritariamente, Reino Unido para clima). Como esses países **não possuem decisão de adequação** da Autoridade Nacional de Proteção de Dados (ANPD), aplicamos o mecanismo de **Cláusulas-Padrão Contratuais** previsto no Anexo II da **Resolução CD/ANPD nº 19/2024** (DOU 23/08/2024).
+
+Para cada operador internacional mantemos:
+- **Data Processing Agreement (DPA)** assinado, contendo as cláusulas-padrão ou equivalente reconhecido
+- Garantias técnicas de segurança (criptografia em trânsito TLS 1.2+ e em repouso)
+- Compromisso contratual de notificação de incidente em prazo compatível com a Res. CD/ANPD nº 15/2024
+
+**Direitos do titular:** você pode solicitar a cópia da cláusula contratual aplicável a qualquer operador escrevendo para `privacidade@cronopet.com.br`. Responderemos em até 15 dias úteis com a documentação aplicável ou indicação de onde encontrá-la publicamente (DPAs públicos de Sentry, RevenueCat, PostHog e Anthropic).
+
+**Por que servidores fora do Brasil:** os operadores escolhidos são líderes globais em suas categorias (auth, crash, IA, IAP) e oferecem nível de proteção equivalente ou superior ao exigido pela LGPD. Avaliamos continuamente alternativas brasileiras conforme amadurecem.
+
 ---
 
 ## 6. Onde seus dados ficam
