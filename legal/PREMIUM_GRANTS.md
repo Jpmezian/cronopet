@@ -129,11 +129,23 @@ Apenas se a pessoa precisa funcionar **mesmo offline** e em **cold start sem red
 
 ## Segurança & limitações
 
-### Não é à prova de adversário
-Se atacante descobre que `beta@x.com` está com Premium grant, ele pode criar conta com esse email e ganhar. Mitigações:
-- Emails na tabela **não são públicos** (RLS bloqueia tudo exceto service_role)
-- Supabase Auth exige confirmação por email → atacante não consegue reivindicar email alheio
-- Para grants públicos (ex: campanha de influencer), gere emails únicos descartáveis
+### Defesa em profundidade (migration 008 — auditoria adversarial)
+
+A tabela tem **2 caminhos** de identidade:
+1. **`email`** (PK) — usado pra match inicial
+2. **`user_id` (uuid REFERENCES auth.users)** — populado AUTOMATICAMENTE por trigger quando `auth.users.email_confirmed_at` é setado
+
+A função `is_pro(uid)` prioriza `user_id`. Caminho `email` só é fallback se o grant ainda não foi claimed (user nunca confirmou).
+
+**Account squatting:**
+- Atacante cria conta com `beta@x.com` antes do dono real → conta entra em `auth.users` mas `email_confirmed_at = NULL` até clicar no link do email
+- Trigger só popula `user_id` quando `email_confirmed_at IS NOT NULL`
+- Atacante não tem acesso ao email real → nunca consegue confirmar → nunca recebe Pro
+- Mesmo que descubra um email premium, precisa controlar o servidor de email pra reivindicar
+
+**Adicional:**
+- RLS bloqueia leitura/escrita pra anon/authenticated (só service_role)
+- Pra grants públicos (campanha de influencer com many users), gere emails únicos descartáveis ou colete email real do influencer antes
 
 ### RLS na tabela
 A migration habilita RLS **sem nenhuma policy**. Resultado:

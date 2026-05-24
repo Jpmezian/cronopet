@@ -56,21 +56,50 @@ export async function createFamilyGroup(
 }
 
 /**
- * Entra em um grupo existente pelo código de 8 dígitos.
+ * Entra em um grupo existente pelo código de convite.
+ *
+ * SECURITY (auditoria 2026-05-24, finding #16): usa RPC
+ * `redeem_invite_code` em vez de SELECT direto. Motivos:
+ *   1. RLS de family_groups bloqueia SELECT pra non-members → SELECT
+ *      direto retornava 0 rows sempre. Feature era inoperante.
+ *   2. RPC tem rate limit interno (5 attempts/min/user) → bloqueia
+ *      enumeration attack (36^6 = 2.17B combos / brute-force).
+ *   3. RPC retorna mesma mensagem pra inválido/expirado/rate-limited →
+ *      sem oracle de timing/conteúdo.
+ *   4. INSERT em family_members vira atômico dentro da RPC.
  */
 export async function joinFamilyGroup(code: string): Promise<FamilyGroup> {
-  const uid = await getUid();
+  await getUid(); // valida que está autenticado (RPC também valida)
 
-  const { data: group, error } = await supabase
+  const { data, error } = await supabase.rpc('redeem_invite_code', {
+    p_code: code,
+  });
+
+  if (error) {
+    // RPC levanta exception com message 'invalid_code' tanto pra
+    // inválido quanto pra rate-limited. Cliente mostra mensagem genérica.
+    if (error.message?.includes('invalid_code')) {
+      throw new Error('Código inválido ou não encontrado.');
+    }
+    if (error.message?.includes('unauthenticated')) {
+      throw new Error('Você precisa estar logado para entrar em um grupo.');
+    }
+    throw new Error('Não foi possível entrar no grupo. Tente novamente.');
+  }
+
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row?.group_id) {
+    throw new Error('Código inválido ou não encontrado.');
+  }
+
+  // Carrega o grupo completo (incluindo invite_code, owner_id) — agora
+  // tem permissão de SELECT porque a RPC já fez o INSERT em members.
+  const { data: group, error: gErr } = await supabase
     .from('family_groups')
     .select()
-    .eq('invite_code', code.toUpperCase().trim())
+    .eq('id', row.group_id)
     .single();
-  if (error || !group) throw new Error('Código inválido ou não encontrado.');
-
-  await supabase.from('family_members')
-    .upsert({ group_id: group.id, user_id: uid, role: 'member' })
-    .throwOnError();
+  if (gErr || !group) throw new Error('Não foi possível carregar o grupo.');
 
   return dbGroupToFamilyGroup(group);
 }
