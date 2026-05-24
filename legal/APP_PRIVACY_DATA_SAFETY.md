@@ -70,14 +70,20 @@ Apple pergunta sobre cada categoria: **Collected? Linked to user? Used for track
 
 ### Categoria 8: Diagnostics → Crash Data
 - ✅ **Collected:** Sim
-- ❌ **Linked to user:** Não (PII scrubbing no Sentry remove emails/IPs)
+- ❌ **Linked to user:** Não (PII scrubbing client-side: `sendDefaultPii: false` + `beforeSend` redact email/auth headers)
 - ❌ **Used for tracking:** Não
 - **Purposes:**
   - ✅ App Functionality (estabilidade do app)
 
+> **Nota Sentry server-side IP:** mesmo com `sendDefaultPii: false`, o
+> Sentry SDK anexa IP do request server-side no event antes de processar.
+> O cliente NÃO envia IP intencionalmente — vem do edge da Sentry Cloud.
+> Conta como "Crash Data" da Apple/Google (escopo de Diagnostics), não
+> como "Contact Info → IP Address". Declaração permanece Diagnostics.
+
 ### Categoria 9: Diagnostics → Performance Data
 - ✅ **Collected:** Sim
-- ❌ **Linked to user:** Não
+- ❌ **Linked to user:** Não (mesmo PII scrub do crash data)
 - ❌ **Used for tracking:** Não
 - **Purposes:**
   - ✅ App Functionality

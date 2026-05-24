@@ -94,7 +94,24 @@ async function persistAndStripPhoto(uri: string): Promise<string> {
     // Copiar para Documents (permanente — sobrevive a updates)
     const filename = `cronopet_photo_${Date.now()}.jpg`;
     const dest = new File(Paths.document, filename);
-    new File(stripped).copy(dest);
+    const strippedFile = new File(stripped);
+    strippedFile.copy(dest);
+
+    // SECURITY (auditoria 2026-05-24, finding #14): purgar arquivos
+    // intermediários do cache. Sem isso:
+    //   - `stripped`: cópia do ImageManipulator em Library/Caches/ —
+    //     contém o JPEG re-encodado (já sem EXIF, mas ocupa espaço).
+    //   - `uri` original: file:// do PHPicker iOS em Caches/ —
+    //     **AINDA TEM EXIF + GPS originais**. iOS limpa Caches
+    //     eventualmente, mas até lá fica acessível via backup iCloud
+    //     ou device forensics.
+    // Best-effort: try/catch silencioso (picker pode bloquear delete
+    // do próprio cache, e o purge eventual do iOS resolve).
+    try { strippedFile.delete(); } catch { /* iOS já purgou */ }
+    if (uri.startsWith('file://') && uri !== stripped) {
+      try { new File(uri).delete(); } catch { /* picker bloqueou */ }
+    }
+
     // Armazena só o filename relativo. O resolver no runtime monta
     // o path completo com o container UUID atual.
     return filename;
