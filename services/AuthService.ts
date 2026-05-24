@@ -3,6 +3,7 @@ import type { CronoPetUser } from '@/types/auth';
 import { identifyUser, resetAnalytics } from './analytics';
 import { identifyPurchasesUser, resetPurchases } from './purchases';
 import { applyDevPremiumIfMatch, checkRemotePremiumGrant } from '@/lib/devPremium';
+import { hydrateFromCloud } from './SyncService';
 
 /**
  * Aplica Premium fora do RevenueCat em 2 camadas:
@@ -33,6 +34,42 @@ function maybeApplyDevPremium(email: string | undefined): void {
   });
 }
 
+/**
+ * Hidrata o store local com dados da nuvem após login.
+ *
+ * Cenários:
+ *   - signIn em device novo (reinstalou app, trocou de aparelho):
+ *     MMKV vazio + cloud tem dados → adota tudo do cloud
+ *   - signIn em device que já tinha sessão local:
+ *     MMKV tem dados + cloud tem dados → merge (local prevalece em
+ *     conflito por id, ver mergeById em usePetStore.hydrateFromCloud)
+ *   - signUp recém-feito:
+ *     trigger 011 cria personal group, mas sem pets/logs → no-op
+ *
+ * Fire-and-forget: não bloqueia auth (se rede off, próximo cold-start
+ * tenta de novo via getSession).
+ */
+function hydrateStoreFromCloud(): void {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { usePetStore } = require('@/store/usePetStore');
+  const hydrate = usePetStore.getState().hydrateFromCloud;
+
+  hydrateFromCloud()
+    .then((snapshot) => {
+      if (!snapshot) return;
+      hydrate({
+        pet:           snapshot.pet,
+        actionLogs:    snapshot.actionLogs,
+        vaccines:      snapshot.vaccines,
+        appointments:  snapshot.appointments,
+        weightHistory: snapshot.weightHistory,
+      });
+    })
+    .catch(() => {
+      // rede off / Supabase fora — silencioso. Próximo getSession refaz.
+    });
+}
+
 // ─── Sign Up ──────────────────────────────────────────────────
 
 export async function signUp(
@@ -59,6 +96,7 @@ export async function signUp(
   identifyUser(data.user.id);
   identifyPurchasesUser(data.user.id).catch(() => {});
   maybeApplyDevPremium(data.user.email);
+  hydrateStoreFromCloud();
 
   return { id: data.user.id, email: data.user.email!, nome };
 }
@@ -79,6 +117,7 @@ export async function signIn(
   identifyUser(data.user.id);
   identifyPurchasesUser(data.user.id).catch(() => {});
   maybeApplyDevPremium(data.user.email);
+  hydrateStoreFromCloud();
 
   const nome = data.user.user_metadata?.nome as string | undefined;
   return { id: data.user.id, email: data.user.email!, nome };

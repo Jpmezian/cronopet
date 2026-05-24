@@ -108,6 +108,23 @@ export function petProfileToRow(pet: PetProfile, groupId: string) {
   };
 }
 
+/**
+ * Row → PetProfile. Usado pela hidratação ao logar em device novo.
+ * Foto vem como URL remota (Supabase nunca persiste URI local).
+ * Campos nutricionais não são sincronizados nesta versão (ficam
+ * só no MMKV local) — adicionar quando schema do Supabase suportar.
+ */
+export function rowToPetProfile(raw: unknown): PetProfile {
+  const r = asRecord(raw);
+  return {
+    nome:       asStr(r.nome),
+    tipo:       (asStr(r.tipo, 'cachorro') as PetProfile['tipo']),
+    raca:       asStr(r.raca, ''),
+    foto:       asStr(r.foto_url, ''),
+    ...(optStr(r.nascimento) ? { nascimento: optStr(r.nascimento)! } : {}),
+  };
+}
+
 // ─── Row → Domain ─────────────────────────────────────────────────────
 
 export function rowToActionLog(raw: unknown): ActionLog {

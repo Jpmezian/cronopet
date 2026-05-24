@@ -10,6 +10,7 @@ import {
   actionLogToRow, vaccineToRow, appointmentToRow, weightEntryToRow,
   petProfileToRow,
   rowToActionLog, rowToVaccine, rowToAppointment, rowToWeightEntry,
+  rowToPetProfile,
   dbGroupToFamilyGroup, dbMemberToFamilyMember,
   realtimePayloadToActionLog,
 } from './syncMappers';
@@ -266,5 +267,74 @@ export async function pullGroupData(groupId: string): Promise<{
     vaccines:      (vaccinesRes.data ?? []).map(rowToVaccine),
     appointments:  (apptsRes.data    ?? []).map(rowToAppointment),
     weightHistory: (weightRes.data   ?? []).map(rowToWeightEntry),
+  };
+}
+
+/**
+ * Pulla o pet do grupo familiar. MVP: assume 1 pet por grupo (futuro
+ * multi-pet pulla array). Retorna null se group ainda sem pet.
+ */
+export async function pullPet(groupId: string): Promise<PetProfile | null> {
+  const { data } = await supabase
+    .from('pets')
+    .select('*')
+    .eq('group_id', groupId)
+    .is('deleted_at', null)
+    .limit(1)
+    .maybeSingle();
+  return data ? rowToPetProfile(data) : null;
+}
+
+/**
+ * Upsert do pet no Supabase. MVP: 1 pet por grupo identificado por nome.
+ * Quando schema suportar pet.id no client, trocar pra upsert por id.
+ * Fire-and-forget — não bloqueia UI. Erros vão pro Sentry.
+ */
+export function pushPet(groupId: string, pet: PetProfile): void {
+  const row = petProfileToRow(pet, groupId);
+  // Upsert: se já tem pet pro group, update; senão insert
+  supabase
+    .from('pets')
+    .upsert(row, { onConflict: 'group_id', ignoreDuplicates: false })
+    .then(({ error }) => {
+      if (error) {
+        Sentry.captureException(new Error(error.message), { tags: { op: 'pushPet' } });
+      }
+    });
+}
+
+/**
+ * Hidratação completa após login (em device novo ou re-login).
+ * Pulla: family_group → pet → action_logs → vaccines → appointments → weight.
+ *
+ * Retorna snapshot pronto pra passar pro store.hydrateFromCloud.
+ *
+ * SEMÂNTICA: se user não tem group ainda (signup recém-feito, trigger
+ * 011 não rodou por algum motivo), retorna null. Caller decide o que
+ * fazer (esperar, criar group manualmente, mostrar erro).
+ */
+export async function hydrateFromCloud(): Promise<{
+  pet:           PetProfile | null;
+  groupId:       string;
+  actionLogs:    ActionLog[];
+  vaccines:      Vaccine[];
+  appointments:  Appointment[];
+  weightHistory: WeightEntry[];
+} | null> {
+  const group = await getMyFamilyGroup();
+  if (!group) {
+    Sentry.captureMessage('[hydrateFromCloud] user logado sem family_group', 'warning');
+    return null;
+  }
+
+  const [pet, groupData] = await Promise.all([
+    pullPet(group.id),
+    pullGroupData(group.id),
+  ]);
+
+  return {
+    pet,
+    groupId: group.id,
+    ...groupData,
   };
 }

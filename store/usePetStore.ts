@@ -188,6 +188,7 @@ interface PetStore extends PetState {
 
   // Sync helpers
   hydrateFromCloud: (data: {
+    pet?:          PetProfile | null;
     actionLogs:    ActionLog[];
     vaccines:      Vaccine[];
     appointments:  Appointment[];
@@ -653,7 +654,7 @@ export const usePetStore = create<PetStore>()(
       },
 
       // ── Sync helpers ──────────────────────────────────────────
-      hydrateFromCloud: ({ actionLogs, vaccines, appointments, weightHistory }) => {
+      hydrateFromCloud: ({ pet, actionLogs, vaccines, appointments, weightHistory }) => {
         set((s) => {
           const mergeById = <T extends { id: string }>(local: T[], remote: T[]): T[] => {
             const map = new Map<string, T>();
@@ -661,7 +662,19 @@ export const usePetStore = create<PetStore>()(
             [...remote, ...local].forEach((item) => map.set(item.id, item));
             return Array.from(map.values());
           };
+
+          // Pet: se local tem nome vazio (instalação nova) e cloud tem pet
+          //      → adota cloud. Se local tem pet com nome → mantém local
+          //      (user pode ter editado offline; futuro: last-write-wins
+          //      via updated_at). Pet vindo só com campos do schema do
+          //      Supabase, preferências nutricionais ficam só local.
+          const shouldAdoptCloudPet = pet && (!s.pet.nome || s.pet.nome.trim() === '');
+          const nextPet = shouldAdoptCloudPet
+            ? { ...s.pet, ...pet }
+            : s.pet;
+
           return {
+            pet: nextPet,
             actionHistory: mergeById(s.actionHistory, actionLogs)
               .sort((a, b) => b.timestamp - a.timestamp),
             vaccines:      mergeById(s.vaccines,      vaccines),
