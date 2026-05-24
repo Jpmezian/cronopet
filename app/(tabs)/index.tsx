@@ -815,7 +815,12 @@ export default function PetDashboard() {
           subtitle={`${totalDone} de ${actions.length} ${actions.length === 1 ? 'registrada' : 'registradas'}`}
         />
 
-        {/* Action grid — foco principal do dashboard */}
+        {/* Action grid — foco principal do dashboard.
+            Layout adapta ao número de ações pra evitar "1 sozinho na
+            última linha" (era o caso de gato: 4 ações em layout de 3
+            colunas → o 4º virava um retangulão esticado embaixo).
+            Regras: 4 ações → 2x2; demais → 3 colunas (cachorro tem 5
+            ações → 3+2, com os 2 últimos alinhados à esquerda). */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: -4 }}>
           {actions.map((action) => (
             <ActionButton
@@ -825,6 +830,7 @@ export default function PetDashboard() {
               isUrgent={urgentMap[action.key]}
               onPress={() => openModal(action)}
               progressLabel={action.key === 'comida' ? comidaProgressLabel : undefined}
+              cols={actions.length === 4 ? 2 : 3}
             />
           ))}
         </View>

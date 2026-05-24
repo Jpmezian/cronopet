@@ -278,7 +278,14 @@ export default function SettingsScreen() {
               <Text style={{ color: colors.textSecondary, fontSize: 12, marginBottom: 10 }}>
                 Modo (CronoPet)
               </Text>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
+              {/* Layout: chips horizontais espaçosos. Antes era flex:1 com
+                  padding apertado (10pt vertical) + ícone tiny (16pt) +
+                  bg igual ao card pai (bgInput) — chips sumiam. Agora:
+                  - bgCard (branco/contraste) pros inativos
+                  - paddingVertical 14, icon 20, gap 8 entre icon e label
+                  - border-radius 14 (alinha com cards de paleta acima)
+                  - flex:1 mantido pra ocupar largura igual */}
+              <View style={{ flexDirection: 'row', gap: 10 }}>
                 {([
                   { mode: 'system', Icon: Monitor, label: 'Sistema' },
                   { mode: 'light',  Icon: Sun,     label: 'Claro'   },
@@ -298,16 +305,17 @@ export default function SettingsScreen() {
                       accessibilityLabel={`Modo ${label}${active ? ', selecionado' : ''}`}
                     >
                       <View style={{
-                        borderRadius: 12, paddingVertical: 10,
-                        alignItems: 'center', gap: 4,
-                        backgroundColor: active ? colors.textPrimary : colors.bgInput,
+                        borderRadius: 14, paddingVertical: 14, paddingHorizontal: 8,
+                        alignItems: 'center', gap: 8,
+                        backgroundColor: active ? colors.textPrimary : colors.bgCard,
                         borderWidth: 1.5,
                         borderColor: active ? colors.textPrimary : colors.border,
                       }}>
-                        <Icon size={16} color={active ? colors.bgCard : colors.textSecondary} strokeWidth={2} />
+                        <Icon size={20} color={active ? colors.bgCard : colors.textSecondary} strokeWidth={2} />
                         <Text style={{
-                          fontSize: 11, fontWeight: '600',
-                          color: active ? colors.bgCard : colors.textSecondary,
+                          fontSize: 12, fontWeight: '700',
+                          fontFamily: 'Nunito_700Bold',
+                          color: active ? colors.bgCard : colors.textPrimary,
                         }}>
                           {label}
                         </Text>

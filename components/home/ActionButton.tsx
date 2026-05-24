@@ -37,11 +37,15 @@ interface ActionButtonProps {
   isUrgent: boolean;
   onPress: () => void;
   progressLabel?: string;  // ex: "120/450 kcal" — substitui "Nx hoje" quando presente
+  /** Layout: 2 colunas (2x2 quando 4 ações) ou 3 colunas (default).
+   *  Caller decide com base em actions.length pra evitar o "retângulão
+   *  sozinho" quando sobra 1 na última linha. */
+  cols?: 2 | 3;
 }
 
 // ─── Componente ───────────────────────────────────────────────
 
-export function ActionButton({ action, count, isUrgent, onPress, progressLabel }: ActionButtonProps) {
+export function ActionButton({ action, count, isUrgent, onPress, progressLabel, cols = 3 }: ActionButtonProps) {
   const { colors } = useThemeColors();
   const isReducedMotion = useReducedMotion();
   const done = count > 0;
@@ -74,8 +78,14 @@ export function ActionButton({ action, count, isUrgent, onPress, progressLabel }
     opacity: ringOpacity.value,
   }));
 
+  // Larguras precisam levar em conta o gap:10 do parent. Pra 3 colunas
+  // (3 itens + 2 gaps de 10) → 31% cada. Pra 2 colunas → 48% cada.
+  // Sem flex:1 pra evitar o último item "esticando" quando sobra 1 na
+  // última linha (caso 4 itens em layout de 3 colunas).
+  const width = cols === 2 ? '48%' : '31%';
+
   return (
-    <View style={{ width: '30%', flex: 1, minWidth: 96 }}>
+    <View style={{ width, minWidth: cols === 2 ? 140 : 96 }}>
       <ScalePress
         onPress={onPress}
         accessible={true}
