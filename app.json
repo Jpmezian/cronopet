@@ -17,7 +17,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.cronopet.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSFaceIDUsageDescription": "Use Face ID para proteger o acesso aos dados do seu pet, garantindo que apenas você visualize o histórico de saúde e a rotina.",
+        "NSPhotoLibraryAddUsageDescription": "Salvar o card visual semanal do CronoPet na sua galeria antes de compartilhar nas redes sociais."
       }
     },
     "android": {
@@ -43,15 +45,15 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Permita o acesso às fotos para escolher a imagem do seu pet.",
-          "cameraPermission": "Permita o acesso à câmera para tirar uma foto do seu pet."
+          "photosPermission": "Permita o acesso à sua biblioteca de fotos para escolher imagens do seu pet e anexar aos registros de rotina e saúde. O CronoPet não envia suas fotos a servidores externos sem o seu consentimento explícito.",
+          "cameraPermission": "O CronoPet usa a câmera para você fotografar momentos do seu pet — banho, refeições, passeios — e anexar às anotações da rotina. As fotos ficam armazenadas localmente no seu dispositivo por padrão."
         }
       ],
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Permita o acesso à localização para exibir o clima da sua região.",
-          "locationWhenInUsePermission": "Permita o acesso à localização para exibir o clima da sua região.",
+          "locationAlwaysAndWhenInUsePermission": "O CronoPet acessa sua localização apenas enquanto o app está aberto para mostrar o clima local (útil para planejar passeios). A localização nunca é armazenada nem enviada a nossos servidores.",
+          "locationWhenInUsePermission": "O CronoPet acessa sua localização apenas enquanto o app está aberto para mostrar o clima local (útil para planejar passeios). A localização nunca é armazenada nem enviada a nossos servidores.",
           "isIosBackgroundLocationEnabled": false
         }
       ],

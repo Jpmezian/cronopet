@@ -11,7 +11,8 @@ import * as SecureStore from 'expo-secure-store';
 import * as Sentry from '@sentry/react-native';
 import { ChevronLeft, Trash2, Sun, Moon, Monitor, Palette, Sparkles } from 'lucide-react-native';
 import { ScalePress } from '@/components/ui/ScalePress';
-import { signOut } from '@/services/AuthService';
+import { openLegal } from '@/lib/legalLinks';
+import { signOut, deleteRemoteAccount } from '@/services/AuthService';
 import { clearSupabaseAuthStorage } from '@/services/supabase';
 import { InsightsSettingsCard } from '@/components/medical/InsightsSettingsCard';
 
@@ -57,34 +58,59 @@ export default function SettingsScreen() {
     setNotificationTime(notificationHour, newM);
   }, [notificationHour, notificationMinute, setNotificationTime]);
 
-  const handleDeleteAllData = useCallback(() => {
+  // R-L1: Apple §5.1.1(v) (vigente 30/06/2022) + Google Account
+  // Deletion (vigente 31/05/2024) exigem deleção in-app. Renomeado
+  // de "Apagar todos os dados" pra "Excluir minha conta" — texto
+  // Apple-compliant. Mensagem clara sobre o que acontece COM SERVIDOR
+  // (não só local): chama deleteRemoteAccount() que invoca Edge
+  // Function pra fazer CASCADE DELETE no Supabase. Best-effort: se
+  // Edge Function falhar, ainda assim limpa local + signOut (dados
+  // remotos viram órfãos mas inacessíveis sem JWT válido).
+  const handleDeleteAccount = useCallback(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     Alert.alert(
-      'Apagar todos os dados',
-      'Isso irá remover permanentemente:\n\n• Perfil do seu pet\n• Todo o histórico de registros\n• Vacinas e consultas\n• Fotos armazenadas\n• Sessão de autenticação\n• Chave de criptografia local\n\nEsta ação não pode ser desfeita.',
+      'Excluir minha conta',
+      'Isso irá remover permanentemente:\n\n' +
+      '• Perfil do seu pet (nome, foto, raça, etc.)\n' +
+      '• Todo o histórico de registros e fotos\n' +
+      '• Vacinas, consultas, ocorrências, peso\n' +
+      '• Sua conta CronoPet (e-mail e identificadores)\n' +
+      '• Dados sincronizados em nuvem (se tiver Pro)\n' +
+      '• Chave de criptografia local\n\n' +
+      'Dados em servidor são apagados em até 30 dias. Esta ação NÃO pode ser desfeita.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
-          text: 'Apagar tudo',
+          text: 'Excluir conta',
           style: 'destructive',
           onPress: async () => {
-            // LGPD/GDPR right-to-be-forgotten:
-            // 1) Signout do Supabase (invalida session no backend)
-            try { await signOut(); }
-            catch (err) { Sentry.captureException(err, { tags: { op: 'deleteAllData.signOut' } }); }
+            // 1) Pede ao backend pra apagar tudo (best-effort).
+            //    Se Edge Function não estiver deployada ainda, falha
+            //    silenciosa — dados ficam órfãos no Supabase até
+            //    purge manual, mas sessão fica deslogada e nenhum
+            //    JWT futuro consegue acessar.
+            try {
+              await deleteRemoteAccount();
+            } catch (err) {
+              Sentry.captureException(err, { tags: { op: 'deleteAccount.remote' } });
+            }
 
-            // 2) Limpa storage local criptografado (MMKV + reminders)
+            // 2) Signout do Supabase (invalida session client + server)
+            try { await signOut(); }
+            catch (err) { Sentry.captureException(err, { tags: { op: 'deleteAccount.signOut' } }); }
+
+            // 3) Limpa storage local criptografado (MMKV + reminders)
             resetStore();
 
-            // 3) Limpa session JWT / refresh token (MMKV auth separado)
+            // 4) Limpa session JWT / refresh token (MMKV auth separado)
             clearSupabaseAuthStorage();
 
-            // 4) Apaga chave de criptografia do Keychain/Keystore
+            // 5) Apaga chave de criptografia do Keychain/Keystore
             //    Sem a chave, dados MMKV residuais ficam ilegíveis
             try {
               await SecureStore.deleteItemAsync('cronopet.mmkv.encryption-key.v1');
             } catch (err) {
-              Sentry.captureException(err, { tags: { op: 'deleteAllData.secureStore' } });
+              Sentry.captureException(err, { tags: { op: 'deleteAccount.secureStore' } });
             }
 
             router.replace('/onboarding');
@@ -429,16 +455,17 @@ export default function SettingsScreen() {
               </Text>
             </View>
             <ScalePress
-              onPress={handleDeleteAllData}
+              onPress={handleDeleteAccount}
               style={{ padding: 20, flexDirection: 'row', alignItems: 'center', gap: 12 }}
               accessible
               accessibilityRole="button"
-              accessibilityLabel="Apagar todos os dados"
+              accessibilityLabel="Excluir minha conta"
+              accessibilityHint="Remove permanentemente todos os dados deste app e do servidor"
             >
               <Trash2 size={18} color={ERROR} strokeWidth={2} />
               <View style={{ flex: 1 }}>
-                <Text style={{ color: ERROR, fontWeight: '700', fontSize: 14 }}>Apagar todos os dados</Text>
-                <Text style={{ color: ERROR_2, fontSize: 12, marginTop: 2 }}>Remove perfil, histórico, vacinas e consultas</Text>
+                <Text style={{ color: ERROR, fontWeight: '700', fontSize: 14 }}>Excluir minha conta</Text>
+                <Text style={{ color: ERROR_2, fontSize: 12, marginTop: 2 }}>Apaga perfil, histórico, fotos e dados em nuvem permanentemente</Text>
               </View>
               <Text style={{ color: errorChevron, fontSize: 16 }}>›</Text>
             </ScalePress>
@@ -511,8 +538,39 @@ export default function SettingsScreen() {
               </Text>
             </ScalePress>
             <View style={{ height: 1, backgroundColor: colors.border }} />
+            {/* L6: links legais — abrem no browser (URLs em
+                lib/legalLinks.ts). Placeholder até cronopet.com.br
+                hospedar os docs reais. */}
+            <View style={{ gap: 8 }}>
+              <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Documentos legais
+              </Text>
+              <View style={{ flexDirection: 'row', gap: 18, flexWrap: 'wrap' }}>
+                <ScalePress
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openLegal('terms'); }}
+                  accessible accessibilityRole="button"
+                  accessibilityLabel="Abrir Termos de Uso no navegador"
+                  style={{ paddingVertical: 4 }}
+                >
+                  <Text style={{ color: colors.tabActive, fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' }}>
+                    Termos de Uso
+                  </Text>
+                </ScalePress>
+                <ScalePress
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openLegal('privacy'); }}
+                  accessible accessibilityRole="button"
+                  accessibilityLabel="Abrir Política de Privacidade no navegador"
+                  style={{ paddingVertical: 4 }}
+                >
+                  <Text style={{ color: colors.tabActive, fontSize: 13, fontWeight: '600', textDecorationLine: 'underline' }}>
+                    Política de Privacidade
+                  </Text>
+                </ScalePress>
+              </View>
+            </View>
+            <View style={{ height: 1, backgroundColor: colors.border }} />
             <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 20 }}>
-              O CronoPet não se responsabiliza pela saúde do seu animal e não substitui a avaliação de um médico veterinário. Este app é apenas um apoio para organizar a rotina e informações do seu pet.
+              O CronoPet é um aplicativo informativo e organizativo. <Text style={{ fontWeight: '700' }}>NÃO substitui consulta veterinária presencial.</Text> Health Insights, plano nutricional e recomendações de ração têm caráter exclusivamente educativo. Decisões clínicas, terapêuticas ou nutricionais são de responsabilidade do tutor em conjunto com médico-veterinário inscrito no CRMV.
             </Text>
           </View>
         </View>

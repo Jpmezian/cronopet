@@ -12,6 +12,9 @@ import { SkeletonPremiumDashboard } from '@/components/ui/Skeleton';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { usePetStore } from '@/store/usePetStore';
 import { signIn, signUp, signOut, getSession } from '@/services/AuthService';
+import { restorePurchases } from '@/services/purchases';
+import { openLegal } from '@/lib/legalLinks';
+import { useToastStore } from '@/store/useToastStore';
 import { track } from '@/services/analytics';
 import {
   checkPasswordStrength, isValidEmail, checkRateLimit,
@@ -115,6 +118,25 @@ export default function PremiumScreen() {
   // Setup form
   const [groupName, setGroupName] = useState(`Família ${pet.nome}`);
   const [inviteCode, setInviteCode] = useState('');
+
+  const showToast = useToastStore((s) => s.showToast);
+
+  // Restore Purchases (Apple §3.1.1 obrigatório) — L2
+  const handleRestore = useCallback(async () => {
+    setLoading(true);
+    try {
+      const result = await restorePurchases();
+      if (result.isPremium) {
+        showToast('success', 'Assinatura restaurada!');
+      } else {
+        showToast('info', 'Nenhuma assinatura ativa encontrada.');
+      }
+    } catch {
+      showToast('error', 'Falha ao restaurar. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
+  }, [showToast]);
 
   // ── Inicialização ─────────────────────────────────────────
 
@@ -224,20 +246,39 @@ export default function PremiumScreen() {
 
   const handleCreateGroup = useCallback(async () => {
     if (!groupName.trim() || !user) return;
-    setLoading(true);
-    setSyncStatus('syncing');
-    try {
-      const g = await createFamilyGroup(groupName.trim(), pet);
-      setFamilyGroupId(g.id);
-      await initialFullSync(g.id, user.id, actionHistory, vaccines, appointments, weightHistory);
-      setSyncStatus('synced');
-      await loadDashboard(g.id, user.id);
-    } catch (err: any) {
-      setSyncStatus('error');
-      Alert.alert('Erro ao criar grupo', translateSupabaseError(err?.message));
-    } finally {
-      setLoading(false);
-    }
+    // L4: consent LGPD art. 7º V + §5º — compartilhamento de dados
+    // com terceiros (futuros membros) requer manifestação explícita.
+    Alert.alert(
+      'Compartilhamento familiar',
+      `Ao criar este grupo:\n\n` +
+      `• Tutores convidados terão acesso a TODOS os registros, fotos, notas e relatórios de ${pet.nome}.\n` +
+      `• Os dados serão armazenados nos servidores do CronoPet (Supabase / AWS us-east-1) enquanto pelo menos um tutor mantiver assinatura Pro ativa.\n` +
+      `• A transferência internacional é amparada pelas Cláusulas-Padrão Contratuais da ANPD (Res. 19/2024).\n` +
+      `• Você pode sair do compartilhamento e desativar o grupo a qualquer momento em Ajustes.\n\n` +
+      `Confirma a criação do grupo?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Confirmar',
+          onPress: async () => {
+            setLoading(true);
+            setSyncStatus('syncing');
+            try {
+              const g = await createFamilyGroup(groupName.trim(), pet);
+              setFamilyGroupId(g.id);
+              await initialFullSync(g.id, user.id, actionHistory, vaccines, appointments, weightHistory);
+              setSyncStatus('synced');
+              await loadDashboard(g.id, user.id);
+            } catch (err: any) {
+              setSyncStatus('error');
+              Alert.alert('Erro ao criar grupo', translateSupabaseError(err?.message));
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ],
+    );
   }, [groupName, user, pet, actionHistory, vaccines, appointments, weightHistory,
       setFamilyGroupId, setSyncStatus, loadDashboard]);
 
@@ -245,21 +286,39 @@ export default function PremiumScreen() {
 
   const handleJoinGroup = useCallback(async () => {
     if (inviteCode.trim().length !== 8 || !user) return;
-    setLoading(true);
-    setSyncStatus('syncing');
-    try {
-      const g = await joinFamilyGroup(inviteCode.trim());
-      setFamilyGroupId(g.id);
-      const cloudData = await pullGroupData(g.id);
-      hydrateFromCloud(cloudData);
-      setSyncStatus('synced');
-      await loadDashboard(g.id, user.id);
-    } catch (err: any) {
-      setSyncStatus('error');
-      Alert.alert('Erro', translateSupabaseError(err?.message));
-    } finally {
-      setLoading(false);
-    }
+    // L4: aceite explícito do tutor convidado (bilateralidade LGPD)
+    Alert.alert(
+      'Entrar em grupo familiar',
+      `Ao entrar neste grupo:\n\n` +
+      `• Você terá acesso aos registros já criados pelos outros tutores deste pet.\n` +
+      `• Seus próprios registros e fotos ficarão visíveis para os demais tutores.\n` +
+      `• Os dados serão armazenados nos servidores do CronoPet (Supabase / AWS us-east-1).\n` +
+      `• Você pode sair do grupo a qualquer momento em Ajustes.\n\n` +
+      `Confirma a entrada no grupo?`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Confirmar',
+          onPress: async () => {
+            setLoading(true);
+            setSyncStatus('syncing');
+            try {
+              const g = await joinFamilyGroup(inviteCode.trim());
+              setFamilyGroupId(g.id);
+              const cloudData = await pullGroupData(g.id);
+              hydrateFromCloud(cloudData);
+              setSyncStatus('synced');
+              await loadDashboard(g.id, user.id);
+            } catch (err: any) {
+              setSyncStatus('error');
+              Alert.alert('Erro', translateSupabaseError(err?.message));
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ],
+    );
   }, [inviteCode, user, setFamilyGroupId, setSyncStatus, loadDashboard, hydrateFromCloud]);
 
   // ── Sign out ──────────────────────────────────────────────
@@ -326,6 +385,8 @@ export default function PremiumScreen() {
         <ViewPitch
           petNome={pet.nome}
           onStartTrial={() => setView('auth')}
+          onRestorePurchases={handleRestore}
+          onOpenLegal={(which) => openLegal(which)}
         />
       )}
 
@@ -732,7 +793,14 @@ function translateSupabaseError(msg?: string): string {
 
 // ─── View: Pitch (nova tela de vendas) ────────────────────────
 
-function ViewPitch({ petNome, onStartTrial }: { petNome: string; onStartTrial: () => void }) {
+function ViewPitch({
+  petNome, onStartTrial, onRestorePurchases, onOpenLegal,
+}: {
+  petNome: string;
+  onStartTrial: () => void;
+  onRestorePurchases?: () => void;
+  onOpenLegal?: (which: 'terms' | 'privacy') => void;
+}) {
   const { colors, actionTheme, isDark } = useThemeColors();
   const darkCardBg = isDark ? colors.bgCard : colors.textPrimary;
 
@@ -1151,15 +1219,77 @@ function ViewPitch({ petNome, onStartTrial }: { petNome: string; onStartTrial: (
         </Text>
       </ScalePress>
 
-      <Text style={{
-        color: colors.textTertiary,
-        fontSize: 11, textAlign: 'center',
-        lineHeight: 15,
-        marginBottom: 4,
-      }}>
-        Cancele quando quiser. Sem compromisso.{'\n'}
-        Cobrança {selectedPlan === 'annual' ? 'anual' : 'mensal'} depois do trial.
-      </Text>
+      {/* R-L2: Apple §3.1.2 + Google subscription policy exigem
+          disclosure completo ANTES da confirmação de compra. */}
+      <View style={{ marginBottom: 8 }}>
+        <Text style={{
+          color: colors.textSecondary,
+          fontSize: 11, lineHeight: 16,
+          marginBottom: 6,
+        }}>
+          {selectedPlan === 'annual'
+            ? 'CronoPet Pro Anual — R$ 99,00/ano. Após 7 dias grátis, sua assinatura será renovada automaticamente por R$ 99,00/ano, cobrados na sua conta Apple ID/Google Play, até que você cancele.'
+            : 'CronoPet Pro Mensal — R$ 14,90/mês. Após 7 dias grátis, sua assinatura será renovada automaticamente por R$ 14,90/mês, cobrados na sua conta Apple ID/Google Play, até que você cancele.'
+          }
+        </Text>
+        <Text style={{
+          color: colors.textTertiary,
+          fontSize: 10, lineHeight: 14,
+        }}>
+          Para cancelar: iOS → Ajustes &gt; seu nome &gt; Assinaturas. Android → Play Store &gt; foto perfil &gt; Pagamentos e assinaturas. O cancelamento deve ser feito ao menos 24h antes da renovação.
+        </Text>
+      </View>
+
+      {/* Botão Restaurar Compras — exigido por Apple §3.1.1 */}
+      <ScalePress
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onRestorePurchases?.();
+        }}
+        accessible accessibilityRole="button"
+        accessibilityLabel="Restaurar compras feitas anteriormente"
+        style={{
+          paddingVertical: 10,
+          alignItems: 'center',
+          marginBottom: 6,
+        }}
+      >
+        <Text style={{
+          color: colors.tabActive,
+          fontSize: 12, fontWeight: '700',
+          fontFamily: 'Nunito_700Bold',
+        }}>
+          Restaurar Compras
+        </Text>
+      </ScalePress>
+
+      {/* Links pra Termos + Privacidade (L6) */}
+      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 16 }}>
+        <ScalePress
+          onPress={() => onOpenLegal?.('terms')}
+          accessible accessibilityRole="button"
+          accessibilityLabel="Abrir Termos de Uso"
+        >
+          <Text style={{
+            color: colors.textTertiary, fontSize: 11, fontWeight: '600',
+            textDecorationLine: 'underline',
+          }}>
+            Termos de Uso
+          </Text>
+        </ScalePress>
+        <ScalePress
+          onPress={() => onOpenLegal?.('privacy')}
+          accessible accessibilityRole="button"
+          accessibilityLabel="Abrir Política de Privacidade"
+        >
+          <Text style={{
+            color: colors.textTertiary, fontSize: 11, fontWeight: '600',
+            textDecorationLine: 'underline',
+          }}>
+            Política de Privacidade
+          </Text>
+        </ScalePress>
+      </View>
     </ScrollView>
   );
 }

@@ -16,7 +16,8 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { View, Text, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, ActivityIndicator, Platform, Modal } from 'react-native';
+import { usePetStore } from '@/store/usePetStore';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as Sentry from '@sentry/react-native';
@@ -62,7 +63,10 @@ export function AIHealthAnalysis({
 }: Props) {
   const { colors, isDark, brand } = useThemeColors();
   const showToast = useToastStore((s) => s.showToast);
+  const aiConsentGiven = usePetStore((s) => s.aiConsentGiven);
+  const setAiConsent   = usePetStore((s) => s.setAiConsent);
   const [state, setState] = useState<State>({ status: 'idle' });
+  const [showConsentModal, setShowConsentModal] = useState(false);
 
   const available = isAIAvailable() || __DEV__;
 
@@ -97,6 +101,24 @@ export function AIHealthAnalysis({
       setState({ status: 'error', reason: 'Erro inesperado. Tente novamente.' });
     }
   }, [pet, actionHistory, weightHistory, medicalEvents, showToast]);
+
+  // L3: gate de consent LGPD. Se ainda não deu consent, mostra modal
+  // com texto detalhado (art. 7º I + art. 20). User precisa aceitar
+  // explicitamente antes da 1ª análise.
+  const requestAnalysis = useCallback(() => {
+    if (!aiConsentGiven) {
+      try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); } catch {}
+      setShowConsentModal(true);
+      return;
+    }
+    runAnalysis();
+  }, [aiConsentGiven, runAnalysis]);
+
+  const acceptConsent = useCallback(() => {
+    setAiConsent(true);
+    setShowConsentModal(false);
+    runAnalysis();
+  }, [setAiConsent, runAnalysis]);
 
   if (!available) {
     return (
@@ -161,7 +183,7 @@ export function AIHealthAnalysis({
           <ScalePress
             accessibilityRole="button"
             accessibilityLabel="Iniciar análise por IA"
-            onPress={runAnalysis}
+            onPress={requestAnalysis}
             style={{
               backgroundColor: brand.primary,
               paddingVertical: 12,
@@ -324,6 +346,85 @@ export function AIHealthAnalysis({
           </ScalePress>
         </Animated.View>
       )}
+
+      {/* L3: Modal de consent LGPD pra IA — aparece na 1ª chamada */}
+      <Modal
+        visible={showConsentModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowConsentModal(false)}
+        statusBarTranslucent
+      >
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <View style={{
+            backgroundColor: colors.bgCard,
+            borderTopLeftRadius: 28, borderTopRightRadius: 28,
+            paddingHorizontal: 24, paddingTop: 20, paddingBottom: 36,
+            gap: 16,
+          }}>
+            <View style={{
+              width: 40, height: 4, borderRadius: 2,
+              backgroundColor: colors.border, alignSelf: 'center',
+            }} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View style={{
+                width: 40, height: 40, borderRadius: 12,
+                backgroundColor: brand.warmBg,
+                alignItems: 'center', justifyContent: 'center',
+              }}>
+                <Stethoscope size={20} color={brand.primary} strokeWidth={2.2} />
+              </View>
+              <Text style={{
+                color: colors.textPrimary, fontFamily: 'Nunito_800ExtraBold',
+                fontSize: 18, fontWeight: '800', flex: 1,
+              }}>
+                Análise por IA — antes de continuar
+              </Text>
+            </View>
+            <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 19 }}>
+              Ao continuar, você consente que o CronoPet envie <Text style={{ fontWeight: '700' }}>dados anonimizados</Text> sobre a rotina e saúde do seu pet (sem nome, foto, e-mail ou identificadores diretos) para o serviço de inteligência artificial <Text style={{ fontWeight: '700' }}>Claude</Text>, operado pela <Text style={{ fontWeight: '700' }}>Anthropic, PBC</Text> (EUA), exclusivamente para gerar insights educativos.
+            </Text>
+            <View style={{ backgroundColor: colors.bgInput, borderRadius: 12, padding: 12, gap: 6 }}>
+              <Text style={{ color: colors.textPrimary, fontSize: 12, fontWeight: '700' }}>
+                Importante:
+              </Text>
+              <Text style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 17 }}>
+                • Os dados <Text style={{ fontWeight: '700' }}>não persistem</Text> nos servidores da Anthropic (retenção zero){'\n'}
+                • A análise é <Text style={{ fontWeight: '700' }}>gerada por IA</Text> e pode conter imprecisões — solicite revisão humana via privacidade@cronopet.com.br{'\n'}
+                • Você pode revogar este consentimento a qualquer momento em <Text style={{ fontWeight: '700' }}>Ajustes &gt; Privacidade</Text>{'\n'}
+                • Base legal: LGPD art. 7º, I (consentimento). Transferência internacional: Cláusulas-Padrão ANPD (Res. 19/2024).
+              </Text>
+            </View>
+            <ScalePress
+              onPress={acceptConsent}
+              accessible accessibilityRole="button"
+              accessibilityLabel="Aceitar e iniciar análise por IA"
+              style={{
+                backgroundColor: brand.primary,
+                borderRadius: 14, paddingVertical: 14,
+                alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <Text style={{
+                color: '#FFFFFF', fontFamily: 'Nunito_700Bold',
+                fontSize: 15, fontWeight: '700',
+              }}>
+                Aceitar e analisar
+              </Text>
+            </ScalePress>
+            <ScalePress
+              onPress={() => setShowConsentModal(false)}
+              accessible accessibilityRole="button"
+              accessibilityLabel="Cancelar análise"
+              style={{ alignItems: 'center', paddingVertical: 10 }}
+            >
+              <Text style={{ color: colors.textTertiary, fontSize: 13, fontWeight: '600' }}>
+                Cancelar
+              </Text>
+            </ScalePress>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }

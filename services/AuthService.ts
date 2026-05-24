@@ -80,6 +80,54 @@ export async function signOut(): Promise<void> {
 
 // ─── Session ─────────────────────────────────────────────────
 
+// ─── Excluir conta (R-L1: Apple §5.1.1(v) + Google) ──────────
+/**
+ * Solicita ao backend a exclusão DEFINITIVA da conta + todos os
+ * dados associados (CASCADE em pets, action_logs, vaccines, etc).
+ *
+ * Implementação: chama Edge Function `delete-account` que valida o
+ * JWT do user e faz DELETE FROM cada tabela WHERE user_id = auth.uid().
+ *
+ * **Estado atual**: Edge Function ainda não deployada. Esta função
+ * faz best-effort — se falhar (404 / Edge não existe), retorna sem
+ * throw. Caller (settings.tsx) continua o fluxo local de limpeza:
+ * signOut + resetStore + clearSupabaseAuth + delete Keychain key.
+ * Dados ficam órfãos no Supabase mas inacessíveis via JWT (sessão
+ * deslogada). Operação manual pode ser feita pelo admin.
+ *
+ * **TODO v1.1**: deployar Edge Function `delete-account` em
+ * supabase/functions/delete-account/index.ts com:
+ *   - verify_jwt = true
+ *   - extrai user.id do header Authorization
+ *   - executa DELETE em pets, action_logs, vaccines, appointments,
+ *     weight_entries, family_members WHERE user_id = X
+ *   - chama supabase.auth.admin.deleteUser(X) com service-role key
+ *   - retorna 204 No Content
+ */
+export async function deleteRemoteAccount(): Promise<void> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return; // user não tem conta — só limpeza local basta
+
+  const url = process.env.EXPO_PUBLIC_SUPABASE_URL
+    ? `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/delete-account`
+    : '';
+  if (!url) return; // env não configurada — pula
+
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    // Não checamos status — função best-effort, signOut depois invalida
+  } catch {
+    // Network/timeout — caller continua limpando local
+  }
+}
+
 export async function getSession(): Promise<CronoPetUser | null> {
   const { data } = await supabase.auth.getSession();
   if (!data.session?.user) return null;

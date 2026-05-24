@@ -116,7 +116,7 @@ export function HealthInsightsCard({ insights, onDismiss, limit = 3 }: Props) {
           fontStyle: 'italic',
         }}
       >
-        Não é diagnóstico. Consulte sempre o veterinário.
+        Análise heurística baseada nos registros do tutor. NÃO é diagnóstico, nem prescrição. Consulte sempre médico-veterinário inscrito no CRMV.
       </Text>
     </View>
   );

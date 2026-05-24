@@ -100,9 +100,10 @@ export function WellnessCard({ todayFoodGrams, todayWalkMinutes, latestWeightKg 
         />
       </View>
 
-      {/* Disclaimer expandido — explica origem da fórmula e o que ela é/não é */}
+      {/* Disclaimer L5 — texto reforçado conforme parecer jurídico
+          (Seção 7.4). Diferenciação explícita de prescrição veterinária. */}
       <Text style={{ color: colors.textTertiary, fontSize: 11, lineHeight: 16 }}>
-        Cálculo baseado no <Text style={{ fontWeight: '700' }}>National Research Council (NRC 2006)</Text>: fórmula RER × fator de atividade. Estimativa informativa, não substitui orientação veterinária.
+        Cálculo baseado no <Text style={{ fontWeight: '700' }}>National Research Council (NRC 2006)</Text>: RER × fator de atividade. <Text style={{ fontWeight: '700' }}>Referência informativa, não é prescrição veterinária.</Text> Animais com condições clínicas (renal, diabetes, alergia, gestação) requerem avaliação individualizada por médico-veterinário inscrito no CRMV.
       </Text>
     </View>
   );

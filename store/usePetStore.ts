@@ -279,6 +279,12 @@ interface PetStore extends PetState {
   hasCompletedTour: boolean;
   setHasCompletedTour: (v: boolean) => void;
 
+  /** Consentimento opt-in para envio de dados anonimizados pra IA
+   *  (Anthropic via Edge Function). LGPD art. 7º I + art. 20. User
+   *  pode revogar a qualquer momento em Settings. */
+  aiConsentGiven: boolean;
+  setAiConsent: (v: boolean) => void;
+
   _hasHydrated: boolean;
   setHasHydrated: (v: boolean) => void;
 }
@@ -321,11 +327,13 @@ export const usePetStore = create<PetStore>()(
       themeMode: 'system',
       paletteMode: 'cronopet',
       hasCompletedTour: false,
+      aiConsentGiven: false,
       _hasHydrated:  false,
 
       setThemeMode: (mode) => set({ themeMode: mode }),
       setPaletteMode: (mode) => set({ paletteMode: mode }),
       setHasCompletedTour: (v) => set({ hasCompletedTour: v }),
+      setAiConsent: (v) => set({ aiConsentGiven: v }),
       setHasHydrated:   (v) => set({ _hasHydrated: v }),
       setUser:          (user)   => set({ user }),
       setFamilyGroupId: (id)     => set({ familyGroupId: id }),
