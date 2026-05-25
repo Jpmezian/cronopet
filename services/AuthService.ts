@@ -2,33 +2,29 @@ import { supabase } from './supabase';
 import type { CronoPetUser } from '@/types/auth';
 import { identifyUser, resetAnalytics } from './analytics';
 import { identifyPurchasesUser, resetPurchases } from './purchases';
-import { applyDevPremiumIfMatch, checkRemotePremiumGrant } from '@/lib/devPremium';
+import { checkRemotePremiumGrant } from '@/lib/devPremium';
 import { hydrateFromCloud } from './SyncService';
 
 /**
- * Aplica Premium fora do RevenueCat em 2 camadas:
- *   1. Hardcoded síncrono (lib/devPremium.ts → founders/sócios).
- *      Funciona offline. Cobre cold start em modo avião.
- *   2. Remoto async (Edge Function check-premium-grant → tabela
- *      premium_grants). Permite adicionar email via SQL sem rebuild.
+ * Aplica Premium consultando a tabela `premium_grants` via Edge Function.
  *
- * Fire-and-forget — não bloqueia o fluxo de auth. Se a chamada remota
- * falhar (rede off, função fora do ar), o user fica com o último
- * estado conhecido em MMKV + o hardcoded que já rodou.
+ * Após cleanup Fase 4 (2026-05-25): hardcoded `applyDevPremiumIfMatch`
+ * removido. Founders agora têm grant ativo em `premium_grants` (seed
+ * migration 005 + trigger claim_premium_grant_on_confirm) — ativam Pro
+ * via remote check normalmente.
+ *
+ * Fire-and-forget — não bloqueia o fluxo de auth. Se a chamada falhar
+ * (rede off, função fora do ar), o user fica com o último estado
+ * conhecido em MMKV. Próximo cold-start (getSession) refaz.
  *
  * Lazy-importa o store pra evitar circular AuthService ↔ store.
  */
-function maybeApplyDevPremium(email: string | undefined): void {
-  if (!email) return;
+function maybeApplyDevPremium(_email: string | undefined): void {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { usePetStore } = require('@/store/usePetStore');
   const setPremiumStatus = usePetStore.getState().setPremiumStatus;
 
-  // 1) Hardcoded fallback — síncrono, offline-safe
-  applyDevPremiumIfMatch(email, setPremiumStatus);
-
-  // 2) Backend grant — async, sobrescreve com dados mais recentes
-  //    Não usa await: não bloqueia signIn/signUp/getSession
+  // Async, fire-and-forget — não bloqueia signIn/getSession
   checkRemotePremiumGrant(setPremiumStatus).catch(() => {
     // já tratado dentro da função; engole pra TS feliz
   });
@@ -101,22 +97,16 @@ export async function signUp(
   //
   // NÃO chamar checkRemotePremiumGrant aqui:
   //   - Edge Function tem verify_jwt=true → sem session = 401.
-  //   - applyDevPremiumIfMatch (hardcoded, síncrono) cobre founders
-  //     offline. Remote grant é re-checado no próximo getSession.
+  //   - Founders ativam Pro via trigger claim_premium_grant_on_confirm
+  //     (roda quando email é confirmado) + remote check no signIn.
 
   identifyUser(data.user.id);
   identifyPurchasesUser(data.user.id).catch(() => {});
-  // Apenas o hardcoded (síncrono, não precisa de rede/session)
-  applyDevPremiumIfMatch(data.user.email, getSetPremiumStatus());
+  // NÃO chamar checkRemotePremiumGrant aqui — sem session ainda
+  // (email confirmation ON). Remote check roda no primeiro signIn /
+  // getSession após o user confirmar o email.
 
   return { id: data.user.id, email: data.user.email!, nome };
-}
-
-/** Helper pra obter o setPremiumStatus do store (lazy import). */
-function getSetPremiumStatus() {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { usePetStore } = require('@/store/usePetStore');
-  return usePetStore.getState().setPremiumStatus;
 }
 
 // ─── Sign In ──────────────────────────────────────────────────
