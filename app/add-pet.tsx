@@ -26,6 +26,7 @@ import { useThemeColors } from '@/hooks/useThemeColors';
 import { fuzzyBreeds, canonicalizeBreed } from '@/data/breeds';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { PetPhoto } from '@/components/PetPhoto';
+import { BirthdayPickerField } from '@/components/ui/BirthdayPickerField';
 import type { PetType } from '@/types/pet';
 
 const BRAND_PRIMARY = '#04A29B';
@@ -240,19 +241,11 @@ export default function AddPetScreen() {
             </View>
           )}
 
-          {/* Nascimento */}
-          <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500', marginBottom: 6 }}>
-            Data de nascimento (opcional)
-          </Text>
-          <TextInput
+          {/* Nascimento — picker nativo (DB-002 follow-up):
+              evita erro de formato comum no TextInput livre 'YYYY-MM-DD'. */}
+          <BirthdayPickerField
             value={nascimento}
-            onChangeText={setNascimento}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={colors.textTertiary}
-            style={inputStyle}
-            keyboardType="numeric"
-            returnKeyType="done"
-            accessibilityLabel="Data de nascimento do pet"
+            onChange={setNascimento}
           />
 
           {/* CTA */}

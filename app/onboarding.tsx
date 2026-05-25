@@ -21,6 +21,7 @@ import { IllustrationWelcome } from '@/components/onboarding/IllustrationWelcome
 import { IllustrationRoutine } from '@/components/onboarding/IllustrationRoutine';
 import { IllustrationSetup } from '@/components/onboarding/IllustrationSetup';
 import { StepAuth } from '@/components/onboarding/StepAuth';
+import { BirthdayPickerField } from '@/components/ui/BirthdayPickerField';
 import type { PetType } from '@/types/pet';
 
 // ─── Constantes ───────────────────────────────────────────────
@@ -541,20 +542,11 @@ function StepPetProfile({
         </View>
       )}
 
-      {/* Nascimento */}
-      <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500', marginBottom: 6 }}>
-        Data de nascimento (opcional)
-      </Text>
-      <TextInput
+      {/* Nascimento — picker nativo (DB-002 follow-up):
+          evita erro de formato comum no TextInput livre 'YYYY-MM-DD'. */}
+      <BirthdayPickerField
         value={nascimento}
-        onChangeText={onChangeNascimento}
-        placeholder="YYYY-MM-DD"
-        placeholderTextColor={colors.textTertiary}
-        style={inputStyle}
-        keyboardType="numeric"
-        returnKeyType="done"
-        accessible
-        accessibilityLabel="Data de nascimento do pet"
+        onChange={onChangeNascimento}
       />
 
       {/* CTA */}
