@@ -188,6 +188,7 @@ export default function PetDashboard() {
   const pets               = usePetStore((s) => s.pets);
   const activePetId        = usePetStore((s) => s.activePetId);
   const setActivePet       = usePetStore((s) => s.setActivePet);
+  const removePet          = usePetStore((s) => s.removePet);
   const streak             = usePetStore((s) => s.streak);
   const isPremium          = usePetStore((s) => s.isPremium);
   const actionHistoryRaw   = usePetStore((s) => s.actionHistory);
@@ -1401,6 +1402,7 @@ export default function PetDashboard() {
               DB-002 onda 3: agora multi-pet funciona de verdade. */}
           {Object.values(pets).map((p) => {
             const isActive = p.id === activePetId;
+            const totalPets = Object.keys(pets).length;
             return (
               <ScalePress
                 key={p.id}
@@ -1410,8 +1412,37 @@ export default function PetDashboard() {
                   setActivePet(p.id!);
                   setShowPetSwitcher(false);
                 }}
+                onLongPress={() => {
+                  // DB-002 follow-up: long-press = opção de remover.
+                  // Bloqueia se for único pet (sempre tem que existir ≥ 1).
+                  if (totalPets === 1) {
+                    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                    Alert.alert(
+                      'Não dá pra remover',
+                      'Você precisa de pelo menos 1 pet cadastrado. Adicione outro antes de remover este.',
+                    );
+                    return;
+                  }
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+                  Alert.alert(
+                    `Remover ${p.nome}?`,
+                    'Os dados desse pet (histórico, vacinas, peso) ficam preservados localmente, mas o pet some da lista. Esta ação não tem desfazer.',
+                    [
+                      { text: 'Cancelar', style: 'cancel' },
+                      {
+                        text: 'Remover',
+                        style: 'destructive',
+                        onPress: () => {
+                          setShowPetSwitcher(false);
+                          removePet(p.id!);
+                          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                        },
+                      },
+                    ],
+                  );
+                }}
                 accessibilityRole="button"
-                accessibilityLabel={`${p.nome}${isActive ? ', pet ativo' : ', tocar pra ativar'}`}
+                accessibilityLabel={`${p.nome}${isActive ? ', pet ativo' : ', tocar pra ativar'}. Segurar pra remover.`}
                 accessibilityState={{ selected: isActive }}
                 style={{
                   flexDirection: 'row', alignItems: 'center', gap: 14,

@@ -15,6 +15,7 @@ import {
 } from '@/services/NotificationService';
 import {
   autoSyncPet, autoSyncActionLog, autoSyncDeleteActionLog,
+  autoSyncVaccine, autoSyncAppointment, autoSyncWeightEntry,
 } from '@/services/SyncService';
 import type {
   ActionKey, ActionLog, PetState, PetType, PetProfile,
@@ -634,12 +635,17 @@ export const usePetStore = create<PetStore>()(
       // ── Eventos médicos ────────────────────────────────────
       addMedicalEvent: async (type, note, photo) => {
         const photoFinal = photo ? await persistAndStripPhoto(photo) : undefined;
+        const activePetId = get().activePetId;
         const event: MedicalEvent = {
-          id: makeId(), type, timestamp: Date.now(),
+          id: makeId(),
+          ...(activePetId ? { petId: activePetId } : {}),
+          type, timestamp: Date.now(),
           ...(photoFinal ? { photo: photoFinal } : {}),
           ...(sanitizeNote(note ?? '') ? { note: sanitizeNote(note ?? '') } : {}),
         };
         set((s) => ({ medicalEvents: [event, ...s.medicalEvents] }));
+        // medical_events tem mapper? Não — skip auto-sync por enquanto.
+        // TODO: criar autoSyncMedicalEvent quando mapper existir.
       },
 
       removeMedicalEvent: (id) => {
@@ -651,13 +657,25 @@ export const usePetStore = create<PetStore>()(
 
       // ── Vacinas ────────────────────────────────────────────
       addVaccine: (data) => {
-        set((s) => ({ vaccines: [{ id: makeId(), ...data }, ...s.vaccines] }));
+        const activePetId = get().activePetId;
+        const vaccine: Vaccine = {
+          id: makeId(),
+          ...(activePetId ? { petId: activePetId } : {}),
+          ...data,
+        };
+        set((s) => ({ vaccines: [vaccine, ...s.vaccines] }));
+        // DB-004: auto-push pra cloud (fire-and-forget se logado)
+        autoSyncVaccine(vaccine);
       },
       updateVaccine: (id, data) => {
         set((s) => ({ vaccines: s.vaccines.map((v) => v.id === id ? { ...v, ...data } : v) }));
+        // Re-sync com dados atualizados
+        const updated = get().vaccines.find((v) => v.id === id);
+        if (updated) autoSyncVaccine(updated);
       },
       removeVaccine: (id) => {
         set((s) => ({ vaccines: s.vaccines.filter((v) => v.id !== id) }));
+        // TODO: autoSyncDeleteVaccine — sem isso, delete fica só local
       },
 
       // ── Consultas ──────────────────────────────────────────
@@ -668,8 +686,15 @@ export const usePetStore = create<PetStore>()(
           data.data,
           data.hora,
         ).catch(() => undefined);
-        const appt: Appointment = { id: makeId(), ...data, ...(notifId ? { notificacaoId: notifId } : {}) };
+        const activePetId = get().activePetId;
+        const appt: Appointment = {
+          id: makeId(),
+          ...(activePetId ? { petId: activePetId } : {}),
+          ...data,
+          ...(notifId ? { notificacaoId: notifId } : {}),
+        };
         set((s) => ({ appointments: [appt, ...s.appointments] }));
+        autoSyncAppointment(appt);
       },
 
       removeAppointment: (id) => {
@@ -929,7 +954,13 @@ export const usePetStore = create<PetStore>()(
 
       // ── Peso ───────────────────────────────────────────────
       addWeightEntry: (peso, data, nota) => {
-        const entry: WeightEntry = { id: makeId(), peso, data, ...(nota?.trim() ? { nota: nota.trim() } : {}) };
+        const activePetId = get().activePetId;
+        const entry: WeightEntry = {
+          id: makeId(),
+          ...(activePetId ? { petId: activePetId } : {}),
+          peso, data,
+          ...(nota?.trim() ? { nota: nota.trim() } : {}),
+        };
         set((s) => ({ weightHistory: [entry, ...s.weightHistory] }));
         // SECURITY: peso é dado de saúde — logar só o ato, não o valor
         Sentry.addBreadcrumb({
@@ -937,6 +968,8 @@ export const usePetStore = create<PetStore>()(
           message: 'addWeightEntry',
           level: 'info',
         });
+        // DB-004: auto-push pra cloud (fire-and-forget se logado)
+        autoSyncWeightEntry(entry);
       },
       removeWeightEntry: (id) => {
         set((s) => ({ weightHistory: s.weightHistory.filter((w) => w.id !== id) }));

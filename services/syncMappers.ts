@@ -67,6 +67,9 @@ export function vaccineToRow(v: Vaccine, groupId: string) {
   return {
     id:          v.id,
     group_id:    groupId,
+    // DB-002 onda 4: associação multi-pet. Nullable pra back-compat
+    // com vacinas antigas (pré-migration 017).
+    pet_id:      v.petId      ?? null,
     nome:        v.nome,
     data:        v.data,
     proxima:     v.proxima     ?? null,
@@ -80,6 +83,7 @@ export function appointmentToRow(a: Appointment, groupId: string) {
   return {
     id:          a.id,
     group_id:    groupId,
+    pet_id:      a.petId      ?? null,
     titulo:      a.titulo,
     data:        a.data,
     hora:        a.hora        ?? null,
@@ -92,6 +96,7 @@ export function weightEntryToRow(w: WeightEntry, groupId: string) {
   return {
     id:       w.id,
     group_id: groupId,
+    pet_id:   w.petId ?? null,
     peso:     w.peso,
     data:     w.data,
     nota:     w.nota ?? null,
@@ -150,6 +155,7 @@ export function rowToVaccine(raw: unknown): Vaccine {
   const r = asRecord(raw);
   return {
     id:   asStr(r.id),
+    ...(optStr(r.pet_id) ? { petId: optStr(r.pet_id)! } : {}),
     nome: asStr(r.nome),
     data: asStr(r.data),
     ...(optStr(r.proxima)     ? { proxima:     optStr(r.proxima)! }     : {}),
@@ -163,6 +169,7 @@ export function rowToAppointment(raw: unknown): Appointment {
   const r = asRecord(raw);
   return {
     id:     asStr(r.id),
+    ...(optStr(r.pet_id) ? { petId: optStr(r.pet_id)! } : {}),
     titulo: asStr(r.titulo),
     data:   asStr(r.data),
     ...(optStr(r.hora)        ? { hora:        optStr(r.hora)! }        : {}),
@@ -175,6 +182,7 @@ export function rowToWeightEntry(raw: unknown): WeightEntry {
   const r = asRecord(raw);
   return {
     id:   asStr(r.id),
+    ...(optStr(r.pet_id) ? { petId: optStr(r.pet_id)! } : {}),
     peso: asNum(r.peso),
     data: asStr(r.data),
     ...(optStr(r.nota) ? { nota: optStr(r.nota)! } : {}),

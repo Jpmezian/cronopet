@@ -72,11 +72,31 @@ export default function MedicalScreen() {
 
   // ── Store ────────────────────────────────────────────────────
   const pet              = usePetStore((s) => s.pet);
-  const actionHistory    = usePetStore((s) => s.actionHistory);
-  const medicalEvents    = usePetStore((s) => s.medicalEvents);
-  const vaccines         = usePetStore((s) => s.vaccines);
-  const appointments     = usePetStore((s) => s.appointments);
-  const weightHistory    = usePetStore((s) => s.weightHistory);
+  const activePetId      = usePetStore((s) => s.activePetId);
+  const actionHistoryRaw = usePetStore((s) => s.actionHistory);
+  const medicalEventsRaw = usePetStore((s) => s.medicalEvents);
+  const vaccinesRaw      = usePetStore((s) => s.vaccines);
+  const appointmentsRaw  = usePetStore((s) => s.appointments);
+  const weightHistoryRaw = usePetStore((s) => s.weightHistory);
+
+  // DB-004: filtros multi-pet. Items sem petId (pré-migration) ficam
+  // visíveis em todos os pets pra back-compat. Items com petId só
+  // aparecem se baterem com o pet ativo.
+  const actionHistory = useMemo(() =>
+    actionHistoryRaw.filter((l) => !l.petId || l.petId === activePetId),
+  [actionHistoryRaw, activePetId]);
+  const medicalEvents = useMemo(() =>
+    medicalEventsRaw.filter((e) => !e.petId || e.petId === activePetId),
+  [medicalEventsRaw, activePetId]);
+  const vaccines = useMemo(() =>
+    vaccinesRaw.filter((v) => !v.petId || v.petId === activePetId),
+  [vaccinesRaw, activePetId]);
+  const appointments = useMemo(() =>
+    appointmentsRaw.filter((a) => !a.petId || a.petId === activePetId),
+  [appointmentsRaw, activePetId]);
+  const weightHistory = useMemo(() =>
+    weightHistoryRaw.filter((w) => !w.petId || w.petId === activePetId),
+  [weightHistoryRaw, activePetId]);
 
   const addMedicalEvent    = usePetStore((s) => s.addMedicalEvent);
   const removeMedicalEvent = usePetStore((s) => s.removeMedicalEvent);
