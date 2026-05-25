@@ -11,6 +11,10 @@ export type PetSize          = 'small' | 'medium' | 'large' | 'giant';
 export type LifeStage        = 'puppy' | 'adult' | 'senior';
 
 export interface PetProfile {
+  /** UUID gerado client-side. Opcional pra back-compat com pets locais
+   *  criados antes do refactor multi-pet (DB-002 onda 2). Quando ausente,
+   *  store gera um id na primeira mutação e migra a row pra pets[]. */
+  id?: string;
   nome: string;
   tipo: PetType;
   raca: string;
@@ -49,6 +53,10 @@ export type Appearance = 'normal' | 'abnormal';
 /** Um registro de ação — pode ter foto (com EXIF removido) e/ou nota */
 export interface ActionLog {
   id: string;
+  /** Pet associado (multi-pet). Opcional pra back-compat com logs
+   *  criados antes do refactor — esses ficam visíveis em todos os
+   *  pets (não podem ser desassociados sem heurística). */
+  petId?: string;
   key: ActionKey;
   timestamp: number;
   photo?: string;              // URI local, EXIF já removido
@@ -70,6 +78,7 @@ export type MedicalEventType =
 
 export interface MedicalEvent {
   id: string;
+  petId?: string;     // DB-002: associação multi-pet (opcional pra back-compat)
   type: MedicalEventType;
   timestamp: number;
   note?: string;
@@ -78,6 +87,7 @@ export interface MedicalEvent {
 
 export interface Vaccine {
   id: string;
+  petId?: string;     // DB-002
   nome: string;
   data: string;       // YYYY-MM-DD
   proxima?: string;
@@ -88,6 +98,7 @@ export interface Vaccine {
 
 export interface Appointment {
   id: string;
+  petId?: string;     // DB-002
   titulo: string;         // Ex: "Consulta anual", "Banho e tosa"
   data: string;           // YYYY-MM-DD
   hora?: string;          // HH:MM
@@ -98,6 +109,7 @@ export interface Appointment {
 
 export interface WeightEntry {
   id: string;
+  petId?: string;     // DB-002
   peso: number;  // kg
   data: string;  // YYYY-MM-DD
   nota?: string;
@@ -106,7 +118,16 @@ export interface WeightEntry {
 /** Metadados persistidos entre sessões */
 export interface PetState {
   hasOnboarded: boolean;
+  /** Pet ATIVO (espelhado de pets[activePetId]). Mantido como source-of-truth
+   *  legacy pra back-compat com componentes que fazem useStore(s => s.pet).
+   *  Toda escrita em pets[activePetId] também atualiza este campo. */
   pet: PetProfile;
+  /** Coleção de pets (DB-002 multi-pet). Chave = pet.id (UUID gerado client).
+   *  Migration automática no rehydrate: se vazio mas pet.nome existe,
+   *  gera id e popula com 1 entry. */
+  pets: Record<string, PetProfile>;
+  /** ID do pet atualmente ativo na UI. Switcher altera. */
+  activePetId: string;
   streak: number;
   streakShieldCount: number;   // "Proteções de streak" disponíveis (max 1, recarrega semanalmente)
   todayDate: string;           // YYYY-MM-DD

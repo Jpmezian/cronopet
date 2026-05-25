@@ -189,6 +189,14 @@ interface PetStore extends PetState {
   addWeightEntry:    (peso: number, data: string, nota?: string) => void;
   removeWeightEntry: (id: string) => void;
 
+  // ── Multi-pet (DB-002) ────────────────────────────────────
+  /** Cria novo pet, gera id, adiciona em pets, switcha pra ele. Retorna o id. */
+  addPet: (profile: Omit<PetProfile, 'id'>) => Promise<string>;
+  /** Soft-remove pet (mantém histórico). Se era o activePet, troca pra outro. */
+  removePet: (id: string) => void;
+  /** Troca pet ativo. Espelha em pet (legacy) imediatamente. */
+  setActivePet: (id: string) => void;
+
   // Sync helpers
   hydrateFromCloud: (data: {
     pet?:          PetProfile | null;
@@ -320,6 +328,10 @@ export const usePetStore = create<PetStore>()(
     (set, get) => ({
       hasOnboarded:      false,
       pet:               { nome: '', tipo: 'cachorro', raca: '', foto: '' },
+      // DB-002 onda 2: multi-pet. `pets` é source of truth; `pet`
+      // (legacy) é espelhado de pets[activePetId] em toda mutação.
+      pets:              {},
+      activePetId:       '',
       streak:            0,
       streakShieldCount: 0,
       todayDate:         getTodayString(),
@@ -366,7 +378,9 @@ export const usePetStore = create<PetStore>()(
       // ── Onboarding ─────────────────────────────────────────
       completeOnboarding: async (nome, tipo, raca, foto, nascimento) => {
         const fotoFinal = await persistAndStripPhoto(foto);
-        const nextPet = {
+        const petId = makeId();
+        const nextPet: PetProfile = {
+          id: petId,
           nome: sanitizeName(nome, INPUT_LIMITS.PET_NAME_MAX),
           tipo,
           raca: sanitizeName(raca, INPUT_LIMITS.BREED_MAX),
@@ -376,6 +390,9 @@ export const usePetStore = create<PetStore>()(
         set({
           hasOnboarded:      true,
           pet:               nextPet,
+          // DB-002: também popular pets[] + activePetId
+          pets:              { [petId]: nextPet },
+          activePetId:       petId,
           streak:            0,
           streakShieldCount: 0,
           todayDate:         getTodayString(),
@@ -418,17 +435,20 @@ export const usePetStore = create<PetStore>()(
               nextPetSize = getBreedSize(sanitizedRaca, tipo);
             }
           }
-          return {
-            pet: {
-              ...s.pet,
-              nome: sanitizeName(nome, INPUT_LIMITS.PET_NAME_MAX),
-              tipo,
-              raca: sanitizedRaca,
-              foto: fotoFinal,
-              nascimento,
-              petSize: nextPetSize,
-            },
+          const updatedPet: PetProfile = {
+            ...s.pet,
+            nome: sanitizeName(nome, INPUT_LIMITS.PET_NAME_MAX),
+            tipo,
+            raca: sanitizedRaca,
+            foto: fotoFinal,
+            nascimento,
+            petSize: nextPetSize,
           };
+          // DB-002: espelhar em pets[activePetId] sempre
+          const nextPets = s.activePetId
+            ? { ...s.pets, [s.activePetId]: updatedPet }
+            : s.pets;
+          return { pet: updatedPet, pets: nextPets };
         });
         // Sprint AUTH Fase 4: push pra nuvem se logado
         autoSyncPet(get().pet);
@@ -460,6 +480,8 @@ export const usePetStore = create<PetStore>()(
 
         const newLog: ActionLog = {
           id: makeId(),
+          // DB-002: associa log ao pet ativo
+          ...(current.activePetId ? { petId: current.activePetId } : {}),
           key,
           timestamp: Date.now(),
           ...(photoFinal ? { photo: photoFinal } : {}),
@@ -658,6 +680,56 @@ export const usePetStore = create<PetStore>()(
             });
         }
         set((s) => ({ appointments: s.appointments.filter((a) => a.id !== id) }));
+      },
+
+      // ── Multi-pet (DB-002) ────────────────────────────────────
+      addPet: async (profile) => {
+        const fotoFinal = await persistAndStripPhoto(profile.foto);
+        const petId = makeId();
+        const newPet: PetProfile = {
+          ...profile,
+          id: petId,
+          nome: sanitizeName(profile.nome, INPUT_LIMITS.PET_NAME_MAX),
+          raca: sanitizeName(profile.raca, INPUT_LIMITS.BREED_MAX),
+          foto: fotoFinal,
+        };
+        set((s) => ({
+          pets: { ...s.pets, [petId]: newPet },
+          activePetId: petId,
+          pet: newPet,  // espelho legado
+        }));
+        // Sync pra cloud (fire-and-forget se logado)
+        autoSyncPet(newPet);
+        return petId;
+      },
+
+      removePet: (id) => {
+        set((s) => {
+          // Soft-remove: tira do pets, troca activePetId pra outro pet existente
+          const remaining: Record<string, PetProfile> = {};
+          for (const [pid, p] of Object.entries(s.pets)) {
+            if (pid !== id) remaining[pid] = p;
+          }
+          const fallbackIds = Object.keys(remaining);
+          const nextActiveId = fallbackIds[0] ?? '';
+          const nextPet = nextActiveId
+            ? remaining[nextActiveId]
+            : { nome: '', tipo: 'cachorro' as PetType, raca: '', foto: '' };
+          return {
+            pets: remaining,
+            activePetId: nextActiveId,
+            pet: nextPet,
+          };
+        });
+        // TODO ondas futuras: chamar Edge Function pra soft-delete remoto
+      },
+
+      setActivePet: (id) => {
+        set((s) => {
+          const target = s.pets[id];
+          if (!target) return s;  // id inválido, no-op
+          return { activePetId: id, pet: target };
+        });
       },
 
       // ── Sync helpers ──────────────────────────────────────────
@@ -860,7 +932,20 @@ export const usePetStore = create<PetStore>()(
     {
       name: 'cronopet-pet-store',
       storage: createJSONStorage(() => zustandMMKVStorage),
-      onRehydrateStorage: () => (state) => { state?.setHasHydrated(true); },
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        // DB-002 migration: se store legado (pet.nome existe) mas pets{}
+        // está vazio, popular com 1 entry + activePetId. Idempotente —
+        // se pets já tem entries, no-op.
+        if (state.pet?.nome && Object.keys(state.pets ?? {}).length === 0) {
+          const petId = state.pet.id ?? `${Date.now()}-legacy`;
+          const migratedPet = { ...state.pet, id: petId };
+          state.pets = { [petId]: migratedPet };
+          state.activePetId = petId;
+          state.pet = migratedPet;
+        }
+        state.setHasHydrated(true);
+      },
       partialize: (state) => {
         const {
           _hasHydrated, setHasHydrated,
@@ -871,7 +956,9 @@ export const usePetStore = create<PetStore>()(
           addVaccine, updateVaccine, removeVaccine,
           addAppointment, removeAppointment,
           addWeightEntry, removeWeightEntry,
+          addPet, removePet, setActivePet,
           hydrateFromCloud, appendRemoteLog,
+          markOnboarded,
           resetStore,
           setUser, setFamilyGroupId, setSyncStatus,
           setThemeMode,
