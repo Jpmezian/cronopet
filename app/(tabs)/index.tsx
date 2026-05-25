@@ -1407,41 +1407,48 @@ export default function PetDashboard() {
             <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: actionTheme.passeio.primary }} />
           </View>
 
-          {/* Botão Adicionar pet → gate Premium */}
+          {/* Botão "Adicionar pet" → EM BREVE (multi-pet ainda não implementado
+              no schema do banco — DB-002 backlog). Antes levava pra /premium
+              o que confundia user Pro (caía na tela de família compartilhada).
+              Agora mostra alert honesto. */}
           <ScalePress
             onPress={() => {
               setShowPetSwitcher(false);
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setTimeout(() => router.push('/premium'), 200);
+              setTimeout(() => {
+                Alert.alert(
+                  'Em breve',
+                  'A possibilidade de cadastrar mais de um pet vai chegar em uma próxima atualização do CronoPet. Por enquanto, você pode acompanhar 1 pet por conta.',
+                  [{ text: 'Beleza' }],
+                );
+              }, 200);
             }}
             accessible={true}
             accessibilityRole="button"
-            accessibilityLabel="Adicionar novo pet. Requer Premium."
+            accessibilityLabel="Adicionar novo pet. Em breve."
             style={{
               flexDirection: 'row', alignItems: 'center', gap: 14,
               backgroundColor: colors.bgInput,
               borderRadius: 16, padding: 14,
               borderWidth: 1, borderColor: colors.border,
               borderStyle: 'dashed',
+              opacity: 0.7,
             }}
           >
             <View style={{
               width: 44, height: 44, borderRadius: 22,
-              backgroundColor: '#fef3c7',
+              backgroundColor: colors.bgScreen,
               alignItems: 'center', justifyContent: 'center',
             }}>
-              <Plus size={20} strokeWidth={2.5} color="#04A29B" />
+              <Plus size={20} strokeWidth={2.5} color={colors.textTertiary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontWeight: '700', fontSize: 15, color: colors.textPrimary }}>
-                Adicionar novo pet
+              <Text style={{ fontWeight: '700', fontSize: 15, color: colors.textSecondary }}>
+                Adicionar outro pet
               </Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                <Crown size={11} strokeWidth={2} color="#04A29B" />
-                <Text style={{ fontSize: 12, color: colors.textSecondary }}>
-                  Requer Premium
-                </Text>
-              </View>
+              <Text style={{ fontSize: 12, color: colors.textTertiary, marginTop: 2 }}>
+                Em breve
+              </Text>
             </View>
           </ScalePress>
         </View>

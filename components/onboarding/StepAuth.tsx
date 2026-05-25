@@ -91,13 +91,11 @@ export function StepAuth({ defaultName = '', onSuccess, onBack }: StepAuthProps)
       if (tab === 'signup') {
         await signUp(email, password, nome.trim());
         // Signup novo nunca tem pet no cloud (trigger 011 acabou de
-        // criar o group vazio). Avisa do email de confirmação e segue.
+        // criar o group vazio). Email confirmation está desligada no
+        // Supabase (autoconfirm ON, decisão DB-008) — usuário entra
+        // direto sem precisar de alert sobre email.
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert(
-          'Conta criada!',
-          'Enviamos um e-mail de confirmação para você. Pode ignorar e continuar — confirme quando puder pra ter Pro/família.',
-          [{ text: 'Continuar', onPress: () => onSuccess({ hadCloudPet: false }) }],
-        );
+        onSuccess({ hadCloudPet: false });
       } else {
         await signIn(email, password);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
