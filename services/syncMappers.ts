@@ -53,6 +53,9 @@ export function actionLogToRow(log: ActionLog, groupId: string, userId: string) 
     id:        log.id,
     group_id:  groupId,
     user_id:   userId,
+    // DB-002: associa ação ao pet (multi-pet). Nullable pra back-compat
+    // com logs antigos sem petId (pré-migration).
+    pet_id:    log.petId ?? null,
     key:       log.key,
     timestamp: log.timestamp,
     note:      log.note ?? null,
@@ -97,6 +100,10 @@ export function weightEntryToRow(w: WeightEntry, groupId: string) {
 
 export function petProfileToRow(pet: PetProfile, groupId: string) {
   return {
+    // DB-002: id agora é PK no schema (migration 017). Cliente passa o
+    // UUID gerado em store.addPet/completeOnboarding. Permite upsert
+    // por id (multi-pet) sem colisões com outros pets do mesmo group.
+    ...(pet.id ? { id: pet.id } : {}),
     group_id:   groupId,
     nome:       pet.nome,
     tipo:       pet.tipo,
@@ -117,6 +124,7 @@ export function petProfileToRow(pet: PetProfile, groupId: string) {
 export function rowToPetProfile(raw: unknown): PetProfile {
   const r = asRecord(raw);
   return {
+    ...(optStr(r.id) ? { id: optStr(r.id)! } : {}),
     nome:       asStr(r.nome),
     tipo:       (asStr(r.tipo, 'cachorro') as PetProfile['tipo']),
     raca:       asStr(r.raca, ''),
@@ -131,6 +139,7 @@ export function rowToActionLog(raw: unknown): ActionLog {
   const r = asRecord(raw);
   return {
     id:        asStr(r.id),
+    ...(optStr(r.pet_id) ? { petId: optStr(r.pet_id)! } : {}),
     key:       asStr(r.key) as ActionKey,
     timestamp: asNum(r.timestamp),
     ...(optStr(r.note) ? { note: optStr(r.note)! } : {}),

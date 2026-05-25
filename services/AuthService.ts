@@ -59,6 +59,7 @@ function hydrateStoreFromCloud(): void {
       if (!snapshot) return;
       hydrate({
         pet:           snapshot.pet,
+        pets:          snapshot.pets,
         actionLogs:    snapshot.actionLogs,
         vaccines:      snapshot.vaccines,
         appointments:  snapshot.appointments,

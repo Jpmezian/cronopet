@@ -200,6 +200,8 @@ interface PetStore extends PetState {
   // Sync helpers
   hydrateFromCloud: (data: {
     pet?:          PetProfile | null;
+    /** DB-002 onda 4: array de todos os pets ativos do group. */
+    pets?:         PetProfile[];
     actionLogs:    ActionLog[];
     vaccines:      Vaccine[];
     appointments:  Appointment[];
@@ -733,7 +735,7 @@ export const usePetStore = create<PetStore>()(
       },
 
       // ── Sync helpers ──────────────────────────────────────────
-      hydrateFromCloud: ({ pet, actionLogs, vaccines, appointments, weightHistory }) => {
+      hydrateFromCloud: ({ pet, pets, actionLogs, vaccines, appointments, weightHistory }) => {
         set((s) => {
           const mergeById = <T extends { id: string }>(local: T[], remote: T[]): T[] => {
             const map = new Map<string, T>();
@@ -742,18 +744,29 @@ export const usePetStore = create<PetStore>()(
             return Array.from(map.values());
           };
 
-          // Pet: se local tem nome vazio (instalação nova) e cloud tem pet
-          //      → adota cloud. Se local tem pet com nome → mantém local
-          //      (user pode ter editado offline; futuro: last-write-wins
-          //      via updated_at). Pet vindo só com campos do schema do
-          //      Supabase, preferências nutricionais ficam só local.
-          const shouldAdoptCloudPet = pet && (!s.pet.nome || s.pet.nome.trim() === '');
-          const nextPet = shouldAdoptCloudPet
-            ? { ...s.pet, ...pet }
-            : s.pet;
+          // DB-002 onda 4: hidratar pets[] do cloud. Merge:
+          //   - cloud pets vão pra map; locais (que têm preferências
+          //     nutricionais não-syncadas) sobrescrevem por id
+          //   - activePetId é primeiro pet do cloud OU o local atual
+          //     se já tiver (preserva escolha do user)
+          const cloudPetsArr = pets ?? (pet ? [pet] : []);
+          const nextPets: Record<string, PetProfile> = { ...s.pets };
+          for (const cp of cloudPetsArr) {
+            if (!cp.id) continue;
+            // Se já tem local com mesmo id, merge (local prevalece em
+            // campos nutricionais que não vêm do cloud)
+            nextPets[cp.id] = { ...cp, ...(s.pets[cp.id] ?? {}) };
+          }
+          const cloudIds = cloudPetsArr.map((p) => p.id).filter(Boolean) as string[];
+          const nextActiveId = s.activePetId && nextPets[s.activePetId]
+            ? s.activePetId
+            : (cloudIds[0] ?? '');
+          const nextActivePet = nextPets[nextActiveId] ?? s.pet;
 
           return {
-            pet: nextPet,
+            pet: nextActivePet,
+            pets: nextPets,
+            activePetId: nextActiveId,
             actionHistory: mergeById(s.actionHistory, actionLogs)
               .sort((a, b) => b.timestamp - a.timestamp),
             vaccines:      mergeById(s.vaccines,      vaccines),

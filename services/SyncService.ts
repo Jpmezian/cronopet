@@ -274,15 +274,27 @@ export async function pullGroupData(groupId: string): Promise<{
  * Pulla o pet do grupo familiar. MVP: assume 1 pet por grupo (futuro
  * multi-pet pulla array). Retorna null se group ainda sem pet.
  */
+/**
+ * DEPRECATED (mantido pra compat): pulla apenas o primeiro pet.
+ * Use pullPets() pra multi-pet (DB-002 onda 4).
+ */
 export async function pullPet(groupId: string): Promise<PetProfile | null> {
+  const all = await pullPets(groupId);
+  return all[0] ?? null;
+}
+
+/**
+ * DB-002 onda 4: pulla TODOS os pets ativos do group (não-deletados).
+ * Usado pelo hydrateFromCloud pra popular pets{} no store.
+ */
+export async function pullPets(groupId: string): Promise<PetProfile[]> {
   const { data } = await supabase
     .from('pets')
     .select('*')
     .eq('group_id', groupId)
     .is('deleted_at', null)
-    .limit(1)
-    .maybeSingle();
-  return data ? rowToPetProfile(data) : null;
+    .order('created_at', { ascending: true });
+  return (data ?? []).map(rowToPetProfile);
 }
 
 /**
@@ -295,7 +307,9 @@ export function pushPet(groupId: string, pet: PetProfile): void {
   // Upsert: se já tem pet pro group, update; senão insert
   supabase
     .from('pets')
-    .upsert(row, { onConflict: 'group_id', ignoreDuplicates: false })
+    // DB-002: pets PK agora é id (não group_id). Upsert por id permite
+    // multi-pet sem colisão entre pets do mesmo group.
+    .upsert(row, { onConflict: 'id', ignoreDuplicates: false })
     .then(({ error }) => {
       if (error) {
         Sentry.captureException(new Error(error.message), { tags: { op: 'pushPet' } });
@@ -385,7 +399,11 @@ export function autoSyncWeightEntry(w: WeightEntry): void {
  * fazer (esperar, criar group manualmente, mostrar erro).
  */
 export async function hydrateFromCloud(): Promise<{
+  /** DEPRECATED: primeiro pet do group (mantido pra back-compat com
+   *  callers antigos). Use `pets` pra multi-pet. */
   pet:           PetProfile | null;
+  /** DB-002 onda 4: array de todos os pets ativos do group. */
+  pets:          PetProfile[];
   groupId:       string;
   actionLogs:    ActionLog[];
   vaccines:      Vaccine[];
@@ -398,13 +416,14 @@ export async function hydrateFromCloud(): Promise<{
     return null;
   }
 
-  const [pet, groupData] = await Promise.all([
-    pullPet(group.id),
+  const [pets, groupData] = await Promise.all([
+    pullPets(group.id),
     pullGroupData(group.id),
   ]);
 
   return {
-    pet,
+    pet: pets[0] ?? null,
+    pets,
     groupId: group.id,
     ...groupData,
   };
