@@ -202,6 +202,13 @@ export default function RootLayout() {
         <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
         <Stack.Screen name="auth" options={{ animation: 'fade' }} />
         <Stack.Screen
+          name="add-pet"
+          options={{
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
+        <Stack.Screen
           name="edit-profile"
           options={{
             presentation: 'modal',

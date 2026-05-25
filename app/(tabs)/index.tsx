@@ -184,9 +184,18 @@ export default function PetDashboard() {
 
   // ── Store ────────────────────────────────────────────────────
   const pet                = usePetStore((s) => s.pet);
+  // DB-002 onda 3: multi-pet UI
+  const pets               = usePetStore((s) => s.pets);
+  const activePetId        = usePetStore((s) => s.activePetId);
+  const setActivePet       = usePetStore((s) => s.setActivePet);
   const streak             = usePetStore((s) => s.streak);
   const isPremium          = usePetStore((s) => s.isPremium);
-  const actionHistory      = usePetStore((s) => s.actionHistory);
+  const actionHistoryRaw   = usePetStore((s) => s.actionHistory);
+  // DB-002 onda 3: filtrar histórico pelo pet ativo. Logs antigos sem
+  // petId (pré-migration) ficam visíveis em todos os pets (compat).
+  const actionHistory = useMemo(() =>
+    actionHistoryRaw.filter((l) => !l.petId || l.petId === activePetId),
+  [actionHistoryRaw, activePetId]);
   const addActionLog       = usePetStore((s) => s.addActionLog);
   const checkAndResetDay   = usePetStore((s) => s.checkAndResetDay);
   const shownMilestones    = usePetStore((s) => s.shownMilestones);
@@ -1388,66 +1397,79 @@ export default function PetDashboard() {
             Trocar de pet
           </Text>
 
-          {/* Pet atual */}
-          <View style={{
-            flexDirection: 'row', alignItems: 'center', gap: 14,
-            backgroundColor: actionTheme.passeio.bg,
-            borderRadius: 16, padding: 14, marginBottom: 12,
-            borderWidth: 1, borderColor: actionTheme.passeio.border,
-          }}>
-            <PetPhoto foto={pet.foto} tipo={pet.tipo} nome={pet.nome} size={44} />
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 15, color: actionTheme.passeio.primary }}>
-                {pet.nome}
-              </Text>
-              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
-                {pet.raca && pet.raca !== 'Sem raça definida' ? pet.raca : 'Sem raça definida'}
-              </Text>
-            </View>
-            <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: actionTheme.passeio.primary }} />
-          </View>
+          {/* Lista TODOS os pets do user. Click no não-ativo troca activePetId.
+              DB-002 onda 3: agora multi-pet funciona de verdade. */}
+          {Object.values(pets).map((p) => {
+            const isActive = p.id === activePetId;
+            return (
+              <ScalePress
+                key={p.id}
+                onPress={() => {
+                  if (isActive) { setShowPetSwitcher(false); return; }
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setActivePet(p.id!);
+                  setShowPetSwitcher(false);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`${p.nome}${isActive ? ', pet ativo' : ', tocar pra ativar'}`}
+                accessibilityState={{ selected: isActive }}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 14,
+                  backgroundColor: isActive ? actionTheme.passeio.bg : colors.bgCard,
+                  borderRadius: 16, padding: 14, marginBottom: 10,
+                  borderWidth: 1.5,
+                  borderColor: isActive ? actionTheme.passeio.border : colors.border,
+                }}
+              >
+                <PetPhoto foto={p.foto} tipo={p.tipo} nome={p.nome} size={44} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{
+                    fontFamily: 'Nunito_700Bold', fontSize: 15,
+                    color: isActive ? actionTheme.passeio.primary : colors.textPrimary,
+                  }}>
+                    {p.nome}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                    {p.raca && p.raca !== 'Sem raça definida' ? p.raca : 'Sem raça definida'}
+                  </Text>
+                </View>
+                {isActive && (
+                  <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: actionTheme.passeio.primary }} />
+                )}
+              </ScalePress>
+            );
+          })}
 
-          {/* Botão "Adicionar pet" → EM BREVE (multi-pet ainda não implementado
-              no schema do banco — DB-002 backlog). Antes levava pra /premium
-              o que confundia user Pro (caía na tela de família compartilhada).
-              Agora mostra alert honesto. */}
+          {/* Botão Adicionar pet — agora funcional (DB-002 onda 3 ✓) */}
           <ScalePress
             onPress={() => {
               setShowPetSwitcher(false);
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setTimeout(() => {
-                Alert.alert(
-                  'Em breve',
-                  'A possibilidade de cadastrar mais de um pet vai chegar em uma próxima atualização do CronoPet. Por enquanto, você pode acompanhar 1 pet por conta.',
-                  [{ text: 'Beleza' }],
-                );
-              }, 200);
+              setTimeout(() => router.push('/add-pet'), 200);
             }}
-            accessible={true}
             accessibilityRole="button"
-            accessibilityLabel="Adicionar novo pet. Em breve."
+            accessibilityLabel="Adicionar novo pet"
             style={{
               flexDirection: 'row', alignItems: 'center', gap: 14,
               backgroundColor: colors.bgInput,
-              borderRadius: 16, padding: 14,
+              borderRadius: 16, padding: 14, marginTop: 4,
               borderWidth: 1, borderColor: colors.border,
               borderStyle: 'dashed',
-              opacity: 0.7,
             }}
           >
             <View style={{
               width: 44, height: 44, borderRadius: 22,
-              backgroundColor: colors.bgScreen,
+              backgroundColor: '#fef3c7',
               alignItems: 'center', justifyContent: 'center',
             }}>
-              <Plus size={20} strokeWidth={2.5} color={colors.textTertiary} />
+              <Plus size={20} strokeWidth={2.5} color="#04A29B" />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontWeight: '700', fontSize: 15, color: colors.textSecondary }}>
+              <Text style={{ fontWeight: '700', fontSize: 15, color: colors.textPrimary }}>
                 Adicionar outro pet
               </Text>
-              <Text style={{ fontSize: 12, color: colors.textTertiary, marginTop: 2 }}>
-                Em breve
+              <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 2 }}>
+                Crie um perfil novo
               </Text>
             </View>
           </ScalePress>
