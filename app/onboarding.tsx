@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import {
   View, Text, TextInput, SafeAreaView,
   Platform, KeyboardAvoidingView, ScrollView,
-  useWindowDimensions,
+  useWindowDimensions, Pressable, Keyboard,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
@@ -141,12 +141,22 @@ export default function OnboardingScreen() {
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          {/* ── Hero section ── */}
-          <View style={{ height: HERO_H, alignItems: 'center', justifyContent: 'center' }}>
+          {/* ── Hero section ──
+              Bug fix (2026-05-26): hero vira Pressable que dispensa
+              o teclado quando tocado. Sem isso, o usuário no StepAuth
+              tocava na ilustração esperando fechar o teclado e nada
+              acontecia — campos ficavam atrás do teclado sem saída.
+              `accessible={false}` pra não virar elemento de leitor de
+              tela (ilustração já é decorativa). */}
+          <Pressable
+            onPress={Keyboard.dismiss}
+            accessible={false}
+            style={{ height: HERO_H, alignItems: 'center', justifyContent: 'center' }}
+          >
             <Animated.View style={illustrationStyle}>
               <HeroIllustration />
             </Animated.View>
-          </View>
+          </Pressable>
 
           {/* ── Content card ── */}
           <View style={{

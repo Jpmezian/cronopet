@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, clearSupabaseAuthStorage } from './supabase';
 import type { CronoPetUser } from '@/types/auth';
 import { identifyUser, resetAnalytics } from './analytics';
 import { identifyPurchasesUser, resetPurchases } from './purchases';
@@ -82,6 +82,18 @@ export async function signUp(
   if (error) throw error;
   if (!data.user) throw new Error('Cadastro falhou — tente novamente.');
 
+  // Bug fix (2026-05-26): Supabase com `mailer_autoconfirm: false`
+  // tem comportamento anti-enumeração: signUp com email já cadastrado
+  // retorna `data.user` SEM erro e com `identities = []` vazio.
+  // Sem este check, o app trata como sucesso → loga "user fantasma"
+  // que (combinado com bug 1) herda os dados do MMKV anterior.
+  // Ref: https://supabase.com/docs/reference/javascript/auth-signup
+  if (data.user.identities && data.user.identities.length === 0) {
+    throw new Error(
+      'Esse e-mail já está cadastrado. Use "Já tenho conta" para entrar — ou recupere a senha se esqueceu.',
+    );
+  }
+
   // NÃO fazer upsert manual em `profiles` aqui (bug build #15):
   //   - O trigger `handle_new_user` JÁ insere profile com nome+email
   //     do raw_user_meta_data (SECURITY DEFINER bypass RLS, sempre roda).
@@ -133,9 +145,40 @@ export async function signIn(
 
 // ─── Sign Out ─────────────────────────────────────────────────
 
+/**
+ * Logout completo — desloga do Supabase, limpa MMKV de auth E
+ * reseta TODO o state local (pets, premium, family, etc).
+ *
+ * Bug fix (2026-05-26): antes só fazia `supabase.auth.signOut()`.
+ * MMKV permanecia → próximo signUp/signIn herdava pets, logs,
+ * status Pro da conta anterior. Era o pior tipo de bug: dados
+ * de um user "vazavam" pra próximo user no mesmo device.
+ *
+ * Ordem importa:
+ *   1. supabase.auth.signOut() — invalida o JWT antes de qualquer
+ *      sync auto-disparar com a sessão velha.
+ *   2. clearSupabaseAuthStorage() — apaga session/refresh do MMKV
+ *      separado de auth (não cobre o store).
+ *   3. usePetStore.resetStore() — zera estado do app (pets, logs,
+ *      premium, family, milestones, etc).
+ *   4. resetAnalytics + resetPurchases — desliga PostHog/RevenueCat
+ *      do user antigo (sem await em purchases pra não bloquear UX).
+ *
+ * NÃO apaga a chave de criptografia do SecureStore — ela é por
+ * device, não por conta. Próximo signUp/signIn reutiliza o MMKV
+ * (já limpo de dados de usuário) com mesma chave.
+ */
 export async function signOut(): Promise<void> {
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
+
+  // Lazy require pra evitar circular import store ↔ AuthService.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { usePetStore } = require('@/store/usePetStore');
+  usePetStore.getState().resetStore();
+
+  clearSupabaseAuthStorage();
+
   resetAnalytics();
   await resetPurchases().catch(() => {});
 }

@@ -819,13 +819,23 @@ export const usePetStore = create<PetStore>()(
       },
 
       // ── Reset completo ────────────────────────────────────
+      // Limpa TODO o state — usado em signOut + delete account.
+      // Bug fix (2026-05-26): antes esquecia campos multi-pet
+      // (pets, activePetId) e auth/premium (user, familyGroupId,
+      // isPremium, premiumPlan, premiumExpiresAt). Resultado: ao
+      // sair e entrar com outra conta, pets/Pro da conta antiga
+      // permaneciam.
       resetStore: () => {
         cancelAllReminders().catch((err) => {
           Sentry.captureException(err, { tags: { op: 'resetStore.cancelReminders' } });
         });
         set({
           hasOnboarded:       false,
+          // ── Pet legacy + multi-pet ─────────────────────────
           pet:                { nome: '', tipo: 'cachorro', raca: '', foto: '' },
+          pets:               {},
+          activePetId:        '',
+          // ── Rotina diária ──────────────────────────────────
           streak:             0,
           streakShieldCount:  0,
           todayDate:          getTodayString(),
@@ -834,8 +844,34 @@ export const usePetStore = create<PetStore>()(
           vaccines:           [],
           appointments:       [],
           weightHistory:      [],
+          // ── Notificações ───────────────────────────────────
           notificationHour:   20,
           notificationMinute: 0,
+          // ── Milestones / insights ──────────────────────────
+          shownMilestones:         [],
+          shownActivityMilestones: [],
+          shownPremiumPrompts:     [],
+          dismissedInsightIds:     [],
+          snoozedInsights:         {},
+          disabledInsightCategories: [],
+          alertsHandledCount:  0,
+          alertsHandledLastAt: null,
+          notifiedInsightIds:  {},
+          // ── Premium (zera Pro da conta antiga) ─────────────
+          isPremium:        false,
+          premiumPlan:      null,
+          premiumExpiresAt: null,
+          trialStartedAt:   null,
+          // ── Auth (limpa info do user) ──────────────────────
+          user:          null,
+          familyGroupId: null,
+          syncStatus:    'idle',
+          // ── UX flags ───────────────────────────────────────
+          hasCompletedTour: false,
+          aiConsentGiven:   false,
+          biometricLockEnabled: false,
+          // Preservados intencionalmente (preferência de device,
+          // não de conta): themeMode, paletteMode, firstAppOpenAt.
         });
       },
 

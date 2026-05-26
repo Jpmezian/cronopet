@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, SafeAreaView, ScrollView, Image,
   Platform, Alert,
@@ -9,12 +9,12 @@ import { useThemeColors } from '@/hooks/useThemeColors';
 import * as Haptics from 'expo-haptics';
 import * as SecureStore from 'expo-secure-store';
 import * as Sentry from '@sentry/react-native';
-import { ChevronLeft, Trash2, Sun, Moon, Monitor, Palette, Sparkles, LogOut, PawPrint, Plus } from 'lucide-react-native';
+import { ChevronLeft, Trash2, Sun, Moon, Monitor, Palette, Sparkles, LogOut, PawPrint, Plus, User as UserIcon } from 'lucide-react-native';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { PetPhoto } from '@/components/PetPhoto';
 import { openLegal } from '@/lib/legalLinks';
 import { signOut, deleteRemoteAccount } from '@/services/AuthService';
-import { clearSupabaseAuthStorage } from '@/services/supabase';
+import { clearSupabaseAuthStorage, supabase } from '@/services/supabase';
 import { InsightsSettingsCard } from '@/components/medical/InsightsSettingsCard';
 import { SupportSection } from '@/components/support/SupportSection';
 
@@ -35,6 +35,26 @@ export default function SettingsScreen() {
   const setPaletteMode = usePetStore((s) => s.setPaletteMode);
   const setHasCompletedTour = usePetStore((s) => s.setHasCompletedTour);
   const { colors, actionTheme, isDark } = useThemeColors();
+
+  // ── Conta (email/nome do user logado) ──────────────────────
+  // Bug fix (2026-05-26): Settings antes não mostrava nada da
+  // conta. Lemos direto de supabase.auth.getSession() porque o
+  // store.user nem sempre tá populado (só `app/premium.tsx`
+  // chama setUser). Session é a fonte de verdade do JWT.
+  const [account, setAccount] = useState<{ email: string; nome?: string } | null>(null);
+  useEffect(() => {
+    let alive = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (!alive) return;
+      const u = data.session?.user;
+      if (!u?.email) { setAccount(null); return; }
+      setAccount({
+        email: u.email,
+        nome:  (u.user_metadata?.nome as string | undefined),
+      });
+    }).catch(() => { /* sem session, sem card */ });
+    return () => { alive = false; };
+  }, []);
 
   // DB-002 follow-up: lista de pets pra seção "Gerenciar pets"
   const pets               = usePetStore((s) => s.pets);
@@ -128,14 +148,16 @@ export default function SettingsScreen() {
     );
   }, [resetStore, router]);
 
-  // Sprint AUTH Fase 5: signOut simples (sem deletar dados).
-  // Sessão é invalidada, dados locais ficam. Próximo cold-start vai
-  // bater no auth guard e redirecionar pra /auth.
+  // signOut completo (2026-05-26): limpa session Supabase + MMKV
+  // de auth + state local (pets, premium, family). Dados ficam
+  // preservados na nuvem (hydrateFromCloud no próximo signIn
+  // restaura tudo). Sem o reset local, dados vazavam pra próxima
+  // conta criada no mesmo device.
   const handleSignOut = useCallback(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     Alert.alert(
       'Sair da conta',
-      'Você vai precisar fazer login novamente pra acessar o app. Seus dados ficam preservados.',
+      'Você vai precisar fazer login de novo pra acessar o app. Seus dados ficam guardados na nuvem e voltam quando você logar.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -205,6 +227,58 @@ export default function SettingsScreen() {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40, gap: 24 }}>
+
+        {/* ── Conta ──────────────────────────────────────
+            Mostra email + nome do user logado. Sem botão de
+            edição por enquanto (próxima sprint). Esconde se
+            não houver session (caso raro). */}
+        {account && (
+          <View style={{
+            backgroundColor: colors.bgCard, borderRadius: 20, padding: 20,
+            gap: 14,
+            ...(Platform.OS === 'android' ? { elevation: 2 } : {
+              shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.06, shadowRadius: 8,
+            }),
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <UserIcon size={18} color={colors.textPrimary} strokeWidth={2} />
+              <Text style={{ color: colors.textPrimary, fontFamily: 'Nunito_700Bold', fontSize: 17 }}>
+                Conta
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+              <View
+                style={{
+                  width: 48, height: 48, borderRadius: 24,
+                  backgroundColor: colors.bgInput,
+                  alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <Text style={{ color: colors.textPrimary, fontFamily: 'Nunito_700Bold', fontSize: 20 }}>
+                  {(account.nome || account.email).charAt(0).toUpperCase()}
+                </Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                {account.nome && (
+                  <Text
+                    style={{ color: colors.textPrimary, fontSize: 15, fontWeight: '700' }}
+                    numberOfLines={1}
+                  >
+                    {account.nome}
+                  </Text>
+                )}
+                <Text
+                  style={{ color: colors.textSecondary, fontSize: 13, marginTop: account.nome ? 2 : 0 }}
+                  numberOfLines={1}
+                  accessibilityLabel={`E-mail da conta: ${account.email}`}
+                >
+                  {account.email}
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* ── Meus pets (DB-002 follow-up) ─────────────── */}
         <View style={{
