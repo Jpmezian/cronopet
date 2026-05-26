@@ -53,6 +53,7 @@ import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { Share2 } from 'lucide-react-native';
 import { useToastStore } from '@/store/useToastStore';
+import { SupportSection } from '@/components/support/SupportSection';
 import type { ActionKey, PetType, Acceptance, Consistency, Appearance } from '@/types/pet';
 
 // Milestones de streak que disparam MilestoneSheet. Mantido sincronizado
@@ -1050,6 +1051,12 @@ export default function PetDashboard() {
             </View>
           </View>
         </ScalePress>
+
+        {/* Suporte — variante "compact": card que abre bottom
+            sheet com bug/sugestão/dúvida. Ponto secundário (Settings
+            é o ponto primário). Aqui aumenta descoberta orgânica de
+            quem nunca abre Settings. */}
+        <SupportSection variant="compact" />
       </ScrollView>
 
       {/* Quick-Log Modal */}

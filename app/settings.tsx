@@ -16,6 +16,7 @@ import { openLegal } from '@/lib/legalLinks';
 import { signOut, deleteRemoteAccount } from '@/services/AuthService';
 import { clearSupabaseAuthStorage } from '@/services/supabase';
 import { InsightsSettingsCard } from '@/components/medical/InsightsSettingsCard';
+import { SupportSection } from '@/components/support/SupportSection';
 
 // ─── Semântico fixo ───────────────────────────────────────────
 // Cores de status que não variam com o tema
@@ -723,6 +724,11 @@ export default function SettingsScreen() {
                 Ver tour de boas-vindas
               </Text>
             </ScalePress>
+            <View style={{ height: 1, backgroundColor: colors.border }} />
+            {/* Suporte e feedback — canal de contato direto via
+                mailto: contato@cronopet.com.br. Variante "full"
+                renderiza título + 3 botões (bug/sugestão/dúvida). */}
+            <SupportSection variant="full" />
             <View style={{ height: 1, backgroundColor: colors.border }} />
             {/* L6: links legais — abrem no browser (URLs em
                 lib/legalLinks.ts). Placeholder até cronopet.com.br
