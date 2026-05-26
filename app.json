@@ -85,6 +85,12 @@
       },
       "router": {}
     },
-    "owner": "jpmezian"
+    "owner": "jpmezian",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/35824170-9f64-4585-a363-db31ad968625"
+    }
   }
 }
