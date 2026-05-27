@@ -16,7 +16,7 @@ import { BiometricLock } from '@/components/security/BiometricLock';
 import { initAnalytics, track } from '@/services/analytics';
 import { createPostHogClient, posthogBackend } from '@/services/analytics-posthog';
 import { initPurchases } from '@/services/purchases';
-import { getSession } from '@/services/AuthService';
+import { getSession, hydrateStoreFromCloud } from '@/services/AuthService';
 import { applyDevAutoGrant } from '@/lib/devPremium';
 // global.css removido junto com NativeWind (R7-B). Mantemos o arquivo
 // só pra preservar o gap visual no diff — sem side effects.
@@ -102,21 +102,53 @@ export default function RootLayout() {
 
   // SECURITY: carregar Supabase client (que internamente garante encryption
   // key + auth storage init) ANTES de qualquer auth op. Fix race de boot
-  // (2026-05-27): module-load do supabase.ts não cria mais client; tudo
+  // (2026-05-27 v1): module-load do supabase.ts não cria mais client; tudo
   // passa pelo singleton-promise getSupabase().
+  //
+  // Fix bug pet_id=null em action_logs (2026-05-27 v2):
+  // Aguarda hydrateStoreFromCloud antes de liberar UI de ações, com
+  // timeout fallback de 5s. Sem isso, user clicava em FAB antes do pull
+  // cloud retornar → activePetId='' → log gravado com pet_id=null.
+  // 4 logs órfãos observados em prod (build #22).
   useEffect(() => {
+    let cloudHydrateResolved = false;
+
+    const timeoutId = setTimeout(() => {
+      if (!cloudHydrateResolved) {
+        Sentry.addBreadcrumb({
+          category: 'hydrate',
+          message: 'cloud_hydrate_timeout_5s',
+          level: 'warning',
+        });
+        usePetStore.getState().setCloudHydrated(true);
+      }
+    }, 5000);
+
     (async () => {
       try {
         await getSupabase();                  // força init do client + storage
         const user = await getSession();
         setHasSession(!!user);
+
+        if (user) {
+          try {
+            await hydrateStoreFromCloud();
+          } catch (e) {
+            Sentry.captureException(e, { tags: { op: 'hydrate_cloud' } });
+          }
+        }
       } catch (e) {
         Sentry.captureException(e, { tags: { op: 'auth_bootstrap' } });
         setHasSession(false);
       } finally {
+        cloudHydrateResolved = true;
+        clearTimeout(timeoutId);
+        usePetStore.getState().setCloudHydrated(true);
         setStorageReady(true);
       }
     })();
+
+    return () => clearTimeout(timeoutId);
   }, []);
 
   // Analytics + RevenueCat ficam atrás de storageReady pra não rodar

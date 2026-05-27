@@ -42,15 +42,17 @@ function maybeApplyDevPremium(_email: string | undefined): void {
  *   - signUp recém-feito:
  *     trigger 011 cria personal group, mas sem pets/logs → no-op
  *
- * Fire-and-forget: não bloqueia auth (se rede off, próximo cold-start
- * tenta de novo via getSession).
+ * Mudança 2026-05-27: agora RETORNA a Promise. Callers podem await
+ * pra gatear UI (ex: `_layout.tsx` aguarda + 5s timeout antes de
+ * liberar FAB de ações). Internamente continua silenciosa em erro
+ * (resolve sem propagar throw) pra não quebrar fluxo de signIn.
  */
-function hydrateStoreFromCloud(): void {
+export function hydrateStoreFromCloud(): Promise<void> {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { usePetStore } = require('@/store/usePetStore');
   const hydrate = usePetStore.getState().hydrateFromCloud;
 
-  hydrateFromCloud()
+  return hydrateFromCloud()
     .then((snapshot) => {
       if (!snapshot) return;
       hydrate({
@@ -63,7 +65,8 @@ function hydrateStoreFromCloud(): void {
       });
     })
     .catch(() => {
-      // rede off / Supabase fora — silencioso. Próximo getSession refaz.
+      // rede off / Supabase fora — silencioso. Caller (_layout) seta
+      // _cloudHydrated=true mesmo em erro pra liberar UI.
     });
 }
 
