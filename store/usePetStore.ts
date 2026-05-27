@@ -448,6 +448,20 @@ interface PetStore extends PetState {
 
   _hasHydrated: boolean;
   setHasHydrated: (v: boolean) => void;
+
+  /**
+   * Indica se hydrateFromCloud completou após signIn/cold start.
+   * Inicializa `false`. Vira `true` após o pull do Supabase resolver
+   * (ou após timeout 5s em `_layout.tsx`). Excluído do `partialize` —
+   * é estado runtime derivado de network, não persistido no MMKV.
+   *
+   * Bug fix (2026-05-27): UI de ações deve gatear input em `false` pra
+   * evitar `addActionLog` lendo `activePetId=''` durante a janela de
+   * race (~500ms–2s entre auth guard liberar e pull cloud retornar).
+   * 4 logs órfãos observados em prod (build #22) por exatamente isso.
+   */
+  _cloudHydrated: boolean;
+  setCloudHydrated: (v: boolean) => void;
 }
 
 // ─── Store ─────────────────────────────────────────────────────
@@ -494,12 +508,14 @@ export const usePetStore = create<PetStore>()(
       hasCompletedTour: false,
       aiConsentGiven: false,
       _hasHydrated:  false,
+      _cloudHydrated: false,
 
       setThemeMode: (mode) => set({ themeMode: mode }),
       setPaletteMode: (mode) => set({ paletteMode: mode }),
       setHasCompletedTour: (v) => set({ hasCompletedTour: v }),
       setAiConsent: (v) => set({ aiConsentGiven: v }),
       setHasHydrated:   (v) => set({ _hasHydrated: v }),
+      setCloudHydrated: (v) => set({ _cloudHydrated: v }),
       setUser:          (user)   => set({ user }),
       setFamilyGroupId: (id)     => set({ familyGroupId: id }),
       setSyncStatus:    (status) => set({ syncStatus: status }),
@@ -606,6 +622,26 @@ export const usePetStore = create<PetStore>()(
       addActionLog: async (key, photo, note, extra) => {
         const current = get();
         const photoFinal = photo ? await persistAndStripPhoto(photo) : undefined;
+
+        // Fail-loud (2026-05-27): se chegamos aqui com pets[] populado
+        // mas activePetId vazio, algo escapou do _cloudHydrated guard
+        // no FAB da Home. Logar pra Sentry sem fallback automático —
+        // pegar primeiro Object.keys(pets)[0] corromperia dado em
+        // multi-pet (associaria log ao pet errado).
+        const hasActivePet  = !!current.activePetId;
+        const hasPetsInStore = Object.keys(current.pets ?? {}).length > 0;
+        if (!hasActivePet && hasPetsInStore) {
+          Sentry.captureException(
+            new Error('addActionLog called with empty activePetId but pets in store'),
+            {
+              tags:  { op: 'addActionLog_no_active_pet' },
+              extra: { petsCount: Object.keys(current.pets).length, key },
+            },
+          );
+        }
+        // Caso !hasActivePet && !hasPetsInStore: estado inicial /
+        // sem pets — log sem pet_id é legítimo (compat mono-pet
+        // legacy). Continua sem warning.
 
         const newLog: ActionLog = {
           id: makeId(),
@@ -924,6 +960,9 @@ export const usePetStore = create<PetStore>()(
             appointments:  mergeById(s.appointments,  appointments),
             weightHistory: mergeById(s.weightHistory, weightHistory)
               .sort((a, b) => (a.data < b.data ? 1 : -1)),
+            // Sinaliza que pull cloud completou — libera UI de ações
+            // (gated em _layout.tsx via setCloudHydrated).
+            _cloudHydrated: true,
           };
         });
       },
@@ -992,6 +1031,9 @@ export const usePetStore = create<PetStore>()(
           user:          null,
           familyGroupId: null,
           syncStatus:    'idle',
+          // Próximo signIn precisa re-hidratar do cloud — UI volta
+          // pro skeleton até pull resolver.
+          _cloudHydrated: false,
           // ── UX flags ───────────────────────────────────────
           hasCompletedTour: false,
           aiConsentGiven:   false,
@@ -1174,6 +1216,7 @@ export const usePetStore = create<PetStore>()(
       partialize: (state) => {
         const {
           _hasHydrated, setHasHydrated,
+          _cloudHydrated, setCloudHydrated,
           completeOnboarding, updatePetProfile,
           addActionLog, removeActionLog, checkAndResetDay, useStreakShield,
           setNotificationTime,
