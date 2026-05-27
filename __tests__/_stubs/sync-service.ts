@@ -13,3 +13,17 @@ export async function pullFromCloud(_groupId: string): Promise<{
 }> {
   return { actionLogs: [], vaccines: [], appointments: [], weightHistory: [] };
 }
+
+// ─── Auto-sync helpers (DB-004) ──────────────────────────────
+// Stubs faltantes detectados em 2026-05-26 quando suite test:pet
+// começou a falhar com "(0 , import_SyncService.autoSyncX) is not
+// a function". usePetStore importa estaticamente esses helpers.
+// Signature real (services/SyncService.ts L340–390): fire-and-forget,
+// retorna void. Mantém parity aqui pra typecheck + test runner.
+
+export function autoSyncPet(_pet: unknown): void { /* no-op */ }
+export function autoSyncActionLog(_log: unknown): void { /* no-op */ }
+export function autoSyncDeleteActionLog(_logId: string): void { /* no-op */ }
+export function autoSyncVaccine(_v: unknown): void { /* no-op */ }
+export function autoSyncAppointment(_a: unknown): void { /* no-op */ }
+export function autoSyncWeightEntry(_w: unknown): void { /* no-op */ }
