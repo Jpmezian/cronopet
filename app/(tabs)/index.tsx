@@ -154,6 +154,11 @@ function showNotificationDeniedAlert(): void {
 
 // ─── Dashboard ────────────────────────────────────────────────
 
+// No-op estável pra passar como onPress quando UI está gateada
+// (cloudHydrated=false). Definido fora do componente pra não recriar
+// a cada render e evitar invalidar memo do ActionButton.
+const NO_OP = (): void => {};
+
 export default function PetDashboard() {
   const router = useRouter();
   const { colors, actionTheme, isDark } = useThemeColors();
@@ -199,6 +204,11 @@ export default function PetDashboard() {
     actionHistoryRaw.filter((l) => !l.petId || l.petId === activePetId),
   [actionHistoryRaw, activePetId]);
   const addActionLog       = usePetStore((s) => s.addActionLog);
+  // Bug fix (2026-05-27): gateia FAB de ações até pull cloud completar.
+  // Sem isso, click rápido pós-signIn grava log com pet_id=null (race
+  // entre liberar UI e activePetId ser populado por hydrateFromCloud).
+  // _layout.tsx tem timeout 5s — UI libera mesmo se cloud não responder.
+  const cloudHydrated      = usePetStore((s) => s._cloudHydrated);
   const checkAndResetDay   = usePetStore((s) => s.checkAndResetDay);
   const shownMilestones    = usePetStore((s) => s.shownMilestones);
   const shownActivityMilestones = usePetStore((s) => s.shownActivityMilestones);
@@ -832,14 +842,25 @@ export default function PetDashboard() {
             colunas → o 4º virava um retangulão esticado embaixo).
             Regras: 4 ações → 2x2; demais → 3 colunas (cachorro tem 5
             ações → 3+2, com os 2 últimos alinhados à esquerda). */}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: -4 }}>
+        <View
+          style={{
+            flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: -4,
+            // Gate visual + interativo enquanto pull cloud não terminou.
+            // Defesa em camadas: opacity sinaliza loading; pointerEvents
+            // bloqueia click; onPress=undefined no ActionButton garante
+            // que mesmo via accessibility action o handler não dispara.
+            opacity: cloudHydrated ? 1 : 0.4,
+          }}
+          pointerEvents={cloudHydrated ? 'auto' : 'none'}
+          accessibilityState={{ disabled: !cloudHydrated, busy: !cloudHydrated }}
+        >
           {actions.map((action) => (
             <ActionButton
               key={action.key}
               action={action}
               count={todayCounts[action.key] ?? 0}
               isUrgent={urgentMap[action.key]}
-              onPress={() => openModal(action)}
+              onPress={cloudHydrated ? () => openModal(action) : NO_OP}
               progressLabel={action.key === 'comida' ? comidaProgressLabel : undefined}
               cols={actions.length === 4 ? 2 : 3}
             />
