@@ -16,6 +16,18 @@ export function getRandomBytes(byteLength: number): Uint8Array {
   return out;
 }
 
+// Contador interno pra garantir uuids distintos entre chamadas.
+// NÃO criptograficamente seguro — só pra testes. Em prod, expo-crypto
+// real usa PRNG nativo.
+let _uuidCounter = 0;
+export function randomUUID(): string {
+  _uuidCounter++;
+  const h = _uuidCounter.toString(16).padStart(12, '0');
+  // Formato uuid v4: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+  // (y ∈ {8,9,a,b})
+  return `00000000-0000-4000-8000-${h}`;
+}
+
 export const CryptoDigestAlgorithm = {
   SHA1:   'SHA-1',
   SHA256: 'SHA-256',

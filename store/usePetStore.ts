@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { File, Paths } from 'expo-file-system';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as Sentry from '@sentry/react-native';
+import * as Crypto from 'expo-crypto';
 import { zustandMMKVStorage } from './storage';
 import { sanitizeName, sanitizeNote, INPUT_LIMITS } from '@/lib/security';
 import { getBreedSize } from '@/data/breed-meta';
@@ -33,8 +34,133 @@ function getTodayString(): string {
   return getLocalToday();
 }
 
+// Bug fix (2026-05-26): pets.id no schema Supabase é coluna uuid com
+// default gen_random_uuid() (migration 017). O makeId antigo gerava
+// `${epoch}-${6chars base36}` — formato NÃO compatível com uuid →
+// upsert em `pets` falhava com 'invalid input syntax for type uuid',
+// silenciado pelo Sentry no autoSyncPet. Sync de pets quebrado desde
+// DB-002 onda 1.
+//
+// action_logs / vaccines / appointments / weight_entries / medical_events
+// têm id text; aceitariam o formato antigo, mas Math.random NÃO é CSPRNG
+// e a entropia (~36^6 por ms) é frágil em criação concorrente.
+//
+// Crypto.randomUUID() (expo-crypto >= 12, já dep nesse projeto via
+// store/storage.ts) usa PRNG nativo (iOS SecRandomCopyBytes / Android
+// SecureRandom) e produz uuid v4 padrão — compatível tanto com colunas
+// uuid quanto text.
 function makeId(): string {
-  return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return Crypto.randomUUID();
+}
+
+// ─── Migration de pets legacy (cleanup pós bug B1) ───────────
+//
+// IMPORTANTE: este bloco pode ser removido em ~6 meses (≈ 2026-11-26)
+// quando todos os beta testers tiverem upgraded pra build com makeId
+// uuid + tiverem oportunidade de re-hidratar ao menos uma vez. Aí o
+// universo de MMKV contaminado fica vazio. Marcar TODO no calendário.
+//
+// Contexto: builds antigas (commit < bfc44a8, 2026-05-26) geravam
+// `pet.id` no formato `${epoch}-${6 base36}` ou `${epoch}-legacy`,
+// que NÃO casa com a coluna uuid de `public.pets`. Cada autoSyncPet
+// falhava silenciosamente (Sentry captura, user não vê), então o pet
+// permanece apenas no MMKV local. Esta migration troca o id local
+// por uuid v4 válido E atualiza todas as referências FK locais
+// (`petId` em actionHistory, vaccines, appointments, medical_events,
+// weight_entries). Próximo autoSync* depois desse rehydrate vai
+// pushar tudo pro cloud com IDs válidos.
+//
+// Assumption: NENHUM pet legacy chegou a sincronizar no cloud (bug
+// B1 quebrou 100% dos pushes — count em prod = 0). Logo, gerar uuid
+// novo e re-push NÃO colide com row existente no cloud. Action_logs
+// já estão sync (pet_id null antes do schema multi-pet, ou pet_id
+// apontando pro legacy local id que o cloud nem conhece).
+//
+// Edge case improvável: pet legacy que conseguiu sync via cliente
+// custom / SQL manual. Mitigation: trigger não existe, RPC inexiste —
+// só caminho de criação é o app. Se algum dia for descoberto, a
+// remediação é manual (operador troca id no DB).
+
+const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const LEGACY_ID_RE = /^\d+-(?:[a-z0-9]{6}|legacy)$/;
+
+export function isLegacyId(id: string | undefined | null): boolean {
+  if (typeof id !== 'string' || id.length === 0) return false;
+  if (UUID_V4_RE.test(id)) return false;
+  return LEGACY_ID_RE.test(id);
+}
+
+/**
+ * Tipo mínimo que migrateLegacyPetIds aceita — subset do PetStore
+ * que sobrevive ao persist + onRehydrateStorage (state hidratado).
+ * Mantido inline pra não criar tipo de uso único exportado.
+ */
+type MigrateState = {
+  pets:          Record<string, PetProfile>;
+  activePetId:   string;
+  pet:           PetProfile;
+  actionHistory: ActionLog[];
+  medicalEvents: MedicalEvent[];
+  vaccines:      Vaccine[];
+  appointments:  Appointment[];
+  weightHistory: WeightEntry[];
+};
+
+/**
+ * Mut **in-place** o state pra trocar pet.id legacy → uuid v4.
+ * Retorna número de pets migrados (0 = no-op idempotente).
+ *
+ * Chamado uma vez por boot, dentro de onRehydrateStorage, antes da
+ * UI montar. Custo: O(P × (L+V+A+M+W)) onde P=pets legacy, L,V,A,M,W=
+ * tamanhos das listas. Pra qualquer device real (P≤3, L≤alguns mil),
+ * roda em microssegundos.
+ */
+export function migrateLegacyPetIds(state: MigrateState): number {
+  let migrated = 0;
+  if (!state.pets) return 0;
+
+  for (const oldId of Object.keys(state.pets)) {
+    if (!isLegacyId(oldId)) continue;
+
+    const pet = state.pets[oldId];
+    if (!pet) continue;
+
+    const newId = Crypto.randomUUID();
+    const migratedPet: PetProfile = { ...pet, id: newId };
+
+    state.pets[newId] = migratedPet;
+    delete state.pets[oldId];
+
+    if (state.activePetId === oldId) {
+      state.activePetId = newId;
+    }
+    if (state.pet?.id === oldId) {
+      state.pet = migratedPet;
+    }
+
+    const repoint = <T extends { petId?: string }>(list: T[]): T[] =>
+      list.map((item) => item.petId === oldId ? { ...item, petId: newId } : item);
+
+    state.actionHistory = repoint(state.actionHistory ?? []);
+    state.medicalEvents = repoint(state.medicalEvents ?? []);
+    state.vaccines      = repoint(state.vaccines      ?? []);
+    state.appointments  = repoint(state.appointments  ?? []);
+    state.weightHistory = repoint(state.weightHistory ?? []);
+
+    migrated++;
+
+    // Telemetria — não loga PII (id é UUID, sem dados do pet)
+    // eslint-disable-next-line no-console
+    console.warn('[migration] legacy pet id replaced', { oldId, newId });
+    Sentry.addBreadcrumb({
+      category: 'migration',
+      message:  'legacy_pet_id_replaced',
+      level:    'info',
+      data:     { oldId, newId },
+    });
+  }
+
+  return migrated;
 }
 
 function daysBetween(fromDateStr: string, toDateStr: string): number {
@@ -1020,12 +1146,29 @@ export const usePetStore = create<PetStore>()(
         // está vazio, popular com 1 entry + activePetId. Idempotente —
         // se pets já tem entries, no-op.
         if (state.pet?.nome && Object.keys(state.pets ?? {}).length === 0) {
-          const petId = state.pet.id ?? `${Date.now()}-legacy`;
+          // Fallback: gera uuid v4 — id antigo `${epoch}-legacy` quebrava
+          // upsert em pets (coluna uuid). Path raro: cobre devices com
+          // MMKV pré-DB-002 que migram pra multi-pet sem pet.id setado.
+          const petId = state.pet.id ?? Crypto.randomUUID();
           const migratedPet = { ...state.pet, id: petId };
           state.pets = { [petId]: migratedPet };
           state.activePetId = petId;
           state.pet = migratedPet;
         }
+
+        // Migration legacy → uuid v4 (cleanup pós bug B1, 2026-05-26).
+        // Idempotente: se nenhum pet legacy, no-op. Pode ser removido
+        // em ~2026-11-26 quando todos beta testers tiverem reidratado.
+        const migrated = migrateLegacyPetIds(state as unknown as MigrateState);
+        if (migrated > 0) {
+          Sentry.addBreadcrumb({
+            category: 'migration',
+            message:  'legacy_pet_ids_batch_migrated',
+            level:    'info',
+            data:     { count: migrated },
+          });
+        }
+
         state.setHasHydrated(true);
       },
       partialize: (state) => {
