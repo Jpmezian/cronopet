@@ -11,8 +11,7 @@ import { Nunito_700Bold, Nunito_800ExtraBold } from '@expo-google-fonts/nunito';
 import { usePetStore } from '@/store/usePetStore';
 import { View } from 'react-native';
 import { ToastRenderer } from '@/components/ui/ToastRenderer';
-import { ensureEncryptionKeyReady } from '@/store/storage';
-import { initSupabaseAuthStorage } from '@/services/supabase';
+import { getSupabase } from '@/services/supabase';
 import { BiometricLock } from '@/components/security/BiometricLock';
 import { initAnalytics, track } from '@/services/analytics';
 import { createPostHogClient, posthogBackend } from '@/services/analytics-posthog';
@@ -101,13 +100,19 @@ export default function RootLayout() {
   // Usado pelo auth guard pra decidir redirect (/auth standalone).
   const [hasSession, setHasSession] = useState<boolean | null>(null);
 
-  // SECURITY: carregar chave de criptografia do Keychain ANTES de hidratar.
-  // Sem essa chave, o MMKV seria criado unencrypted (modo degradado).
+  // SECURITY: carregar Supabase client (que internamente garante encryption
+  // key + auth storage init) ANTES de qualquer auth op. Fix race de boot
+  // (2026-05-27): module-load do supabase.ts não cria mais client; tudo
+  // passa pelo singleton-promise getSupabase().
   useEffect(() => {
     (async () => {
       try {
-        const key = await ensureEncryptionKeyReady();
-        initSupabaseAuthStorage(key);
+        await getSupabase();                  // força init do client + storage
+        const user = await getSession();
+        setHasSession(!!user);
+      } catch (e) {
+        Sentry.captureException(e, { tags: { op: 'auth_bootstrap' } });
+        setHasSession(false);
       } finally {
         setStorageReady(true);
       }
@@ -126,15 +131,6 @@ export default function RootLayout() {
       track({ name: 'app_opened', props: { coldStart: true } });
     })();
     initPurchases().catch(() => {});
-
-    // Cold-start auth: chama getSession (que internamente também
-    // dispara `maybeApplyDevPremium` + `hydrateStoreFromCloud`) pra
-    // reativar premium dev e popular dados da nuvem em toda abertura.
-    // Resultado é guardado em hasSession pra o guard global decidir
-    // se manda pra /auth standalone.
-    getSession()
-      .then((user) => setHasSession(!!user))
-      .catch(() => setHasSession(false));
 
     // DEV-only: o sistema email-based só dispara após login. Como o
     // app suporta uso offline sem conta, em DEV builds liberamos Pro

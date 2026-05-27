@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react-native';
-import { supabase } from './supabase';
-import type { RealtimeChannel } from '@supabase/supabase-js';
+import { getSupabase } from './supabase';
+import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
 import type { FamilyGroup, FamilyMember } from '@/types/auth';
 import type {
   ActionLog, PetProfile,
@@ -20,8 +20,21 @@ import {
 let activeChannel: RealtimeChannel | null = null;
 
 // ─── Helpers ──────────────────────────────────────────────────
+//
+// Cache local do client pra permitir acesso síncrono em
+// `unsubscribeAll` (após primeira chamada async, qualquer acesso
+// é cheap). `getSupabase()` já é singleton-promise, mas guardar
+// a ref resolvida evita um await desnecessário em hot paths.
+
+let _client: SupabaseClient | null = null;
+async function client(): Promise<SupabaseClient> {
+  if (_client) return _client;
+  _client = await getSupabase();
+  return _client;
+}
 
 async function getUid(): Promise<string> {
+  const supabase = await client();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Não autenticado');
   return user.id;
@@ -38,6 +51,7 @@ export async function createFamilyGroup(
   pet:       PetProfile,
 ): Promise<FamilyGroup> {
   const uid = await getUid();
+  const supabase = await client();
 
   const { data: group, error } = await supabase
     .from('family_groups')
@@ -71,6 +85,7 @@ export async function createFamilyGroup(
  */
 export async function joinFamilyGroup(code: string): Promise<FamilyGroup> {
   await getUid(); // valida que está autenticado (RPC também valida)
+  const supabase = await client();
 
   const { data, error } = await supabase.rpc('redeem_invite_code', {
     p_code: code,
@@ -109,6 +124,7 @@ export async function joinFamilyGroup(code: string): Promise<FamilyGroup> {
  * Retorna o grupo do usuário logado (null se não estiver em nenhum).
  */
 export async function getMyFamilyGroup(): Promise<FamilyGroup | null> {
+  const supabase = await client();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
 
@@ -127,6 +143,7 @@ export async function getMyFamilyGroup(): Promise<FamilyGroup | null> {
  * Lista os membros de um grupo com nome e e-mail.
  */
 export async function getFamilyMembers(groupId: string): Promise<FamilyMember[]> {
+  const supabase = await client();
   const { data, error } = await supabase
     .from('family_members')
     .select('role, joined_at, profiles(id, nome, email)')
@@ -142,15 +159,20 @@ export async function getFamilyMembers(groupId: string): Promise<FamilyMember[]>
 export function pushActionLog(groupId: string, userId: string, log: ActionLog): void {
   // SECURITY: timeout de 10s — não deixar sync hangar indefinidamente.
   // foto não sincronizada nesta versão — requer Supabase Storage.
-  const op = supabase.from('action_logs').upsert(actionLogToRow(log, groupId, userId));
-  const timer = setTimeout(() => {
-    Sentry.captureMessage('[Sync] pushActionLog timeout (10s)', 'warning');
-  }, 10_000);
-  op.then(({ error }) => {
-    clearTimeout(timer);
-    if (error) {
-      Sentry.captureException(new Error(error.message), { tags: { op: 'pushActionLog' } });
-    }
+  // Fire-and-forget mantido — só `await client()` pra resolver o singleton.
+  client().then((supabase) => {
+    const op = supabase.from('action_logs').upsert(actionLogToRow(log, groupId, userId));
+    const timer = setTimeout(() => {
+      Sentry.captureMessage('[Sync] pushActionLog timeout (10s)', 'warning');
+    }, 10_000);
+    op.then(({ error }) => {
+      clearTimeout(timer);
+      if (error) {
+        Sentry.captureException(new Error(error.message), { tags: { op: 'pushActionLog' } });
+      }
+    });
+  }).catch((err) => {
+    Sentry.captureException(err, { tags: { op: 'pushActionLog.clientInit' } });
   });
 }
 
@@ -161,6 +183,7 @@ export async function pushAllActionLogs(
   logs:    ActionLog[],
 ): Promise<void> {
   if (!logs.length) return;
+  const supabase = await client();
   const rows = logs.map((l) => actionLogToRow(l, groupId, userId));
   const { error } = await supabase.from('action_logs').upsert(rows);
   if (error) {
@@ -171,18 +194,21 @@ export async function pushAllActionLogs(
 /** Sincroniza vacinas. */
 export async function pushVaccines(groupId: string, vaccines: Vaccine[]): Promise<void> {
   if (!vaccines.length) return;
+  const supabase = await client();
   await supabase.from('vaccines').upsert(vaccines.map((v) => vaccineToRow(v, groupId)));
 }
 
 /** Sincroniza consultas. */
 export async function pushAppointments(groupId: string, appts: Appointment[]): Promise<void> {
   if (!appts.length) return;
+  const supabase = await client();
   await supabase.from('appointments').upsert(appts.map((a) => appointmentToRow(a, groupId)));
 }
 
 /** Sincroniza histórico de peso. */
 export async function pushWeightHistory(groupId: string, entries: WeightEntry[]): Promise<void> {
   if (!entries.length) return;
+  const supabase = await client();
   await supabase.from('weight_entries').upsert(entries.map((w) => weightEntryToRow(w, groupId)));
 }
 
@@ -219,6 +245,7 @@ export async function subscribeToFamilyLogs(
   onInsert: (log: ActionLog) => void,
 ): Promise<void> {
   unsubscribeAll();
+  const supabase = await client();
 
   activeChannel = supabase
     .channel(`cronopet-group-${groupId}`)
@@ -233,10 +260,16 @@ export async function subscribeToFamilyLogs(
     .subscribe();
 }
 
-/** Cancela todas as assinaturas realtime. */
+/**
+ * Cancela todas as assinaturas realtime.
+ * SÍNCRONO porque cleanup paths (route unmount, signOut) precisam
+ * rodar sem await. Usa o cache local `_client` populado em qualquer
+ * chamada async anterior — se ainda for null (caller antes do client
+ * resolver), é no-op porque também não há activeChannel.
+ */
 export function unsubscribeAll(): void {
-  if (activeChannel) {
-    supabase.removeChannel(activeChannel);
+  if (activeChannel && _client) {
+    _client.removeChannel(activeChannel);
     activeChannel = null;
   }
 }
@@ -251,6 +284,7 @@ export async function pullGroupData(groupId: string): Promise<{
   appointments:  Appointment[];
   weightHistory: WeightEntry[];
 }> {
+  const supabase = await client();
   const [logsRes, vaccinesRes, apptsRes, weightRes] = await Promise.all([
     supabase.from('action_logs')
       .select('*').eq('group_id', groupId).order('timestamp', { ascending: false }),
@@ -288,6 +322,7 @@ export async function pullPet(groupId: string): Promise<PetProfile | null> {
  * Usado pelo hydrateFromCloud pra popular pets{} no store.
  */
 export async function pullPets(groupId: string): Promise<PetProfile[]> {
+  const supabase = await client();
   const { data } = await supabase
     .from('pets')
     .select('*')
@@ -304,17 +339,22 @@ export async function pullPets(groupId: string): Promise<PetProfile[]> {
  */
 export function pushPet(groupId: string, pet: PetProfile): void {
   const row = petProfileToRow(pet, groupId);
-  // Upsert: se já tem pet pro group, update; senão insert
-  supabase
-    .from('pets')
+  // Fire-and-forget mantido. Inner promise chain resolve o client.
+  client().then((supabase) => {
+    // Upsert: se já tem pet pro group, update; senão insert.
     // DB-002: pets PK agora é id (não group_id). Upsert por id permite
     // multi-pet sem colisão entre pets do mesmo group.
-    .upsert(row, { onConflict: 'id', ignoreDuplicates: false })
-    .then(({ error }) => {
-      if (error) {
-        Sentry.captureException(new Error(error.message), { tags: { op: 'pushPet' } });
-      }
-    });
+    supabase
+      .from('pets')
+      .upsert(row, { onConflict: 'id', ignoreDuplicates: false })
+      .then(({ error }) => {
+        if (error) {
+          Sentry.captureException(new Error(error.message), { tags: { op: 'pushPet' } });
+        }
+      });
+  }).catch((err) => {
+    Sentry.captureException(err, { tags: { op: 'pushPet.clientInit' } });
+  });
 }
 
 // ─── Auto-sync helpers (Sprint AUTH Fase 4) ──────────────────
@@ -328,6 +368,7 @@ export function pushPet(groupId: string, pet: PetProfile): void {
 // Pra throughput crítico (bulk register), considerar batching no futuro.
 
 async function getSessionUser(): Promise<{ uid: string; groupId: string } | null> {
+  const supabase = await client();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
   // getMyFamilyGroup já chama getUser internamente — eficiente
@@ -354,8 +395,9 @@ export function autoSyncActionLog(log: ActionLog): void {
 
 /** Auto-sync delete de action log: chamado em removeActionLog. */
 export function autoSyncDeleteActionLog(logId: string): void {
-  getSessionUser().then((ctx) => {
+  getSessionUser().then(async (ctx) => {
     if (!ctx) return;
+    const supabase = await client();
     supabase.from('action_logs').delete().eq('id', logId).then(({ error }) => {
       if (error) {
         Sentry.captureException(new Error(error.message), { tags: { op: 'autoSyncDeleteActionLog' } });

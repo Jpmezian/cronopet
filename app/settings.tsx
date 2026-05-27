@@ -14,7 +14,7 @@ import { ScalePress } from '@/components/ui/ScalePress';
 import { PetPhoto } from '@/components/PetPhoto';
 import { openLegal } from '@/lib/legalLinks';
 import { signOut, deleteRemoteAccount } from '@/services/AuthService';
-import { clearSupabaseAuthStorage, supabase } from '@/services/supabase';
+import { clearSupabaseAuthStorage, getSupabase } from '@/services/supabase';
 import { InsightsSettingsCard } from '@/components/medical/InsightsSettingsCard';
 import { SupportSection } from '@/components/support/SupportSection';
 
@@ -44,15 +44,19 @@ export default function SettingsScreen() {
   const [account, setAccount] = useState<{ email: string; nome?: string } | null>(null);
   useEffect(() => {
     let alive = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (!alive) return;
-      const u = data.session?.user;
-      if (!u?.email) { setAccount(null); return; }
-      setAccount({
-        email: u.email,
-        nome:  (u.user_metadata?.nome as string | undefined),
-      });
-    }).catch(() => { /* sem session, sem card */ });
+    (async () => {
+      try {
+        const supabase = await getSupabase();
+        const { data } = await supabase.auth.getSession();
+        if (!alive) return;
+        const u = data.session?.user;
+        if (!u?.email) { setAccount(null); return; }
+        setAccount({
+          email: u.email,
+          nome:  (u.user_metadata?.nome as string | undefined),
+        });
+      } catch { /* sem session, sem card */ }
+    })();
     return () => { alive = false; };
   }, []);
 

@@ -1,4 +1,4 @@
-import { supabase, clearSupabaseAuthStorage } from './supabase';
+import { getSupabase, clearSupabaseAuthStorage } from './supabase';
 import type { CronoPetUser } from '@/types/auth';
 import { identifyUser, resetAnalytics } from './analytics';
 import { identifyPurchasesUser, resetPurchases } from './purchases';
@@ -74,6 +74,7 @@ export async function signUp(
   password: string,
   nome:     string,
 ): Promise<CronoPetUser> {
+  const supabase = await getSupabase();
   const { data, error } = await supabase.auth.signUp({
     email:   email.trim().toLowerCase(),
     password,
@@ -127,6 +128,7 @@ export async function signIn(
   email:    string,
   password: string,
 ): Promise<CronoPetUser> {
+  const supabase = await getSupabase();
   const { data, error } = await supabase.auth.signInWithPassword({
     email:    email.trim().toLowerCase(),
     password,
@@ -169,6 +171,7 @@ export async function signIn(
  * (já limpo de dados de usuário) com mesma chave.
  */
 export async function signOut(): Promise<void> {
+  const supabase = await getSupabase();
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 
@@ -210,6 +213,7 @@ export async function signOut(): Promise<void> {
  *   - retorna 204 No Content
  */
 export async function deleteRemoteAccount(): Promise<void> {
+  const supabase = await getSupabase();
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
   if (!token) return; // user não tem conta — só limpeza local basta
@@ -234,6 +238,7 @@ export async function deleteRemoteAccount(): Promise<void> {
 }
 
 export async function getSession(): Promise<CronoPetUser | null> {
+  const supabase = await getSupabase();
   const { data } = await supabase.auth.getSession();
   if (!data.session?.user) return null;
   const u = data.session.user;

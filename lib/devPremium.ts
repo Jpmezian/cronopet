@@ -21,7 +21,7 @@
 //   INSERT INTO public.premium_grants (email, plan, reason, granted_by)
 //   VALUES ('beta@x.com', 'annual', 'beta_tester', 'jp');
 
-import { supabase } from '@/services/supabase';
+import { getSupabase } from '@/services/supabase';
 
 type SetPremium = (args: {
   isPremium: boolean;
@@ -45,6 +45,7 @@ export async function checkRemotePremiumGrant(
   setPremiumStatus: SetPremium,
 ): Promise<boolean> {
   try {
+    const supabase = await getSupabase();
     const { data, error } = await supabase.functions.invoke<{
       granted: boolean;
       plan?: 'monthly' | 'annual';

@@ -25,7 +25,7 @@
 import React, { useEffect } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { supabase } from '@/services/supabase';
+import { getSupabase } from '@/services/supabase';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { useToastStore } from '@/store/useToastStore';
 
@@ -39,6 +39,7 @@ export default function AuthConfirmedScreen() {
 
     (async () => {
       try {
+        const supabase = await getSupabase();
         const { data } = await supabase.auth.getSession();
         if (cancelled) return;
 
