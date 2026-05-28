@@ -34,3 +34,11 @@ verify_jwt = true
 # JWT obrigatório — email vem do token, não do body (anti-forge).
 [functions.check-premium-grant]
 verify_jwt = true
+
+# revenuecat-webhook: recebe eventos da RevenueCat (purchase, renewal,
+# cancellation, expiration, etc) e sincroniza public.subscriptions.
+# JWT desabilitado porque RevenueCat envia bearer token PRÓPRIO no
+# header Authorization (configurado no dashboard RC). Validação custom
+# dentro do handler via env var REVENUECAT_WEBHOOK_AUTH_TOKEN.
+[functions.revenuecat-webhook]
+verify_jwt = false
