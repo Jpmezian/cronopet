@@ -58,3 +58,10 @@ supabase/.branches/
 # Docs internos — mantidos localmente, não vão pro remote público
 LEGAL_RESEARCH_PROMPT.md
 PRODUCT_OVERVIEW.md
+
+# Credenciais Apple / Google / Supabase (locais)
+*.p8
+cronopet-credentials/
+
+# Relatórios internos (CEO/CMO/etc) — privados
+docs/reports/
