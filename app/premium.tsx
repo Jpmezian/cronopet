@@ -49,16 +49,16 @@ const PRICING_PLANS: PricingPlan[] = [
   {
     id:      'annual',
     label:   'Anual',
-    price:   'R$ 99',
+    price:   'R$ 99,90',
     caption: 'R$ 0,27/dia',
     badge:   '🔥 MAIS POPULAR',
-    savings: 'Economize 44% · 2 meses grátis',
+    savings: 'Economize 58% · 7 meses grátis',
   },
   {
     id:      'monthly',
     label:   'Mensal',
-    price:   'R$ 14,90',
-    caption: 'R$ 0,50/dia',
+    price:   'R$ 19,90',
+    caption: 'R$ 0,66/dia',
   },
 ];
 
@@ -1219,8 +1219,8 @@ function ViewPitch({
           marginBottom: 6,
         }}>
           {selectedPlan === 'annual'
-            ? 'CronoPet Pro Anual — R$ 99,00/ano. Após 7 dias grátis, sua assinatura será renovada automaticamente por R$ 99,00/ano, cobrados na sua conta Apple ID/Google Play, até que você cancele.'
-            : 'CronoPet Pro Mensal — R$ 14,90/mês. Após 7 dias grátis, sua assinatura será renovada automaticamente por R$ 14,90/mês, cobrados na sua conta Apple ID/Google Play, até que você cancele.'
+            ? 'CronoPet Pro Anual — R$ 99,90/ano. Após 7 dias grátis, sua assinatura será renovada automaticamente por R$ 99,90/ano, cobrados na sua conta Apple ID/Google Play, até que você cancele.'
+            : 'CronoPet Pro Mensal — R$ 19,90/mês. Após 7 dias grátis, sua assinatura será renovada automaticamente por R$ 19,90/mês, cobrados na sua conta Apple ID/Google Play, até que você cancele.'
           }
         </Text>
         <Text style={{

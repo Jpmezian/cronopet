@@ -103,7 +103,7 @@ Apple pergunta categoria por categoria se vc coleta + se é "linked to user" + s
 | **App Distribution** | Public on App Store |
 | **Pre-orders** | Not enabled |
 
-Premium (R$ 14,90/mês ou R$ 99/ano) é via In-App Purchase, configurar **depois** que o app for aprovado (separado do submit inicial). Recomendo lançar **grátis** primeiro, ativar Premium na v1.1.
+Premium (R$ 19,90/mês ou R$ 99,90/ano) é via In-App Purchase, configurar **depois** que o app for aprovado (separado do submit inicial). Recomendo lançar **grátis** primeiro, ativar Premium na v1.1.
 
 ---
 
@@ -253,7 +253,7 @@ CronoPet NÃO é "AI vet" nem chute. É um sistema de regras escrito a partir de
 
 ━━ PREMIUM (opcional) ━━
 
-Plano grátis cobre tudo o essencial. Premium (R$ 14,90/mês ou R$ 99/ano com 7 dias grátis) adiciona:
+Plano grátis cobre tudo o essencial. Premium (R$ 19,90/mês ou R$ 99,90/ano com 7 dias grátis) adiciona:
 • Múltiplos pets
 • Compartilhamento familiar (rotina em tempo real)
 • Backup em nuvem encrypted

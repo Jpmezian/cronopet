@@ -55,7 +55,7 @@ Rebuilda o app — `services/AIInsights.ts` detecta a variável e começa a cham
 - Cache de 24h no app (`AIInsights.ts`) garante ≤ 1 chamada por usuário por dia
 - Com 1000 usuários ativos: ~$3.50/mês
 
-Pra clientes Premium pagantes (R$ 14,90/mês): margem confortável.
+Pra clientes Premium pagantes (R$ 19,90/mês): margem confortável.
 
 ## Testar local
 

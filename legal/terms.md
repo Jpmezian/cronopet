@@ -1,6 +1,6 @@
 # Termos de Uso — CronoPet
 
-**Última atualização:** 24 de maio de 2026 · **Versão:** 2.0
+**Última atualização:** 27 de maio de 2026 · **Versão:** 2.1 (ajuste de pricing)
 
 > Substitui qualquer versão anterior.
 
@@ -50,8 +50,8 @@ Conta é gratuita. App funciona offline sem conta. Conta com e-mail necessária 
 Registro de rotina, plano nutricional NRC 2006, PDF veterinário, card semanal, histórico 30 dias, alertas críticos de saúde.
 
 ### 4.2 Pro
-- **Mensal:** R$ 14,90/mês
-- **Anual:** R$ 99,00/ano (~R$ 8,25/mês, economia 44%)
+- **Mensal:** R$ 19,90/mês
+- **Anual:** R$ 99,90/ano (~R$ 8,33/mês, economia 58%)
 - **Teste grátis:** 7 dias no primeiro acesso
 
 **Adicionais:** histórico ilimitado, avisos automáticos completos, múltiplos pets, família, backup nuvem, análise IA opcional, exportação completa.

@@ -34,10 +34,10 @@ const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
 const MAX_TOKENS = 1024;
 
-// Cost cap mensal por user (R$ 14,90 Pro ≈ $3 USD bruto, ~$2.10 líquido
+// Cost cap mensal por user (R$ 19,90 Pro ≈ $4 USD bruto, ~$2.80 líquido
 // depois de Apple/Google 30%. Anthropic Haiku 4.5 = $1/$5 por MTok.
 // 50 calls × 1024 tokens out = ~50K tokens out × $5 = $0.25/user/mês
-// → margem >$1.80 por user Pro mesmo no pior caso). Ajustar via env.
+// → margem >$2.50 por user Pro mesmo no pior caso). Ajustar via env.
 const MONTHLY_CALL_CAP = Number(Deno.env.get('AI_MONTHLY_CALL_CAP') ?? '50');
 const MONTHLY_TOKEN_OUT_CAP = Number(Deno.env.get('AI_MONTHLY_TOKEN_OUT_CAP') ?? '100000');
 

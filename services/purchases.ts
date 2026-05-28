@@ -53,8 +53,8 @@ export interface CustomerInfo {
 
 export interface Offering {
   id: PremiumPlan;
-  priceString: string;        // ex: "R$ 14,90"
-  pricePerMonth?: string;     // ex: "R$ 8,25" (yearly amortizado)
+  priceString: string;        // ex: "R$ 19,90"
+  pricePerMonth?: string;     // ex: "R$ 8,33" (yearly amortizado: 99,90/12)
   trialDays?: number;
 }
 
@@ -191,8 +191,8 @@ export async function getCustomerInfo(): Promise<CustomerInfo> {
 export async function getOfferings(): Promise<Offering[]> {
   if (mode === 'stub') {
     return [
-      { id: 'monthly', priceString: 'R$ 14,90', trialDays: 7 },
-      { id: 'yearly', priceString: 'R$ 99,00', pricePerMonth: 'R$ 8,25', trialDays: 7 },
+      { id: 'monthly', priceString: 'R$ 19,90', trialDays: 7 },
+      { id: 'yearly', priceString: 'R$ 99,90', pricePerMonth: 'R$ 8,33', trialDays: 7 },
     ];
   }
 

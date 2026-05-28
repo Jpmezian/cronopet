@@ -29,8 +29,8 @@
 **Ação pendente (você):**
 1. **App Store Connect:**
    - Criar 2 produtos auto-renewable em "Subscriptions":
-     - `cronopet_premium_monthly` — R$ 14,90/mês — 7 dias trial
-     - `cronopet_premium_yearly` — R$ 99,00/ano — 7 dias trial
+     - `com.cronopet.app.premium.monthly` — R$ 19,90/mês — 7 dias trial
+     - `com.cronopet.app.premium.annual` — R$ 99,90/ano — 7 dias trial
    - Subscription Group: "CronoPet Premium"
    - Localizar pra pt-BR
 
@@ -204,7 +204,7 @@ Hoje cada user faz `useWeather` no mount do Home. Com 100 abertas/dia/user → 1
 - **B-1 + B-2 são os únicos release-blockers absolutos.** Tudo o resto roda.
 - **Premium dev por email** (`lib/devPremium.ts`) funciona ortogonal ao RC — você + sócio ganham Pro sem precisar comprar, independente de B-1 estar resolvido.
 - **TestFlight Internal** continua usável pra você + sócio + até 100 testers Internal (Internal tier do Apple Team).
-- O cardápio dev pra simular IAP sem RC live: `services/purchases.ts:194` tem `priceString: 'R$ 14,90'` hardcoded — UI mostra esses preços mesmo em stub.
+- O cardápio dev pra simular IAP sem RC live: `services/purchases.ts:194` tem `priceString: 'R$ 19,90'` hardcoded — UI mostra esses preços mesmo em stub.
 
 ---
 

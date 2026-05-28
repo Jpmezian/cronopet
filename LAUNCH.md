@@ -195,8 +195,8 @@ Música instrumental leve, sem letra. Loop de 30s. Sugestão: Epidemic Sound tag
 - [x] Wrapper `services/purchases.ts` com fallback graceful (sem key = stub DEV)
 - [x] Wired ao `setPremiumStatus` do store
 - [ ] 👤 Produtos criados no App Store Connect:
-      - `cronopet_premium_monthly` — Auto-renewable — R$ 14,90/mês
-      - `cronopet_premium_yearly` — Auto-renewable — R$ 99,00/ano
+      - `com.cronopet.app.premium.monthly` — Auto-renewable — R$ 19,90/mês
+      - `com.cronopet.app.premium.annual` — Auto-renewable — R$ 99,90/ano
       - Trial de 7 dias configurado em ambos
 - [ ] 👤 Informações bancárias + tax forms preenchidos
 - [ ] 🟡 `EXPO_PUBLIC_REVENUECAT_IOS_KEY` no `.env` de produção
@@ -270,7 +270,7 @@ Música instrumental leve, sem letra. Loop de 30s. Sugestão: Epidemic Sound tag
 - Cards compartilháveis
 - 1 pet
 
-**PREMIUM (R$ 14,90/mês ou R$ 99/ano)** adiciona:
+**PREMIUM (R$ 19,90/mês ou R$ 99,90/ano)** adiciona:
 - Múltiplos pets
 - Compartilhamento familiar
 - Backup em nuvem
@@ -288,7 +288,7 @@ Assumindo 1.000 downloads orgânicos no primeiro mês:
 - 500 (50%) fazem onboarding completo
 - 300 (30%) abrem o app em D7
 - 80 (8%) visitam a tela Premium
-- 10 (1%) convertem em Premium anual = **R$ 990/mês de MRR**
+- 10 (1%) convertem em Premium anual = **R$ 999/mês de MRR** (10 × R$ 99,90)
 
 Conservador. Com Product Hunt + TikTok viral = 5-10× isso.
 
