@@ -148,6 +148,41 @@ export async function signIn(
   return { id: data.user.id, email: data.user.email!, nome };
 }
 
+// ─── Recuperação de acesso ────────────────────────────────────
+
+/**
+ * Reenvia o e-mail de confirmação de cadastro.
+ *
+ * Necessário porque o GoTrue, por política anti-enumeração, devolve o
+ * genérico "Invalid login credentials" tanto pra senha errada quanto
+ * pra conta com e-mail ainda não confirmado. Sem este caminho, um
+ * usuário com a senha certa numa conta não confirmada fica preso vendo
+ * "e-mail ou senha incorretos" sem saída.
+ */
+export async function resendConfirmationEmail(email: string): Promise<void> {
+  const supabase = await getSupabase();
+  const { error } = await supabase.auth.resend({
+    type: 'signup',
+    email: email.trim().toLowerCase(),
+    options: { emailRedirectTo: 'cronopet://auth/confirmed' },
+  });
+  if (error) throw error;
+}
+
+/**
+ * Dispara o fluxo de redefinição de senha. O Supabase envia um e-mail
+ * com link de recuperação que reabre o app via deep link (scheme
+ * `cronopet`). Por anti-enumeração, resolve mesmo se o e-mail não existir.
+ */
+export async function sendPasswordReset(email: string): Promise<void> {
+  const supabase = await getSupabase();
+  const { error } = await supabase.auth.resetPasswordForEmail(
+    email.trim().toLowerCase(),
+    { redirectTo: 'cronopet://auth/confirmed' },
+  );
+  if (error) throw error;
+}
+
 // ─── Sign Out ─────────────────────────────────────────────────
 
 /**

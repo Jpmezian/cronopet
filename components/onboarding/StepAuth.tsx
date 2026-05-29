@@ -19,7 +19,7 @@ import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeInRight, useReducedMotion } from 'react-native-reanimated';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { ScalePress } from '@/components/ui/ScalePress';
-import { signIn, signUp } from '@/services/AuthService';
+import { signIn, signUp, resendConfirmationEmail, sendPasswordReset } from '@/services/AuthService';
 import { hydrateFromCloud } from '@/services/SyncService';
 import { isValidEmail, checkPasswordStrength } from '@/lib/security';
 import { translateSupabaseError } from '@/lib/supabaseErrors';
@@ -49,6 +49,11 @@ export function StepAuth({ defaultName = '', onSuccess, onBack }: StepAuthProps)
   const [password, setPassword] = useState('');
   const [nome,     setNome]     = useState(defaultName);
   const [loading,  setLoading]  = useState(false);
+  // Após falha de login, exibe caminhos de recuperação (reenviar
+  // confirmação / esqueci senha). O erro genérico do GoTrue mascara
+  // os casos "e-mail não confirmado" e "esqueci a senha".
+  const [showRecovery, setShowRecovery] = useState(false);
+  const [recovering,   setRecovering]   = useState(false);
 
   const inputStyle = {
     backgroundColor: colors.bgInput,
@@ -115,11 +120,55 @@ export function StepAuth({ defaultName = '', onSuccess, onBack }: StepAuthProps)
     } catch (err) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       const msg = err instanceof Error ? err.message : String(err);
+      // Numa falha de login, oferece os caminhos de recuperação.
+      if (tab === 'signin') setShowRecovery(true);
       Alert.alert('Erro', translateSupabaseError(msg));
     } finally {
       setLoading(false);
     }
   }, [tab, email, password, nome, onSuccess]);
+
+  // ── Recuperação de acesso ───────────────────────────────────
+  const handleResendConfirmation = useCallback(async () => {
+    if (!isValidEmail(email)) {
+      Alert.alert('E-mail inválido', 'Digite seu e-mail no campo acima primeiro.');
+      return;
+    }
+    setRecovering(true);
+    try {
+      await resendConfirmationEmail(email);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Pronto', 'E-mail de confirmação reenviado. Verifique sua caixa de entrada (e o spam).');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      Alert.alert('Erro', translateSupabaseError(msg));
+    } finally {
+      setRecovering(false);
+    }
+  }, [email]);
+
+  const handlePasswordReset = useCallback(async () => {
+    if (!isValidEmail(email)) {
+      Alert.alert('E-mail inválido', 'Digite seu e-mail no campo acima primeiro.');
+      return;
+    }
+    setRecovering(true);
+    try {
+      await sendPasswordReset(email);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Pronto', 'Enviamos um link de recuperação pro seu e-mail.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      Alert.alert('Erro', translateSupabaseError(msg));
+    } finally {
+      setRecovering(false);
+    }
+  }, [email]);
+
+  const switchTab = useCallback((t: AuthTab) => {
+    setTab(t);
+    setShowRecovery(false);
+  }, []);
 
   const isValidForm =
     isValidEmail(email) &&
@@ -162,7 +211,7 @@ export function StepAuth({ defaultName = '', onSuccess, onBack }: StepAuthProps)
           return (
             <Pressable
               key={t}
-              onPress={() => setTab(t)}
+              onPress={() => switchTab(t)}
               style={{
                 flex: 1, paddingVertical: 10, alignItems: 'center',
                 borderRadius: 10,
@@ -283,6 +332,49 @@ export function StepAuth({ defaultName = '', onSuccess, onBack }: StepAuthProps)
           </Text>
         )}
       </ScalePress>
+
+      {/* Recuperação de acesso — só aparece após uma falha de login.
+          A mensagem genérica do GoTrue mascara "e-mail não confirmado"
+          e "esqueci a senha"; estes caminhos dão saída ao usuário. */}
+      {tab === 'signin' && showRecovery && (
+        <Animated.View entering={isReduced ? FadeIn.duration(200) : FadeIn.duration(280)} style={{ gap: 8, marginTop: 2 }}>
+          <Text style={{ color: colors.textTertiary, fontSize: 12, lineHeight: 17, textAlign: 'center' }}>
+            Não recebeu o e-mail de confirmação? Ou esqueceu a senha?
+          </Text>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <ScalePress
+              onPress={handleResendConfirmation}
+              disabled={recovering}
+              accessibilityRole="button"
+              accessibilityLabel="Reenviar e-mail de confirmação"
+              accessibilityHint="Envia novamente o e-mail para confirmar sua conta"
+              style={{
+                flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: 'center',
+                backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,
+              }}
+            >
+              <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '700', fontFamily: 'Nunito_700Bold', textAlign: 'center' }}>
+                Reenviar confirmação
+              </Text>
+            </ScalePress>
+            <ScalePress
+              onPress={handlePasswordReset}
+              disabled={recovering}
+              accessibilityRole="button"
+              accessibilityLabel="Esqueci minha senha"
+              accessibilityHint="Envia um link de recuperação de senha para seu e-mail"
+              style={{
+                flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: 'center',
+                backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,
+              }}
+            >
+              <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '700', fontFamily: 'Nunito_700Bold', textAlign: 'center' }}>
+                Esqueci a senha
+              </Text>
+            </ScalePress>
+          </View>
+        </Animated.View>
+      )}
 
       {/* Voltar ao welcome */}
       <Pressable

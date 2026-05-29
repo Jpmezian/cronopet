@@ -143,7 +143,7 @@ export async function scheduleAppointmentReminder(
   titulo: string,
   data:   string,   // YYYY-MM-DD
   hora?:  string,   // HH:MM
-): Promise<string> {
+): Promise<string | undefined> {
   await ensureChannels();
 
   const [year, month, day] = data.split('-').map(Number);
@@ -152,6 +152,27 @@ export async function scheduleAppointmentReminder(
   // Dispara 15 min antes
   const apptDate = new Date(year, month - 1, day, h, m, 0);
   const triggerDate = new Date(apptDate.getTime() - 15 * 60 * 1000);
+
+  // ── defense-in-depth para evitar EXC_BREAKPOINT no scheduler nativo ──
+  // Uma data malformada (ex: vinda de input livre) vira Invalid Date e seu
+  // getTime() é NaN. Como `NaN <= Date.now()` é sempre false, o fluxo escapava
+  // do branch "hoje" e entregava um Date inválido ao módulo nativo, que crashava.
+  // Aqui abortamos antes de tocar o nativo — e registramos no Sentry pra termos
+  // visibilidade quando acontece (em vez de silenciar por completo).
+  if (Number.isNaN(triggerDate.getTime())) {
+    console.warn('[Notif] data inválida, pulando agendamento:', data, hora);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const Sentry = require('@sentry/react-native');
+      Sentry.captureMessage('Skipped notification: invalid date', {
+        level: 'warning',
+        extra: { data, hora },
+      });
+    } catch {
+      // Sentry indisponível — engole, não propaga
+    }
+    return undefined;
+  }
 
   // Não agendar no passado
   if (triggerDate.getTime() <= Date.now()) {

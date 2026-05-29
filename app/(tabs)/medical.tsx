@@ -12,6 +12,7 @@ import {
 import Animated from 'react-native-reanimated';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { ScalePress } from '@/components/ui/ScalePress';
+import { DateTimeField } from '@/components/ui/DateTimeField';
 import { resolvePhotoUri } from '@/lib/photoPath';
 import { getLocalToday } from '@/lib/dateLocal';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
@@ -256,6 +257,16 @@ export default function MedicalScreen() {
     }), [appointments]);
 
   const today = getLocalToday();
+
+  // ── Limites do seletor de data de consulta ───────────────────
+  // Consulta não pode ser agendada no passado; teto razoável de 2 anos.
+  const apptDateBounds = useMemo(() => {
+    const min = new Date();
+    min.setHours(0, 0, 0, 0);
+    const max = new Date();
+    max.setFullYear(max.getFullYear() + 2);
+    return { min, max };
+  }, []);
 
   // ── Input style compartilhado ────────────────────────────────
   const inputStyle = {
@@ -823,8 +834,44 @@ export default function MedicalScreen() {
             <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
               {[
                 { label: 'Título *', value: apptTitulo, setter: setApptTitulo, placeholder: 'Ex: Consulta anual, Banho e tosa' },
-                { label: 'Data * (AAAA-MM-DD)', value: apptData, setter: setApptData, placeholder: 'Ex: 2025-06-20' },
-                { label: 'Horário (HH:MM)', value: apptHora, setter: setApptHora, placeholder: 'Ex: 14:30 (opcional)' },
+              ].map((field) => (
+                <View key={field.label} style={{ marginBottom: 14 }}>
+                  <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 13, marginBottom: 6 }}>
+                    {field.label}
+                  </Text>
+                  <TextInput
+                    value={field.value} onChangeText={field.setter}
+                    placeholder={field.placeholder} placeholderTextColor={colors.textTertiary}
+                    autoCorrect={false} maxLength={100}
+                    style={inputStyle}
+                  />
+                </View>
+              ))}
+
+              {/* Data e hora via picker nativo — saída sempre válida (AAAA-MM-DD / HH:MM) */}
+              <View style={{ marginBottom: 14 }}>
+                <DateTimeField
+                  label="Data *"
+                  mode="date"
+                  value={apptData}
+                  onChange={setApptData}
+                  placeholder="Toque para escolher a data"
+                  minimumDate={apptDateBounds.min}
+                  maximumDate={apptDateBounds.max}
+                />
+              </View>
+              <View style={{ marginBottom: 14 }}>
+                <DateTimeField
+                  label="Horário (opcional)"
+                  mode="time"
+                  value={apptHora}
+                  onChange={setApptHora}
+                  placeholder="Toque para escolher o horário"
+                  clearable
+                />
+              </View>
+
+              {[
                 { label: 'Veterinário', value: apptVet, setter: setApptVet, placeholder: 'Nome do vet (opcional)' },
                 { label: 'Observação', value: apptNota, setter: setApptNota, placeholder: 'Notas adicionais' },
               ].map((field) => (
