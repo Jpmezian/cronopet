@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  View, Text, SafeAreaView, ScrollView, Image,
+  View, Text, ScrollView, Image,
   Platform, Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { usePetStore } from '@/store/usePetStore';
 import { useThemeColors } from '@/hooks/useThemeColors';
@@ -209,7 +210,7 @@ export default function SettingsScreen() {
   const pad = (n: number) => String(n).padStart(2, '0');
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgScreen }}>
+    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: colors.bgScreen }}>
       {/* Header */}
       <View style={{
         flexDirection: 'row', alignItems: 'center', gap: 12,

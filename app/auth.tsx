@@ -12,7 +12,8 @@
 // hasOnboarded && !hasSession.
 
 import React from 'react';
-import { View, SafeAreaView, useWindowDimensions } from 'react-native';
+import { View, useWindowDimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { StepAuth } from '@/components/onboarding/StepAuth';
@@ -28,7 +29,7 @@ export default function AuthScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: heroBg }}>
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1 }}>
         <View style={{ height: HERO_H, alignItems: 'center', justifyContent: 'center' }}>
           <IllustrationWelcome />
         </View>

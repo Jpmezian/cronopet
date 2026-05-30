@@ -149,6 +149,16 @@ export const WeeklyReportCard = forwardRef<View, WeeklyReportCardProps>(
   }, ref) => {
     const hasFoto = !!petFoto;
 
+    // ── "Primeira semana": tudo zerado, sem streak, sem peso ──────
+    // Em vez de mostrar streak hero + grid + stats todos vazios (que
+    // dá uma sensação de fracasso), o card vira motivacional.
+    const weekIsEmpty =
+      totals.meals === 0 &&
+      totals.water === 0 &&
+      totals.walks === 0 &&
+      streak === 0 &&
+      latestWeight == null;
+
     return (
       <View
         ref={ref}
@@ -187,7 +197,11 @@ export const WeeklyReportCard = forwardRef<View, WeeklyReportCardProps>(
         {/* ── Conteúdo ── */}
         <View style={{
           flex: 1, paddingHorizontal: 28,
-          paddingTop: 36, paddingBottom: 16,
+          paddingTop: 36,
+          // paddingBottom alto pra reservar o espaço do footer absoluto
+          // (logo + wordmark + tagline ≈ 60px + safe gap). Antes era 16
+          // → footer sobrepunha a 2ª linha de stats no captureRef.
+          paddingBottom: 88,
         }}>
 
           {/* HEADER: label + semana */}
@@ -241,10 +255,38 @@ export const WeeklyReportCard = forwardRef<View, WeeklyReportCardProps>(
             </Text>
           </View>
 
+          {weekIsEmpty ? (
+            /* ── Primeira semana (todos os contadores em 0) ──
+               Substitui o trio streak/grid/stats por um card
+               motivacional. Mantém branding pra share viral. */
+            <View style={{
+              flex: 1, alignItems: 'center', justifyContent: 'center',
+              paddingHorizontal: 12,
+            }}>
+              <Text style={{
+                fontSize: 22, color: C.white,
+                fontFamily: 'Nunito_800ExtraBold', fontWeight: '800',
+                textAlign: 'center', lineHeight: 28,
+              }}>
+                Minha primeira semana{'\n'}com {petNome} 🐾
+              </Text>
+              <Text style={{
+                fontSize: 13, color: C.whiteSoft,
+                textAlign: 'center', marginTop: 14, lineHeight: 18,
+                paddingHorizontal: 8,
+              }}>
+                Os próximos dias começam a contar a partir daqui.
+              </Text>
+            </View>
+          ) : (
+          <>
           {/* STREAK HERO — número dramático + label.
               R3-5: emoji 🔥 posicionado absoluto à direita pra o
               número ficar visualmente centralizado no card. Antes o
-              row com emoji empurrava o número pra esquerda. */}
+              row com emoji empurrava o número pra esquerda.
+              P2 (2026-05-30): 🔥 e copy "DIAS DE STREAK" só aparecem
+              quando streak > 0 — fogo apagado com 0 dias era
+              contraditório. Com 0, mostra "Começando · 1ª semana". */}
           <View style={{
             backgroundColor: C.whiteFaint,
             borderWidth: 1, borderColor: C.whiteBord,
@@ -254,26 +296,46 @@ export const WeeklyReportCard = forwardRef<View, WeeklyReportCardProps>(
             alignItems: 'center',
             position: 'relative',
           }}>
-            <Text style={{
-              fontSize: 72, fontFamily: 'Nunito_800ExtraBold',
-              color: C.accent, fontWeight: '800', lineHeight: 76,
-              textAlign: 'center',
-            }}>
-              {streak}
-            </Text>
-            {/* Emoji em absolute pra não deslocar o número */}
-            <Text style={{
-              position: 'absolute',
-              right: 22, top: 36,
-              fontSize: 24,
-            }}>🔥</Text>
-            <Text style={{
-              fontSize: 11, color: C.whiteSoft,
-              fontWeight: '700', letterSpacing: 2,
-              marginTop: 2,
-            }}>
-              {streak === 1 ? 'D I A   D E   S T R E A K' : 'D I A S   D E   S T R E A K'}
-            </Text>
+            {streak > 0 ? (
+              <>
+                <Text style={{
+                  fontSize: 72, fontFamily: 'Nunito_800ExtraBold',
+                  color: C.accent, fontWeight: '800', lineHeight: 76,
+                  textAlign: 'center',
+                }}>
+                  {streak}
+                </Text>
+                <Text style={{
+                  position: 'absolute',
+                  right: 22, top: 36,
+                  fontSize: 24,
+                }}>🔥</Text>
+                <Text style={{
+                  fontSize: 11, color: C.whiteSoft,
+                  fontWeight: '700', letterSpacing: 2,
+                  marginTop: 2,
+                }}>
+                  {streak === 1 ? 'D I A   D E   S T R E A K' : 'D I A S   D E   S T R E A K'}
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text style={{
+                  fontSize: 36, fontFamily: 'Nunito_800ExtraBold',
+                  color: C.accent, fontWeight: '800', lineHeight: 42,
+                  textAlign: 'center',
+                }}>
+                  Começando
+                </Text>
+                <Text style={{
+                  fontSize: 11, color: C.whiteSoft,
+                  fontWeight: '700', letterSpacing: 2,
+                  marginTop: 4,
+                }}>
+                  S U A   1 ª   S E M A N A
+                </Text>
+              </>
+            )}
           </View>
 
           {/* 7-DAY GRID — narrativa visual da semana.
@@ -355,6 +417,8 @@ export const WeeklyReportCard = forwardRef<View, WeeklyReportCardProps>(
               />
             </View>
           </View>
+          </>
+          )}
         </View>
 
         {/* FOOTER branding — wordmark minimal centralizado */}

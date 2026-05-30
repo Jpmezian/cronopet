@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import {
-  View, Text, SafeAreaView, ScrollView,
+  View, Text, ScrollView,
   TextInput, Platform, ActivityIndicator, Alert, KeyboardAvoidingView,
   Clipboard,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Copy, Check } from 'lucide-react-native';
@@ -356,7 +357,7 @@ export default function PremiumScreen() {
   // ─── Render ───────────────────────────────────────────────
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgScreen }}>
+    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: colors.bgScreen }}>
       {/* Header */}
       <View style={{
         flexDirection: 'row', alignItems: 'center', gap: 12,

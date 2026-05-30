@@ -11,6 +11,7 @@ import { Nunito_700Bold, Nunito_800ExtraBold } from '@expo-google-fonts/nunito';
 import { usePetStore } from '@/store/usePetStore';
 import { View } from 'react-native';
 import { ToastRenderer } from '@/components/ui/ToastRenderer';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { getSupabase } from '@/services/supabase';
 import { BiometricLock } from '@/components/security/BiometricLock';
 import { initAnalytics, track } from '@/services/analytics';
@@ -222,6 +223,7 @@ export default function RootLayout() {
   if (!isNavigationReady) return null;
 
   return (
+    <SafeAreaProvider>
     <BiometricLock>
     <View style={{ flex: 1 }}>
       <StatusBar style={themeMode === 'dark' ? 'light' : themeMode === 'light' ? 'dark' : 'auto'} />
@@ -290,5 +292,6 @@ export default function RootLayout() {
       <ToastRenderer />
     </View>
     </BiometricLock>
+    </SafeAreaProvider>
   );
 }

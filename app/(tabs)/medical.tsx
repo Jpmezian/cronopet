@@ -1,8 +1,9 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import {
-  View, Text, SafeAreaView, ScrollView, Platform, Pressable,
+  View, Text, ScrollView, Platform, Pressable,
   Modal, TextInput, ActivityIndicator, Alert, Image, KeyboardAvoidingView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import {
@@ -276,7 +277,7 @@ export default function MedicalScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgScreen }}>
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bgScreen }}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
 
         {/* ── Header ──────────────────────────────────── */}

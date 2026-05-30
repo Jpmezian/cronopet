@@ -1,9 +1,10 @@
 import React, { useEffect, useCallback, useState, useMemo, useRef } from 'react';
 import {
-  View, Text, Image, Pressable, SafeAreaView,
+  View, Text, Image, Pressable,
   Platform, Modal, TextInput, ScrollView, ActivityIndicator,
   KeyboardAvoidingView, AppState, Alert, Linking,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 // Shared element transitions not available in Reanimated v4.1.7 — kept for future upgrade
 import * as Notifications from 'expo-notifications';
 import * as ImagePicker from 'expo-image-picker';
@@ -481,10 +482,16 @@ export default function PetDashboard() {
     const totals = empty();
     const previousTotals = empty();
 
-    // Semana atual: 7 dias até hoje (i=6..0)
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
+    // Semana atual: domingo→sábado da semana corrente (pt-BR).
+    // Antes era janela rolante de 7 dias terminando hoje, o que dava
+    // range "Sáb→Sex" se o usuário abrisse na sexta — confunde + não
+    // bate com a noção brasileira de "semana".
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay()); // anda até o domingo
+    weekStart.setHours(0, 0, 0, 0);
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekStart);
+      d.setDate(weekStart.getDate() + i);
       const ds = tsToLocalYMD(d.getTime());
       const dayLogs = actionHistory.filter(
         (l) => new Date(l.timestamp).toISOString().slice(0, 10) === ds,
@@ -509,10 +516,12 @@ export default function PetDashboard() {
       });
     }
 
-    // Semana anterior: 7 dias entre 13 e 7 dias atrás (i=13..7)
-    for (let i = 13; i >= 7; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
+    // Semana anterior: o domingo→sábado anterior
+    const prevStart = new Date(weekStart);
+    prevStart.setDate(weekStart.getDate() - 7);
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(prevStart);
+      d.setDate(prevStart.getDate() + i);
       const ds = tsToLocalYMD(d.getTime());
       const dayLogs = actionHistory.filter(
         (l) => new Date(l.timestamp).toISOString().slice(0, 10) === ds,
@@ -526,7 +535,8 @@ export default function PetDashboard() {
       });
     }
 
-    const start = new Date(now); start.setDate(start.getDate() - 6);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
     const fmt = (dt: Date) =>
       `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}`;
 
@@ -549,7 +559,7 @@ export default function PetDashboard() {
 
     return {
       dailyGrid: days,
-      weekLabel: `${fmt(start)} — ${fmt(now)}`,
+      weekLabel: `${fmt(weekStart)} — ${fmt(weekEnd)}`,
       totals,
       previousTotals: hasPreviousData ? previousTotals : undefined,
       previousWeight,
@@ -709,7 +719,7 @@ export default function PetDashboard() {
   const greeting = getSmartGreeting(pet.nome, todayCounts, pet.tipo, isDayComplete, currentHour);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgScreen }}>
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bgScreen }}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24, gap: 16 }}

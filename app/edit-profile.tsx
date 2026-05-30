@@ -1,8 +1,9 @@
 import React, { useState, useCallback } from 'react';
 import {
-  View, Text, TextInput, SafeAreaView,
+  View, Text, TextInput,
   Platform, ScrollView, ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 // Shared element transitions not available in Reanimated v4.1.7 — kept for future upgrade
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -119,7 +120,7 @@ export default function EditProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgScreen }}>
+    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: colors.bgScreen }}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"

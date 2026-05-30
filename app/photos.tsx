@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import {
-  View, Text, SafeAreaView, ScrollView, Image, Modal,
+  View, Text, ScrollView, Image, Modal,
   Pressable, Dimensions, Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, X } from 'lucide-react-native';
@@ -116,7 +117,7 @@ export default function PhotosScreen() {
   const thumbSize = (screenW - paddingH * 2 - gap * (cols - 1)) / cols;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgScreen }}>
+    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: colors.bgScreen }}>
       {/* Header */}
       <View style={{
         flexDirection: 'row',

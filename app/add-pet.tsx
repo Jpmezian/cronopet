@@ -14,9 +14,10 @@
 
 import React, { useState, useCallback } from 'react';
 import {
-  View, Text, TextInput, SafeAreaView, ScrollView,
+  View, Text, TextInput, ScrollView,
   Platform, KeyboardAvoidingView,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
@@ -103,7 +104,7 @@ export default function AddPetScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgScreen }}>
+    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: colors.bgScreen }}>
       {/* Header */}
       <View style={{
         flexDirection: 'row', alignItems: 'center', gap: 12,

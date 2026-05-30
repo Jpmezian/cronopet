@@ -1,7 +1,8 @@
 import React, { useCallback, useMemo, useRef } from 'react';
 import {
-  View, Text, SafeAreaView, ScrollView, Platform,
+  View, Text, ScrollView, Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
@@ -66,7 +67,7 @@ Use meu código *${inviteCode}* quando se cadastrar e a gente ganha 1 mês de Pr
   }, [inviteCode, showToast]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgScreen }}>
+    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: colors.bgScreen }}>
       {/* Header */}
       <View style={{
         flexDirection: 'row', alignItems: 'center',
