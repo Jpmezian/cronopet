@@ -25,10 +25,22 @@ import * as Sentry from '@sentry/react-native';
 // Toda nova feature DEVE adicionar seus eventos aqui antes de chamar `track()`.
 // Limitamos propositalmente a poucos eventos críticos pra não virar lixo.
 
+export type PaywallSource =
+  | 'settings_upgrade_card'
+  | 'home_upgrade_card'
+  | 'history_lock'
+  | 'family_invite'
+  | 'sync_promo'
+  | 'insights_gate'
+  | 'premium_trigger_sheet'
+  | 'onboarding'
+  | 'other';
+
 export type AnalyticsEvent =
   // Onboarding & ativação
   | { name: 'onboarding_started' }
   | { name: 'onboarding_completed'; props: { petType: 'cachorro' | 'gato' | 'outro'; hasPhoto: boolean; hasBirthdate: boolean } }
+  | { name: 'first_pet_added'; props: { source: 'onboarding' | 'manual' } }
   | { name: 'first_action_logged'; props: { actionKey: string; daysSinceOnboarding: number } }
 
   // Engagement core
@@ -39,10 +51,12 @@ export type AnalyticsEvent =
   | { name: 'appointment_added' }
 
   // Premium funnel
-  | { name: 'paywall_viewed'; props: { source: 'settings' | 'history_lock' | 'family_invite' | 'sync_promo' | 'other' } }
+  | { name: 'paywall_viewed'; props: { source: PaywallSource } }
   | { name: 'premium_purchase_started'; props: { plan: 'monthly' | 'yearly' } }
   | { name: 'premium_purchase_completed'; props: { plan: 'monthly' | 'yearly' } }
   | { name: 'premium_purchase_failed'; props: { plan: 'monthly' | 'yearly'; reason: string } }
+  | { name: 'trial_started'; props: { plan: 'monthly' | 'yearly' } }
+  | { name: 'trial_converted'; props: { plan: 'monthly' | 'yearly' } }  // emitido server-side via revenuecat-webhook
   | { name: 'family_invite_created' }
   | { name: 'family_invite_accepted' }
 

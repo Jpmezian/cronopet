@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, TextInput,
   Platform, KeyboardAvoidingView, ScrollView,
@@ -16,6 +16,7 @@ import Animated, {
 import { usePetStore } from '@/store/usePetStore';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { breedsForType, fuzzyBreeds, canonicalizeBreed } from '@/data/breeds';
+import { track } from '@/services/analytics';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { PetPhoto } from '@/components/PetPhoto';
 import { IllustrationWelcome } from '@/components/onboarding/IllustrationWelcome';
@@ -48,6 +49,13 @@ export default function OnboardingScreen() {
 
   const [displayStep, setDisplayStep] = useState<Step>(0);
   const [heroBg,      setHeroBg]      = useState<string>(actionTheme.agua.bg);
+
+  // Funnel entry: dispara 1× quando a tela monta. Só faz sentido na
+  // primeira sessão (guard global redireciona pra (tabs) se já onboardou),
+  // então não filtra por hasOnboarded — é onboarding_started por definição.
+  useEffect(() => {
+    track({ name: 'onboarding_started' });
+  }, []);
 
   const [tipo,        setTipo]        = useState<PetType>('cachorro');
   const [nome,        setNome]        = useState('');

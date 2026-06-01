@@ -132,7 +132,7 @@ export function PremiumTriggerSheet({ trigger, onDismiss }: PremiumTriggerSheetP
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                   onDismiss();
-                  setTimeout(() => router.push('/premium'), 200);
+                  setTimeout(() => router.push({ pathname: '/premium', params: { source: 'premium_trigger_sheet' } }), 200);
                 }}
                 accessible accessibilityRole="button"
                 accessibilityLabel={trigger.cta}

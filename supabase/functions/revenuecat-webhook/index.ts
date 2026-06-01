@@ -53,6 +53,12 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
 const SUPABASE_URL    = Deno.env.get('SUPABASE_URL') ?? '';
 const SERVICE_ROLE    = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 const WEBHOOK_TOKEN   = Deno.env.get('REVENUECAT_WEBHOOK_AUTH_TOKEN') ?? '';
+// Server-side analytics: trial_converted é emitido aqui porque o app
+// pode estar fechado quando o trial vence. Project API Key (phc_) é
+// publishable; usamos a mesma do bundle. POSTHOG_PROJECT_API_KEY pode
+// ser não-setada (fica no-op).
+const POSTHOG_KEY     = Deno.env.get('POSTHOG_PROJECT_API_KEY') ?? '';
+const POSTHOG_HOST    = Deno.env.get('POSTHOG_HOST') ?? 'https://us.i.posthog.com';
 
 // ─── Helpers ──────────────────────────────────────────────────
 
@@ -87,6 +93,48 @@ function logWarn(tag: string, message: string, extra: Record<string, any> = {}):
     message,
     ...extra,
   }));
+}
+
+/** Emite evento server-side no PostHog. No-op se POSTHOG_KEY ausente.
+ *  Não bloqueia o handler — fire-and-forget com timeout curto. */
+async function emitPosthog(
+  distinctId: string,
+  event: string,
+  props: Record<string, unknown>,
+): Promise<void> {
+  if (!POSTHOG_KEY || !distinctId) return;
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 2000);
+    const res = await fetch(`${POSTHOG_HOST}/i/v0/e/`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        api_key: POSTHOG_KEY,
+        event,
+        distinct_id: distinctId,
+        properties: props,
+      }),
+      signal: ctrl.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) {
+      logWarn('posthog_emit_non_2xx', `status=${res.status}`, { event, distinctId });
+    }
+  } catch (err) {
+    logWarn('posthog_emit_failed', err instanceof Error ? err.message : String(err), {
+      event, distinctId,
+    });
+  }
+}
+
+/** Mapeia product_id → plan ('monthly' | 'yearly') pra props consistentes
+ *  com o evento client-side (trial_started). */
+function planFromProductId(productId: string): 'monthly' | 'yearly' | null {
+  const p = productId.toLowerCase();
+  if (p.includes('yearly') || p.includes('annual')) return 'yearly';
+  if (p.includes('monthly')) return 'monthly';
+  return null;
 }
 
 // ─── Mapeamento de payload RC → row local ─────────────────────
@@ -327,6 +375,17 @@ serve(async (req) => {
     // 500 → RC retenta. Erro transitório de DB (network, lock) é
     // legítimo pra retry.
     return json(500, { error: 'upsert_failed' });
+  }
+
+  // ─── Analytics server-side (PostHog) ──────────────────────
+  // Fecha o funnel: client emite trial_started no momento da compra,
+  // server emite trial_converted quando o trial vence e cobra.
+  if (event.type === 'TRIAL_CONVERTED') {
+    const plan = planFromProductId(event.product_id);
+    if (plan) {
+      // Não awaitamos pra não atrasar o ACK pra RC (eles esperam <30s)
+      emitPosthog(event.app_user_id, 'trial_converted', { plan });
+    }
   }
 
   return ok();

@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ChevronLeft, Copy, Check } from 'lucide-react-native';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { SkeletonPremiumDashboard } from '@/components/ui/Skeleton';
@@ -16,7 +16,7 @@ import { signIn, signUp, signOut, getSession } from '@/services/AuthService';
 import { restorePurchases } from '@/services/purchases';
 import { openLegal } from '@/lib/legalLinks';
 import { useToastStore } from '@/store/useToastStore';
-import { track } from '@/services/analytics';
+import { track, type PaywallSource } from '@/services/analytics';
 import {
   checkPasswordStrength, isValidEmail, checkRateLimit,
   recordRateLimitAttempt, clearRateLimit, INPUT_LIMITS,
@@ -142,8 +142,13 @@ export default function PremiumScreen() {
 
   // ── Inicialização ─────────────────────────────────────────
 
+  // Source vem como query param do caller (router.push({ pathname: '/premium',
+  // params: { source: '...' } })). Sem source = 'other' (não-rastreável).
+  const { source: sourceParam } = useLocalSearchParams<{ source?: string }>();
+  const paywallSource: PaywallSource = (sourceParam ?? 'other') as PaywallSource;
+
   useEffect(() => {
-    track({ name: 'paywall_viewed', props: { source: 'other' } });
+    track({ name: 'paywall_viewed', props: { source: paywallSource } });
     (async () => {
       const session = await getSession();
       if (!session) { setView('pitch'); return; }

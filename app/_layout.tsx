@@ -178,6 +178,27 @@ export default function RootLayout() {
   }, [storageReady, recordFirstAppOpen]);
 
   const router = useRouter();
+
+  // ── Recovery deep-link → tela de set-password ─────────────
+  // Quando o user clica no link de recuperação de senha do e-mail,
+  // Supabase abre uma sessão temporária em modo "recovery" e emite
+  // PASSWORD_RECOVERY no onAuthStateChange. Sem este listener, o
+  // user caía em /auth/confirmed → getSession → /(tabs) logado, mas
+  // SEM jeito de trocar a senha (bug reportado por user real).
+  useEffect(() => {
+    let sub: { unsubscribe: () => void } | null = null;
+    (async () => {
+      const supabase = await getSupabase();
+      const { data } = supabase.auth.onAuthStateChange((event) => {
+        if (event === 'PASSWORD_RECOVERY') {
+          router.replace('/auth/reset-password');
+        }
+      });
+      sub = data.subscription;
+    })();
+    return () => sub?.unsubscribe();
+  }, [router]);
+
   const segments = useSegments();
 
   const [isNavigationReady, setIsNavigationReady] = useState(false);
@@ -231,6 +252,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
         <Stack.Screen name="auth" options={{ animation: 'fade' }} />
+        <Stack.Screen name="auth/reset-password" options={{ animation: 'fade', headerShown: false }} />
         <Stack.Screen
           name="add-pet"
           options={{

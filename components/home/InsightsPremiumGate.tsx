@@ -40,7 +40,7 @@ export function InsightsPremiumGate({ insightCount, previewInsight }: InsightsPr
     <ScalePress
       onPress={() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        router.push('/premium');
+        router.push({ pathname: '/premium', params: { source: 'insights_gate' } });
       }}
       accessible
       accessibilityRole="button"

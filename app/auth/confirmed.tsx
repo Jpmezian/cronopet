@@ -44,10 +44,15 @@ export default function AuthConfirmedScreen() {
         if (cancelled) return;
 
         if (data.session?.user) {
-          // Sessão restaurada (PKCE flow ou refresh em curso) — vai
-          // direto pro dashboard. Onboarding guard no _layout decide
-          // se ainda precisa criar pet (hasOnboarded=false).
-          router.replace('/(tabs)');
+          // Sessão restaurada (PKCE flow ou refresh em curso). Se vier
+          // de recovery de senha, o listener global em _layout.tsx
+          // captura PASSWORD_RECOVERY e leva pra /auth/reset-password
+          // antes deste setTimeout disparar. O delay de 150ms dá 1
+          // frame pro listener priorizar.
+          setTimeout(() => {
+            if (cancelled) return;
+            router.replace('/(tabs)');
+          }, 150);
         } else {
           // Email confirmado mas sem sessão local nesse device. Manda
           // pro login pra ele entrar com credenciais agora confirmadas.

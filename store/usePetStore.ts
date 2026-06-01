@@ -873,6 +873,13 @@ export const usePetStore = create<PetStore>()(
 
       // ── Multi-pet (DB-002) ────────────────────────────────────
       addPet: async (profile) => {
+        // Detecta se este é o primeiro pet ANTES do set — necessário
+        // pra emitir first_pet_added apenas uma vez na vida do user.
+        // Source heurístico: se hasOnboarded ainda é false, veio do
+        // fluxo de onboarding; senão, veio da tela "Adicionar pet" manual.
+        const wasEmpty = Object.keys(get().pets).length === 0;
+        const wasOnboardedBeforeAdd = get().hasOnboarded;
+
         const fotoFinal = await persistAndStripPhoto(profile.foto);
         const petId = makeId();
         const newPet: PetProfile = {
@@ -889,6 +896,13 @@ export const usePetStore = create<PetStore>()(
         }));
         // Sync pra cloud (fire-and-forget se logado)
         autoSyncPet(newPet);
+
+        if (wasEmpty) {
+          track({
+            name: 'first_pet_added',
+            props: { source: wasOnboardedBeforeAdd ? 'manual' : 'onboarding' },
+          });
+        }
         return petId;
       },
 

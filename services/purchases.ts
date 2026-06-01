@@ -243,6 +243,7 @@ export async function purchasePackage(plan: PremiumPlan): Promise<{ success: boo
       };
       notifyListeners();
       track({ name: 'premium_purchase_completed', props: { plan } });
+      track({ name: 'trial_started', props: { plan } });  // stub sempre simula trial
       return { success: true, cancelled: false };
     }
     // Em PROD sem chave: não tem como comprar, falha graceful
@@ -261,6 +262,13 @@ export async function purchasePackage(plan: PremiumPlan): Promise<{ success: boo
     cachedInfo = mapCustomerInfo(customerInfo);
     notifyListeners();
     track({ name: 'premium_purchase_completed', props: { plan } });
+    // Funnel: distingue "comprou direto" de "começou trial gratuito".
+    // trial_converted é emitido SERVER-SIDE no revenuecat-webhook quando
+    // o trial vira pago (TRIAL_CONVERTED event) — não dá pra confiar no
+    // cliente porque o app pode estar fechado quando isso acontece.
+    if (cachedInfo.isInTrial) {
+      track({ name: 'trial_started', props: { plan } });
+    }
     return { success: true, cancelled: false };
   } catch (err: unknown) {
     const e = err as { userCancelled?: boolean; code?: string; message?: string };

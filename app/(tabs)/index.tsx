@@ -1059,7 +1059,7 @@ export default function PetDashboard() {
         )}
 
         {/* PRO Card — no final */}
-        <ScalePress onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/premium'); }}>
+        <ScalePress onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/premium', params: { source: 'home_upgrade_card' } }); }}>
           <View style={{
             backgroundColor: colors.textPrimary, borderRadius: 16,
             paddingHorizontal: 16, paddingVertical: 14,
