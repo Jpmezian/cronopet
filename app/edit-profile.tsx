@@ -10,7 +10,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { usePetStore } from '@/store/usePetStore';
 import { useThemeColors } from '@/hooks/useThemeColors';
-import { breedsForType, fuzzyBreeds, canonicalizeBreed } from '@/data/breeds';
+import { canonicalizeBreed, SRD } from '@/data/breeds';
+import { BreedPickerField } from '@/components/ui/BreedPickerField';
 import type { PetType } from '@/types/pet';
 import * as Haptics from 'expo-haptics';
 import { ChevronLeft, Camera } from 'lucide-react-native';
@@ -39,18 +40,22 @@ export default function EditProfileScreen() {
 
   const [nome, setNome]             = useState(pet.nome);
   const [tipo, setTipo]             = useState<PetType>(pet.tipo ?? 'cachorro');
-  const [raca, setRaca]             = useState(pet.raca === 'Sem raça definida' ? '' : pet.raca);
+  const [raca, setRaca]             = useState(
+    // Migração branda: 'Sem raça definida' e Viralata legados → SRD pra
+    // o picker destacar o item correto. Save final ainda passa pelo SRD.
+    pet.raca === 'Sem raça definida' || pet.raca === 'Viralata' || pet.raca === 'Vira-lata'
+      ? SRD : pet.raca,
+  );
   const [foto, setFoto]             = useState<string>(pet.foto);
   const [nascimento, setNascimento] = useState(pet.nascimento ?? '');
   const [notes, setNotes]           = useState(pet.notes ?? '');
   const [saving, setSaving]         = useState(false);
-  const [racaSuggestions, setRacaSuggestions] = useState<string[]>([]);
 
   const isValid = nome.trim().length > 0;
   const hasChanges =
     nome.trim()       !== pet.nome ||
     tipo              !== (pet.tipo ?? 'cachorro') ||
-    raca.trim()       !== (pet.raca === 'Sem raça definida' ? '' : pet.raca) ||
+    raca.trim()       !== (pet.raca === 'Sem raça definida' ? SRD : pet.raca) ||
     foto              !== pet.foto ||
     nascimento.trim() !== (pet.nascimento ?? '') ||
     notes.trim()      !== (pet.notes ?? '');
@@ -59,16 +64,7 @@ export default function EditProfileScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setTipo(t);
     setRaca('');
-    setRacaSuggestions([]);
   }, []);
-
-  const handleRacaChange = useCallback((text: string) => {
-    setRaca(text);
-    if (text.length < 2) { setRacaSuggestions([]); return; }
-    // Fuzzy: tolerante a typo ("lavrador"), acento ("siames"), prefixo ("york")
-    const matches = fuzzyBreeds(text, tipo, 5);
-    setRacaSuggestions(matches.map((m) => m.value));
-  }, [tipo]);
 
   const handlePickPhoto = useCallback(async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -91,7 +87,7 @@ export default function EditProfileScreen() {
       await updatePetProfile(
         nome.trim(),
         tipo,
-        racaFinal || 'Sem raça definida',
+        racaFinal || SRD,
         foto,
         nascimento.trim() || undefined,
       );
@@ -238,43 +234,15 @@ export default function EditProfileScreen() {
             </View>
           </View>
 
-          {/* Raça */}
+          {/* Raça — seletor (BreedPickerField). Tipo='outro' renderiza TextInput livre. */}
           <View>
-            <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 14, marginBottom: 8 }}>
-              Raça <Text style={{ color: colors.textTertiary, fontWeight: '400' }}>(opcional)</Text>
-            </Text>
-            <TextInput
-              value={raca} onChangeText={handleRacaChange}
-              placeholder={
-                tipo === 'cachorro' ? 'Ex: Golden Retriever, Viralata...'
-                : tipo === 'gato' ? 'Ex: Siamês, Persa...'
-                : 'Ex: Coelho, Hamster...'
-              }
-              placeholderTextColor={colors.textTertiary}
-              returnKeyType="done" onSubmitEditing={isValid ? handleSave : undefined}
-              autoCapitalize="words" autoCorrect={false} maxLength={40}
-              style={inputStyle}
+            <BreedPickerField
+              label="Raça (opcional)"
+              species={tipo}
+              value={raca}
+              onChange={setRaca}
+              petName={nome}
             />
-            {racaSuggestions.length > 0 && (
-              <View style={{
-                backgroundColor: colors.bgCard, borderRadius: 12, marginTop: 4,
-                borderWidth: 1, borderColor: colors.border, overflow: 'hidden',
-                ...(Platform.OS === 'android' ? { elevation: 4 } : {}),
-              }}>
-                {racaSuggestions.map((s, i) => (
-                  <ScalePress
-                    key={s} onPress={() => { setRaca(s); setRacaSuggestions([]); }}
-                    style={{
-                      paddingHorizontal: 16, paddingVertical: 12,
-                      borderBottomWidth: i < racaSuggestions.length - 1 ? 1 : 0,
-                      borderBottomColor: colors.border,
-                    }}
-                  >
-                    <Text style={{ color: colors.textPrimary, fontSize: 15 }}>{s}</Text>
-                  </ScalePress>
-                ))}
-              </View>
-            )}
           </View>
 
           {/* Data de nascimento */}

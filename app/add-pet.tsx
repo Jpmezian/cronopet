@@ -24,7 +24,8 @@ import { useRouter } from 'expo-router';
 import { Camera, ChevronLeft, Check } from 'lucide-react-native';
 import { usePetStore } from '@/store/usePetStore';
 import { useThemeColors } from '@/hooks/useThemeColors';
-import { fuzzyBreeds, canonicalizeBreed } from '@/data/breeds';
+import { canonicalizeBreed, SRD } from '@/data/breeds';
+import { BreedPickerField } from '@/components/ui/BreedPickerField';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { PetPhoto } from '@/components/PetPhoto';
 import { BirthdayPickerField } from '@/components/ui/BirthdayPickerField';
@@ -48,19 +49,11 @@ export default function AddPetScreen() {
   const [raca,        setRaca]        = useState('');
   const [nascimento,  setNascimento]  = useState('');
   const [foto,        setFoto]        = useState<string | null>(null);
-  const [racaSuggestions, setRacaSuggestions] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   const darkCardBg = isDark ? colors.bgCard : colors.textPrimary;
   const tipoLabel  = tipo === 'cachorro' ? 'cachorro' : tipo === 'gato' ? 'gato' : 'pet';
   const isValid    = nome.trim().length > 0 && !saving;
-
-  const handleRacaChange = useCallback((text: string) => {
-    setRaca(text);
-    if (text.length < 2) { setRacaSuggestions([]); return; }
-    const matches = fuzzyBreeds(text, tipo, 5);
-    setRacaSuggestions(matches.map((m) => m.value));
-  }, [tipo]);
 
   const handlePickPhoto = useCallback(async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -82,7 +75,7 @@ export default function AddPetScreen() {
       await addPet({
         nome: nome.trim(),
         tipo,
-        raca: racaFinal || 'Sem raça definida',
+        raca: racaFinal || SRD,
         foto: foto ?? '',
         nascimento: nascimento.trim() || undefined,
       });
@@ -165,7 +158,7 @@ export default function AddPetScreen() {
               return (
                 <ScalePress
                   key={opt.tipo}
-                  onPress={() => { setTipo(opt.tipo); setRaca(''); setRacaSuggestions([]); }}
+                  onPress={() => { setTipo(opt.tipo); setRaca(''); }}
                   accessibilityRole="button"
                   accessibilityLabel={opt.label}
                   accessibilityState={{ selected }}
@@ -206,41 +199,16 @@ export default function AddPetScreen() {
             maxLength={50}
           />
 
-          {/* Raça */}
-          <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500', marginBottom: 6 }}>
-            Raça (opcional)
-          </Text>
-          <TextInput
-            value={raca}
-            onChangeText={handleRacaChange}
-            placeholder="Labrador, SRD, Maine Coon..."
-            placeholderTextColor={colors.textTertiary}
-            style={inputStyle}
-            autoCapitalize="words"
-            returnKeyType="next"
-            accessibilityLabel="Raça do pet"
-          />
-
-          {/* Sugestões de raça */}
-          {racaSuggestions.length > 0 && (
-            <View style={{
-              backgroundColor: colors.bgCard, borderRadius: 12,
-              marginTop: -8, marginBottom: 12, overflow: 'hidden',
-            }}>
-              {racaSuggestions.map((s) => (
-                <ScalePress
-                  key={s}
-                  onPress={() => { setRaca(s); setRacaSuggestions([]); }}
-                  style={{
-                    paddingHorizontal: 14, paddingVertical: 12,
-                    borderBottomWidth: 1, borderBottomColor: colors.bgInput,
-                  }}
-                >
-                  <Text style={{ color: colors.textPrimary, fontSize: 14 }}>{s}</Text>
-                </ScalePress>
-              ))}
-            </View>
-          )}
+          {/* Raça — seletor (BreedPickerField). Tipo='outro' renderiza TextInput livre. */}
+          <View style={{ marginBottom: 12 }}>
+            <BreedPickerField
+              label="Raça (opcional)"
+              species={tipo}
+              value={raca}
+              onChange={setRaca}
+              petName={nome}
+            />
+          </View>
 
           {/* Nascimento — picker nativo (DB-002 follow-up):
               evita erro de formato comum no TextInput livre 'YYYY-MM-DD'. */}

@@ -15,7 +15,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { usePetStore } from '@/store/usePetStore';
 import { useThemeColors } from '@/hooks/useThemeColors';
-import { breedsForType, fuzzyBreeds, canonicalizeBreed } from '@/data/breeds';
+import { canonicalizeBreed, SRD } from '@/data/breeds';
+import { BreedPickerField } from '@/components/ui/BreedPickerField';
 import { track } from '@/services/analytics';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { PetPhoto } from '@/components/PetPhoto';
@@ -62,7 +63,6 @@ export default function OnboardingScreen() {
   const [raca,        setRaca]        = useState('');
   const [nascimento,  setNascimento]  = useState('');
   const [foto,        setFoto]        = useState<string | null>(null);
-  const [racaSuggestions, setRacaSuggestions] = useState<string[]>([]);
 
   // ── Animação de cross-fade ────────────────────────────────
   const illustrationOpacity = useSharedValue(1);
@@ -113,14 +113,6 @@ export default function OnboardingScreen() {
   }, [illustrationOpacity, isReduced]);
 
   // ── Handlers ─────────────────────────────────────────────
-  const handleRacaChange = useCallback((text: string) => {
-    setRaca(text);
-    if (text.length < 2) { setRacaSuggestions([]); return; }
-    // Fuzzy: tolerante a typo, acento, ordem de palavra
-    const matches = fuzzyBreeds(text, tipo, 5);
-    setRacaSuggestions(matches.map((m) => m.value));
-  }, [tipo]);
-
   const handlePickPhoto = useCallback(async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) return;
@@ -132,15 +124,16 @@ export default function OnboardingScreen() {
 
   const handleFinish = useCallback(async () => {
     if (!nome.trim()) return;
-    // Auto-corrige raça se tutor digitou algo próximo de uma raça conhecida
-    // Ex: "Lavrador" → "Labrador Retriever". Se nada bate, mantém como digitado.
+    // Raça vem do BreedPicker (já canônica) ou de texto livre quando user
+    // toca "Outro". Pra retrocompat com pets pré-picker, ainda passa pelo
+    // canonicalizeBreed (idempotente em raças já canônicas).
     const racaInput = raca.trim();
     const canonical = racaInput ? canonicalizeBreed(racaInput, tipo) : null;
     const racaFinal = canonical ?? racaInput ?? '';
     // Foto vazia ("") quando user não escolhe → PetPhoto renderiza fallback
     // estilizado em toda a UI. Antes ficava DEFAULT_FOTO Unsplash (rato).
     await completeOnboarding(
-      nome.trim(), tipo, racaFinal || 'Sem raça definida',
+      nome.trim(), tipo, racaFinal || SRD,
       foto ?? '',
       nascimento.trim() || undefined,
     );
@@ -211,7 +204,7 @@ export default function OnboardingScreen() {
             {displayStep === 2 && (
               <StepPetType
                 tipo={tipo}
-                onSelect={(t) => { setTipo(t); setRaca(''); setRacaSuggestions([]); }}
+                onSelect={(t) => { setTipo(t); setRaca(''); }}
                 onNext={() => animateToStep(3)}
               />
             )}
@@ -219,10 +212,8 @@ export default function OnboardingScreen() {
               <StepPetProfile
                 tipo={tipo}
                 nome={nome} raca={raca} foto={foto} nascimento={nascimento}
-                racaSuggestions={racaSuggestions}
                 onChangeName={setNome}
-                onChangeRaca={handleRacaChange}
-                onSelectRaca={(r) => { setRaca(r); setRacaSuggestions([]); }}
+                onChangeRaca={setRaca}
                 onChangeNascimento={setNascimento}
                 onPickPhoto={handlePickPhoto}
                 onFinish={handleFinish}
@@ -454,18 +445,16 @@ function StepPetType({
 interface StepPetProfileProps {
   tipo: PetType;
   nome: string; raca: string; foto: string | null; nascimento: string;
-  racaSuggestions: string[];
   onChangeName: (v: string) => void;
   onChangeRaca: (v: string) => void;
-  onSelectRaca: (v: string) => void;
   onChangeNascimento: (v: string) => void;
   onPickPhoto: () => void;
   onFinish: () => void;
 }
 
 function StepPetProfile({
-  tipo, nome, raca, foto, nascimento, racaSuggestions,
-  onChangeName, onChangeRaca, onSelectRaca, onChangeNascimento, onPickPhoto, onFinish,
+  tipo, nome, raca, foto, nascimento,
+  onChangeName, onChangeRaca, onChangeNascimento, onPickPhoto, onFinish,
 }: StepPetProfileProps) {
   const { colors, isDark } = useThemeColors();
   const isReduced  = useReducedMotion();
@@ -540,39 +529,17 @@ function StepPetProfile({
         accessibilityLabel="Nome do pet"
       />
 
-      {/* Raça */}
-      <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500', marginBottom: 6 }}>
-        Raça (opcional)
-      </Text>
-      <TextInput
-        value={raca}
-        onChangeText={onChangeRaca}
-        placeholder="Labrador, SRD, Maine Coon..."
-        placeholderTextColor={colors.textTertiary}
-        style={inputStyle}
-        autoCapitalize="words"
-        returnKeyType="next"
-        accessible
-        accessibilityLabel="Raça do pet"
-      />
-
-      {/* Sugestões de raça */}
-      {racaSuggestions.length > 0 && (
-        <View style={{
-          backgroundColor: colors.bgCard, borderRadius: 12,
-          marginTop: -8, marginBottom: 12, overflow: 'hidden',
-        }}>
-          {racaSuggestions.map((s) => (
-            <ScalePress
-              key={s}
-              onPress={() => onSelectRaca(s)}
-              style={{ paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.bgInput }}
-            >
-              <Text style={{ color: colors.textPrimary, fontSize: 14 }}>{s}</Text>
-            </ScalePress>
-          ))}
-        </View>
-      )}
+      {/* Raça — seletor full-screen com SRD e Outro. Pra tipo='outro',
+          renderiza TextInput livre direto. */}
+      <View style={{ marginBottom: 12 }}>
+        <BreedPickerField
+          label="Raça (opcional)"
+          species={tipo}
+          value={raca}
+          onChange={onChangeRaca}
+          petName={nome}
+        />
+      </View>
 
       {/* Nascimento — picker nativo (DB-002 follow-up):
           evita erro de formato comum no TextInput livre 'YYYY-MM-DD'. */}

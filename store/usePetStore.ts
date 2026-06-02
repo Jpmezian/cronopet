@@ -1225,6 +1225,32 @@ export const usePetStore = create<PetStore>()(
           });
         }
 
+        // UX-F1 (2026-06-02): pets com raca = 'Viralata' / 'Vira-lata'
+        // viram 'SRD' (Sem Raça Definida). Esses nomes vinham do TextInput
+        // livre legado e não estão mais na lista do BreedPicker. Idempotente.
+        const LEGACY_SRD_RACAS = new Set(['Viralata', 'Vira-lata']);
+        let racaMigrated = 0;
+        if (state.pets) {
+          for (const id of Object.keys(state.pets)) {
+            const p = state.pets[id];
+            if (p && LEGACY_SRD_RACAS.has(p.raca)) {
+              state.pets[id] = { ...p, raca: 'SRD' };
+              racaMigrated++;
+            }
+          }
+        }
+        if (state.pet && LEGACY_SRD_RACAS.has(state.pet.raca)) {
+          state.pet = { ...state.pet, raca: 'SRD' };
+        }
+        if (racaMigrated > 0) {
+          Sentry.addBreadcrumb({
+            category: 'migration',
+            message:  'legacy_viralata_to_srd',
+            level:    'info',
+            data:     { count: racaMigrated },
+          });
+        }
+
         state.setHasHydrated(true);
       },
       partialize: (state) => {
