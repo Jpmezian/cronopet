@@ -70,10 +70,23 @@ export default function OnboardingScreen() {
     opacity: illustrationOpacity.value,
   }));
 
-  // R5-2: reduzido de 0.46 → 0.36 no welcome/petType. O bottom sheet
-  // estava com muito espaço sobrando porque o hero tomava quase metade
-  // da tela. Agora 36% no step 0 e 2, 30% nos steps com form denso (1 e 3).
-  const HERO_H = height * (displayStep === 1 || displayStep === 3 ? 0.30 : 0.36);
+  // ── Hero adapta a teclado ─────────────────────────────────
+  // R5-2: 0.46 → 0.36 (welcome/petType) e 0.30 (form steps).
+  // 2026-06-02: quando o teclado abre nos steps de form (1 Auth e
+  // 3 PetProfile), encolhe pra 0.12 (≈60px) pra liberar espaço.
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  useEffect(() => {
+    const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const onShow = Keyboard.addListener(showEvt, () => setKeyboardOpen(true));
+    const onHide = Keyboard.addListener(hideEvt, () => setKeyboardOpen(false));
+    return () => { onShow.remove(); onHide.remove(); };
+  }, []);
+  const isFormStep = displayStep === 1 || displayStep === 3;
+  const heroRatio = isFormStep
+    ? (keyboardOpen ? 0.12 : 0.30)
+    : 0.36;
+  const HERO_H = height * heroRatio;
 
   const HERO_COLORS = [
     actionTheme.agua.bg,      // 0 Welcome

@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import {
   View, Text, TextInput,
   Platform, ScrollView, ActivityIndicator,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 // Shared element transitions not available in Reanimated v4.1.7 — kept for future upgrade
@@ -121,6 +122,12 @@ export default function EditProfileScreen() {
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: colors.bgScreen }}>
+      {/* KAV estava ausente: 4 TextInputs ficavam atrás do teclado em
+          telas pequenas. Mesmo padrão de add-pet / nutrition. */}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
@@ -342,6 +349,7 @@ export default function EditProfileScreen() {
           </ScalePress>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

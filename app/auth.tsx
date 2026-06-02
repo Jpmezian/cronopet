@@ -12,7 +12,7 @@
 // hasOnboarded && !hasSession.
 
 import React from 'react';
-import { View, useWindowDimensions } from 'react-native';
+import { View, useWindowDimensions, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useThemeColors } from '@/hooks/useThemeColors';
@@ -24,31 +24,42 @@ export default function AuthScreen() {
   const { colors, actionTheme } = useThemeColors();
   const { height } = useWindowDimensions();
 
-  const HERO_H = height * 0.30;
+  // HERO_H reduzido de 0.30 → 0.20 (2026-06-02): no re-login standalone
+  // o user precisa SÓ logar — hero é puro decorativo. Hero pequeno deixa
+  // mais espaço pros campos quando o teclado abre.
+  const HERO_H = height * 0.20;
   const heroBg = actionTheme.xixi.bg;
 
   return (
     <View style={{ flex: 1, backgroundColor: heroBg }}>
       <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1 }}>
-        <View style={{ height: HERO_H, alignItems: 'center', justifyContent: 'center' }}>
-          <IllustrationWelcome />
-        </View>
+        {/* KeyboardAvoidingView estava AUSENTE nesta tela (bug reportado):
+            teclado cobria os campos no re-login standalone. Onboarding já
+            tem KAV; esta tela compartilha o StepAuth mas estava nua. */}
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <View style={{ height: HERO_H, alignItems: 'center', justifyContent: 'center' }}>
+            <IllustrationWelcome />
+          </View>
 
-        <View style={{
-          flex: 1,
-          backgroundColor: colors.bgScreen,
-          borderTopLeftRadius: 28,
-          borderTopRightRadius: 28,
-        }}>
-          <StepAuth
-            onSuccess={() => router.replace('/(tabs)')}
-            // No standalone, "voltar" não tem pra onde ir — esconde via
-            // navegação ignorada (botão Voltar mostra mas no-op confortável)
-            onBack={() => { /* no-op: sem onde voltar */ }}
-          />
-          {/* No standalone, hadCloudPet é ignorado: já está pós-onboarding,
-              vai direto pras tabs com store hidratado pelo AuthService. */}
-        </View>
+          <View style={{
+            flex: 1,
+            backgroundColor: colors.bgScreen,
+            borderTopLeftRadius: 28,
+            borderTopRightRadius: 28,
+          }}>
+            <StepAuth
+              onSuccess={() => router.replace('/(tabs)')}
+              // No standalone, "voltar" não tem pra onde ir — esconde via
+              // navegação ignorada (botão Voltar mostra mas no-op confortável)
+              onBack={() => { /* no-op: sem onde voltar */ }}
+            />
+            {/* No standalone, hadCloudPet é ignorado: já está pós-onboarding,
+                vai direto pras tabs com store hidratado pelo AuthService. */}
+          </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </View>
   );
