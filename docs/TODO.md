@@ -99,6 +99,38 @@ secundária comprometida.
 
 ---
 
+### [P2] Implementar sincronização cloud de fotos
+**Origem:** Sprint Documentação Visual — Artefato 3 (C4 Container, 2026-06-03).
+
+**Problema:** fotos dos pets e das ações são persistidas APENAS em
+`Paths.document.uri` (Expo FileSystem, sandbox local do app) via
+`persistAndStripPhoto` em `store/usePetStore.ts:210`. Supabase Storage
+NÃO é usado (confirmado por triangulação no Artefato 3: zero
+ocorrências de `supabase.storage.from` em todo o codebase). Backup via
+iCloud do iOS pode mitigar mas não está garantido — depende de
+configuração e do path estar incluído no backup.
+
+**Impacto:** se o usuário trocar de celular, reinstalar o app, ou
+limpar dados, **perde TODAS as fotos do pet e das ações**. UX crítica
+em app de pet care (foto do pet é elemento emocional central).
+
+**Ação:** avaliar 3 caminhos:
+- (a) Supabase Storage com bucket por user_id + RLS (mesma policy
+  pattern das outras tabelas; custo: $0.021/GB/mês)
+- (b) Compactar e armazenar base64 em coluna Postgres (limita
+  resolução; simples; reaproveita backup nativo do DB)
+- (c) Solução third-party (Cloudinary free tier, Bunny CDN, ImageKit)
+
+Decisão precisa pesar: custo Storage vs UX de perda de dados vs
+complexidade de migração (toda foto existente já em FileSystem
+local precisa ser uploadada na primeira execução pós-feature).
+
+**Arquivos:** `store/usePetStore.ts:210` (`persistAndStripPhoto`),
+`lib/photoPath.ts`, qualquer caller que lê URI de foto (Home, edit-pet,
+weekly card).
+
+---
+
 ### [P2] Customizar templates de e-mail Supabase pra pt-BR
 **Origem:** Pré-Launch Sprint (Frente 4 audit, 2026-06-01).
 
