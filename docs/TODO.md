@@ -8,6 +8,97 @@
 
 ## Aberto
 
+### [P1] Investigar duplicação de `premium_purchase_completed`
+**Origem:** Sprint Documentação Visual — Artefato 2 (Conversion Funnel, 2026-06-02).
+
+**Problema:** evento `premium_purchase_completed` é trackeado em 3 lugares:
+`services/purchases.ts:245` (stub DEV), `services/purchases.ts:264` (compra
+real após `Purchases.purchasePackage`), e `store/usePetStore.ts:1136`
+(callback de `customerInfoUpdateListener`). Em compra real, o evento pode
+ser disparado 2× — `purchases.ts:264` durante o handler de compra, e
+`usePetStore.ts:1136` quando o listener de customerInfo dispara em
+sequência. **Impacto:** métrica de receita inflada em PostHog, decisões
+de growth baseadas em volume errado.
+
+**Ação:** confirmar via PostHog (filtrar `event_type=premium_purchase_completed`
+agrupado por `distinct_id` + janela de 1 min — se aparecer 2 events por
+user, está duplicado). Remover o redundante. Sugestão: manter no listener
+de customerInfo (mais confiável, captura também restauros) e remover do
+handler imperativo.
+
+**Arquivos:** `services/purchases.ts:245,264`, `store/usePetStore.ts:1136`.
+
+---
+
+### [P2] Resiliência do `trial_converted` server-side
+**Origem:** Sprint Documentação Visual — Artefato 2 (Conversion Funnel, 2026-06-02).
+
+**Problema:** `supabase/functions/revenuecat-webhook/index.ts:387` emite
+`trial_converted` para o PostHog via fetch direto com timeout 2s, em modo
+fire-and-forget (sem await). Se o PostHog ingest estiver lento ou indisponível,
+o evento é perdido silenciosamente. **Impacto:** subestima a métrica mais
+importante do funil (conversão final de trial → pago), comprometendo análise
+de ROI.
+
+**Ação:** opções (escolher 1):
+- Adicionar retry com backoff exponencial (3 tentativas, 1s/3s/9s)
+- Encolar em tabela Postgres (ex: `analytics_outbox`) com cron de drain
+- Ao falhar, emitir `Sentry.captureMessage('posthog_emit_failed', { event, extra })`
+  pra ter alerta visível em vez de silent miss
+
+**Arquivos:** `supabase/functions/revenuecat-webhook/index.ts:100-145` (helper `emitPosthog`).
+
+---
+
+### [P3] Type drift em `onboarding_completed`
+**Origem:** Sprint Documentação Visual — Artefato 2 (Conversion Funnel, 2026-06-02).
+
+**Problema:** `store/usePetStore.ts:997` chama:
+```ts
+track({ name: 'onboarding_completed', props: { petType: get().pet.tipo, viaHydration: true } as any });
+```
+O `as any` mata o type-check porque `viaHydration` não está declarada no
+TypeScript type do evento (`services/analytics.ts:32`). Risco: prop pode
+sumir num refactor sem aviso do compilador.
+
+**Ação:** ou (a) adicionar `viaHydration?: boolean` ao type do evento em
+`services/analytics.ts`, ou (b) remover do chamador se a prop não tiver
+mais sentido. Recomendação: (a) — `viaHydration` distingue completion
+manual vs vindo de cloud sync, é útil pra analytics.
+
+**Arquivos:** `services/analytics.ts:32`, `store/usePetStore.ts:997`.
+
+---
+
+### [P3] Instrumentar 10 eventos enum dead
+**Origem:** Sprint Documentação Visual — Artefato 2 (Conversion Funnel, 2026-06-02).
+
+**Problema:** 10 eventos existem no `AnalyticsEvent` enum mas nunca são
+disparados em lugar nenhum (nem cliente, nem servidor). Telemetria
+secundária comprometida.
+
+**Categorias por prioridade:**
+
+**Grupo A — CRÍTICOS pós-launch (Family Sharing):**
+- `family_invite_created` — `app/invite.tsx` (ATENÇÃO: rota órfã, ver Artefato 1; depende de destravar a rota)
+- `family_invite_accepted` — `app/premium.tsx:313` (no `joinFamilyGroup`)
+
+**Grupo B — HIGIENE de telemetria (Médico):**
+- `vaccine_added` — `app/(tabs)/medical.tsx` (save de vacina)
+- `appointment_added` — `app/(tabs)/medical.tsx` (save de consulta)
+- `weight_logged` — `app/(tabs)/medical.tsx` (save de peso)
+
+**Grupo C — OBSERVABILIDADE:**
+- `error_shown` — `components/ui/ToastRenderer` (no path de `type === 'error'`)
+- `sync_failed` — `services/SyncService` (catch blocks)
+- `notifications_enabled` — `components/ui/NotificationAskSheet` (aceite)
+- `notifications_disabled` — `app/settings.tsx` (toggle off)
+- `account_deleted` — `app/settings.tsx:118` (após `deleteRemoteAccount` OK)
+
+**Esforço:** ~30 min cada evento (track call + props). Total ~5h.
+
+---
+
 ### [P2] Customizar templates de e-mail Supabase pra pt-BR
 **Origem:** Pré-Launch Sprint (Frente 4 audit, 2026-06-01).
 
