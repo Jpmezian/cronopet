@@ -239,6 +239,31 @@ diff visual sutil — testar com smoke real antes de mergear. Esforço: ~2h
 
 ---
 
+### [P3] WeeklyReportCard.tsx em 751 linhas (5x o limite de 150 do CLAUDE.md)
+**Origem:** Sprint share visual refresh — 2026-06-03.
+
+**Problema:** o componente `components/ui/WeeklyReportCard.tsx` passou a ter
+751 linhas após o refresh visual (HTML cronopet-semana-bidu adaptado +
+streak hero + 7-day grid + delta vs semana anterior + weekIsEmpty
+motivacional + stats 2×3 + highlight + footer). Está 5× acima do limite
+de 150 linhas que o CLAUDE.md define como teto saudável de componente.
+
+**Ação:** split em sub-components numa sprint dedicada de refactor.
+Candidatos:
+- `StreakHero` (streak number + flame + label)
+- `WeekGrid` (7 dias Dom→Sáb com dot ✓/·)
+- `StatCard` (já existe inline; promover pra arquivo próprio)
+- `HighlightCard` (estrela + label + valor do destaque)
+- `ShareFooter` (logo + cronopet.com.br)
+
+Após split, cada pedaço fica em `components/share/` (nova pasta) com
+testes visuais no Sandbox. WeeklyReportCard vira orquestrador < 150
+linhas.
+
+**Arquivos:** `components/ui/WeeklyReportCard.tsx` (split alvo).
+
+---
+
 ### [BAIXO] Catalogar DateTimeField no Sandbox
 **Origem:** Fix Sprint P1 (commit `80cd47b`) — Bug 2 (Date picker).
 

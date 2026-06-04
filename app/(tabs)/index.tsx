@@ -50,7 +50,7 @@ import { ChipGroup, QuickAmount } from '@/components/ui/ChipGroup';
 import type { ChipOption } from '@/components/ui/ChipGroup';
 import { WeeklyReportCard } from '@/components/ui/WeeklyReportCard';
 import type { DayData } from '@/components/ui/WeeklyReportCard';
-import { captureRef } from 'react-native-view-shot';
+import { generateStoryImage } from '@/services/socialCardCapture';
 import * as Sharing from 'expo-sharing';
 import { Share2 } from 'lucide-react-native';
 import { useToastStore } from '@/store/useToastStore';
@@ -477,8 +477,8 @@ export default function PetDashboard() {
     const days: DayData[] = [];
     const DAYS  = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-    type Totals = { meals: number; water: number; walks: number; walkDuration: number; foodGrams: number };
-    const empty = (): Totals => ({ meals: 0, water: 0, walks: 0, walkDuration: 0, foodGrams: 0 });
+    type Totals = { meals: number; water: number; walks: number; walkDuration: number; foodGrams: number; banhos: number };
+    const empty = (): Totals => ({ meals: 0, water: 0, walks: 0, walkDuration: 0, foodGrams: 0, banhos: 0 });
     const totals = empty();
     const previousTotals = empty();
 
@@ -507,9 +507,10 @@ export default function PetDashboard() {
         actions: acts,
         isComplete: cmplt,
       });
-      totals.meals += dayLogs.filter((l) => l.key === 'comida').length;
-      totals.water += dayLogs.filter((l) => l.key === 'agua').length;
-      totals.walks += dayLogs.filter((l) => l.key === 'passeio').length;
+      totals.meals  += dayLogs.filter((l) => l.key === 'comida').length;
+      totals.water  += dayLogs.filter((l) => l.key === 'agua').length;
+      totals.walks  += dayLogs.filter((l) => l.key === 'passeio').length;
+      totals.banhos += dayLogs.filter((l) => l.key === 'banho').length;
       dayLogs.forEach((l) => {
         if (l.key === 'passeio' && l.duration) totals.walkDuration += l.duration;
         if (l.key === 'comida' && l.quantity) totals.foodGrams += l.quantity;
@@ -526,9 +527,10 @@ export default function PetDashboard() {
       const dayLogs = actionHistory.filter(
         (l) => new Date(l.timestamp).toISOString().slice(0, 10) === ds,
       );
-      previousTotals.meals += dayLogs.filter((l) => l.key === 'comida').length;
-      previousTotals.water += dayLogs.filter((l) => l.key === 'agua').length;
-      previousTotals.walks += dayLogs.filter((l) => l.key === 'passeio').length;
+      previousTotals.meals  += dayLogs.filter((l) => l.key === 'comida').length;
+      previousTotals.water  += dayLogs.filter((l) => l.key === 'agua').length;
+      previousTotals.walks  += dayLogs.filter((l) => l.key === 'passeio').length;
+      previousTotals.banhos += dayLogs.filter((l) => l.key === 'banho').length;
       dayLogs.forEach((l) => {
         if (l.key === 'passeio' && l.duration) previousTotals.walkDuration += l.duration;
         if (l.key === 'comida' && l.quantity) previousTotals.foodGrams += l.quantity;
@@ -560,6 +562,7 @@ export default function PetDashboard() {
     return {
       dailyGrid: days,
       weekLabel: `${fmt(weekStart)} — ${fmt(weekEnd)}`,
+      weekStart,
       totals,
       previousTotals: hasPreviousData ? previousTotals : undefined,
       previousWeight,
@@ -570,14 +573,19 @@ export default function PetDashboard() {
     if (!weeklyCardRef.current) return;
     setSharingWeekly(true);
     try {
-      const uri = await captureRef(weeklyCardRef.current, { format: 'jpg', quality: 0.92 });
+      const { uri } = await generateStoryImage(weeklyCardRef, {
+        // pet.id é opcional na PetProfile (back-compat pré DB-002).
+        // Fallback estável pro caso de pets locais legacy ainda não migrados.
+        petId: pet.id ?? 'unknown',
+        weekStart: weeklyData.weekStart,
+      });
       await Sharing.shareAsync(uri, { mimeType: 'image/jpeg' });
     } catch {
       showToast('error', 'Não foi possível compartilhar.');
     } finally {
       setSharingWeekly(false);
     }
-  }, [showToast]);
+  }, [showToast, pet.id, weeklyData.weekStart]);
 
   // ── Urgência temporal ─────────────────────────────────────
   // Calcula o último timestamp de cada ação (global, não só hoje)
@@ -1577,6 +1585,10 @@ export default function PetDashboard() {
           ref={weeklyCardRef}
           petNome={pet.nome}
           petFoto={pet.foto}
+          petTipo={[
+            pet.raca || (pet.tipo === 'cachorro' ? 'Cachorro' : pet.tipo === 'gato' ? 'Gato' : 'Pet'),
+            pet.nascimento ? getPetAge(pet.nascimento) : null,
+          ].filter(Boolean).join(' · ')}
           weekLabel={weeklyData.weekLabel}
           dailyGrid={weeklyData.dailyGrid}
           totals={weeklyData.totals}
