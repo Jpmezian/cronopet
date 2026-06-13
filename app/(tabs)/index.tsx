@@ -1592,10 +1592,7 @@ export default function PetDashboard() {
           weekLabel={weeklyData.weekLabel}
           dailyGrid={weeklyData.dailyGrid}
           totals={weeklyData.totals}
-          previousTotals={weeklyData.previousTotals}
           streak={streak}
-          latestWeight={latestWeight}
-          previousWeight={weeklyData.previousWeight}
         />
       </View>
 

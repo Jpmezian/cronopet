@@ -670,11 +670,8 @@ function ShareCardsPreview() {
             petFoto={pet.foto}
             weekLabel="10/04 — 16/04"
             dailyGrid={dailyGrid}
-            totals={{ meals: 14, water: 18, walks: 6, walkDuration: 210, foodGrams: 1450 }}
-            previousTotals={{ meals: 11, water: 14, walks: 5, walkDuration: 150, foodGrams: 1200 }}
+            totals={{ meals: 14, water: 18, walks: 6, walkDuration: 210, foodGrams: 1450, banhos: 1, medicamentos: 0 }}
             streak={6}
-            latestWeight={5.2}
-            previousWeight={5.0}
           />
         </View>
       </View>

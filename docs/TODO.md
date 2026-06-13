@@ -8,6 +8,56 @@
 
 ## Aberto
 
+### [P0] action_logs sync silent fail — observabilidade + outbox
+**Origem:** Hotfix WeeklyReportCard (Bug 2 investigado, 2026-06-13).
+
+**Problema:** `services/SyncService.ts:388-394` (`autoSyncActionLog`) tem 6
+caminhos de falha silenciosa que perdem dados sem alertar Sentry e sem
+retry:
+
+1. Sessão Supabase expirou / null → `getSessionUser` retorna null → no-op
+2. User sem `family_groups` link → no-op
+3. Network error em `getSessionUser` → catch silencioso
+4. `client()` init falha → captura mas não retenta
+5. `pushActionLog` timeout 10s → captura warning, log fica só local
+6. `pushActionLog` retorna error PostgREST (RLS/FK/etc) → captura mas
+   não retenta
+
+**Evidência (banco prod, 2026-06-13):**
+- 9 users criaram conta, **3 têm action_logs** (33%)
+- 6 users com conta SEM nenhum log no servidor
+- Vinicius (CMO, 2 pets): Bobby tem 11 logs, **Nigga tem 0**
+- Esses logs provavelmente existem no MMKV local dos friends mas o
+  servidor nunca recebeu
+
+**Mesmo padrão em:** `autoSyncPet`, `autoSyncDeleteActionLog`,
+`autoSyncVaccine`, `autoSyncAppointment`, `autoSyncWeight`,
+`autoSyncMedicalEvent` (todos `services/SyncService.ts:380-430`).
+
+**Ação A (~30 min — observability ASAP):**
+Substituir todos os `if (!ctx) return;` por `Sentry.captureMessage` +
+substituir `.catch(() => {})` por `.catch((err) =>
+Sentry.captureException(err))`. Não conserta o bug mas revela escala
+real.
+
+**Ação B (~1 dia — fix definitivo):**
+Criar `lib/syncOutbox.ts` com fila persistida em MMKV. Mutações
+falhadas (no-op OU error) caem na fila. Worker periódico (`useEffect`
+no `_layout.tsx` a cada 30s + on session-restored event) drena.
+Counter de attempts max 5 → deadletter. App offline → fila → push
+quando volta online OU re-loga.
+
+**Severidade:** P0. Bloqueia confiança em telemetria + perde dado de
+beta. Sem isso, qualquer decisão baseada em logs do servidor é viesada.
+
+**Arquivos:**
+- `services/SyncService.ts:159-200` (push helpers)
+- `services/SyncService.ts:370-430` (autoSync helpers, getSessionUser)
+- `lib/syncOutbox.ts` (novo, Ação B)
+- `app/_layout.tsx` (drain worker, Ação B)
+
+---
+
 ### [P1] Investigar duplicação de `premium_purchase_completed`
 **Origem:** Sprint Documentação Visual — Artefato 2 (Conversion Funnel, 2026-06-02).
 
@@ -239,14 +289,14 @@ diff visual sutil — testar com smoke real antes de mergear. Esforço: ~2h
 
 ---
 
-### [P3] WeeklyReportCard.tsx em 751 linhas (5x o limite de 150 do CLAUDE.md)
-**Origem:** Sprint share visual refresh — 2026-06-03.
+### [P3] WeeklyReportCard.tsx em 573 linhas (3.8x o limite de 150 do CLAUDE.md)
+**Origem:** Sprint share visual refresh — 2026-06-03, atualizado 2026-06-13.
 
-**Problema:** o componente `components/ui/WeeklyReportCard.tsx` passou a ter
-751 linhas após o refresh visual (HTML cronopet-semana-bidu adaptado +
-streak hero + 7-day grid + delta vs semana anterior + weekIsEmpty
-motivacional + stats 2×3 + highlight + footer). Está 5× acima do limite
-de 150 linhas que o CLAUDE.md define como teto saudável de componente.
+**Problema:** o componente `components/ui/WeeklyReportCard.tsx` está em
+573 linhas após o hotfix 2026-06-13 (decisão CTO #5 removeu streak hero
++ 7-day grid + delta — reduziu de 751 → 573 linhas). Ainda está 3.8×
+acima do limite de 150 linhas que o CLAUDE.md define como teto saudável
+de componente.
 
 **Ação:** split em sub-components numa sprint dedicada de refactor.
 Candidatos:

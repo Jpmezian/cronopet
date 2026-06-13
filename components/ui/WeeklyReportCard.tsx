@@ -1,7 +1,12 @@
 import React, { forwardRef } from 'react';
+import type { ComponentType } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
+import { Bath, Calendar, Drumstick, Droplet, Footprints, Pill } from 'lucide-react-native';
 import { resolvePhotoUri } from '@/lib/photoPath';
 import { brand, verdigrisDeep } from '@/constants/colors';
+
+// Lucide icon prop signature comum a todos os 6 stats.
+type StatIconProps = { size?: number; color?: string; strokeWidth?: number };
 
 // ─── Dimensões 9:16 (Stories) ─────────────────────────────────
 // Em iPhone @3x captureRef gera ~1080×1920 nativamente. Mantemos 360×640
@@ -85,31 +90,18 @@ interface WeeklyReportCardProps {
   petFoto:   string;
   petTipo?:  string;          // ex: "Golden Retriever · 3 anos" (formatado pelo caller)
   weekLabel: string;          // ex: "28 mai – 03 jun"
-  dailyGrid: DayData[];       // 7 items
+  dailyGrid: DayData[];       // 7 items — usado pra derivar daysAcompanhados
   totals: WeeklyTotals;
-  previousTotals?: WeeklyTotals;
   streak:       number;
-  latestWeight: number | null;
-  previousWeight?: number | null;
-  /** Adicionado no refresh visual 2026-06-03. Texto livre do "destaque
-   *  da semana" — se não fornecido, derivado automaticamente do
-   *  contexto (streak ou peso ou primeira semana). */
+  /** Texto livre do "destaque da semana" — se não fornecido, derivado
+   *  automaticamente do contexto (streak ou primeira semana). */
   highlight?: string;
-  /** Adicionado no refresh visual 2026-06-03. Counter de dias com
-   *  pelo menos 1 log. Se não fornecido, deduzido do dailyGrid. */
+  /** Counter de dias com pelo menos 1 log. Se não fornecido, deduzido
+   *  do dailyGrid. */
   daysAcompanhados?: number;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────
-
-function formatDelta(current: number, previous: number | undefined): string | null {
-  if (previous === undefined || previous === 0) return null;
-  const diff = current - previous;
-  if (diff === 0) return '=';
-  const pct = Math.round((diff / previous) * 100);
-  if (Math.abs(pct) > 999) return diff > 0 ? '+999%' : '-999%';
-  return diff > 0 ? `+${pct}%` : `${pct}%`;
-}
 
 function deriveDaysAcompanhados(grid: DayData[]): number {
   return grid.filter((d) => d.isComplete || Object.values(d.actions).some(Boolean)).length;
@@ -119,61 +111,38 @@ function deriveHighlight(args: {
   streak: number;
   totalWalks: number;
   weekIsEmpty: boolean;
-  latestWeight: number | null;
-  previousWeight: number | null | undefined;
 }): string {
   if (args.weekIsEmpty) return 'Primeira semana com seu pet!';
-  if (args.streak >= 7) return `Maior streak: ${args.streak} dias seguidos`;
-  if (args.streak >= 3) return `${args.streak} dias de sequência`;
+  if (args.streak >= 2) return `Maior streak: ${args.streak} dias seguidos`;
+  if (args.streak === 1) return 'Streak de 1 dia — primeira sequência';
   if (args.totalWalks >= 7) return `${args.totalWalks} passeios na semana`;
-  if (args.latestWeight !== null && args.previousWeight != null && args.previousWeight > 0) {
-    const diff = args.latestWeight - args.previousWeight;
-    if (Math.abs(diff) >= 0.1) {
-      return diff > 0
-        ? `Ganhou ${diff.toFixed(1)}kg na semana`
-        : `Perdeu ${Math.abs(diff).toFixed(1)}kg na semana`;
-    }
-  }
   return 'Semana acompanhada';
 }
 
 // ─── Sub-componente: StatCard 2×3 ─────────────────────────────
+//
+// Icon: Lucide SVG line outline. Verdigris #04A29B sobre fundo Celadon
+// claro #E9F1CF, stroke-width 1.6 (combinação testada no HTML
+// cronopet-semana-bidu, mantém leveza editorial). Override do
+// CLAUDE.md "emojis em ações do pet" foi decisão consciente do CTO
+// pro card de share — emojis seguem usados em ActionButton e outros
+// pontos do app.
 
 function StatCard({
-  emoji,
+  Icon,
   value,
   label,
-  delta,
 }: {
-  emoji: string;
+  Icon: ComponentType<StatIconProps>;
   value: string;
   label: string;
-  delta?: string | null;
 }) {
-  const isPositive = delta?.startsWith('+');
-  const isNegative = delta?.startsWith('-');
-  const isEqual = delta === '=';
-  const deltaColor = isEqual
-    ? C.textSecondary
-    : isPositive
-    ? C.accent
-    : isNegative
-    ? '#B45309'  // amber-700 — semantic warn no card claro
-    : C.textSecondary;
-
   return (
     <View style={styles.statCard}>
       <View style={styles.statHeader}>
         <View style={styles.statIconBox}>
-          <Text style={styles.statEmoji}>{emoji}</Text>
+          <Icon size={20} color={C.accent} strokeWidth={1.6} />
         </View>
-        {delta && (
-          <View style={styles.statDeltaPill}>
-            <Text style={[styles.statDeltaText, { color: deltaColor }]}>
-              {delta}
-            </Text>
-          </View>
-        )}
       </View>
       <Text
         numberOfLines={1}
@@ -199,22 +168,18 @@ export const WeeklyReportCard = forwardRef<View, WeeklyReportCardProps>(
     weekLabel,
     dailyGrid,
     totals,
-    previousTotals,
     streak,
-    latestWeight,
-    previousWeight,
     highlight,
     daysAcompanhados,
   }, ref) => {
     const hasFoto = !!petFoto;
 
-    // ── "Primeira semana": tudo zerado, sem streak, sem peso ──────
+    // "Primeira semana": tudo zerado.
     const weekIsEmpty =
       totals.meals === 0 &&
       totals.water === 0 &&
       totals.walks === 0 &&
-      streak === 0 &&
-      latestWeight == null;
+      streak === 0;
 
     // Stats novos derivados / fallback
     const banhos = totals.banhos ?? 0;
@@ -224,8 +189,6 @@ export const WeeklyReportCard = forwardRef<View, WeeklyReportCardProps>(
       streak,
       totalWalks: totals.walks,
       weekIsEmpty,
-      latestWeight,
-      previousWeight,
     });
 
     return (
@@ -294,82 +257,19 @@ export const WeeklyReportCard = forwardRef<View, WeeklyReportCardProps>(
             </View>
           ) : (
             <>
-              {/* ── Streak hero (mantido das 3 sprints — R2-2/R3-5/P2-B2) ── */}
-              {streak > 0 && (
-                <View style={styles.streakHero}>
-                  <Text style={styles.streakNumber}>{streak}</Text>
-                  <Text style={styles.streakFlame}>🔥</Text>
-                  <Text style={styles.streakLabel}>
-                    {streak === 1 ? 'DIA DE STREAK' : 'DIAS DE STREAK'}
-                  </Text>
-                </View>
-              )}
-
-              {/* ── 7-day grid (R3-5: labels 3 letras Dom→Sáb) ── */}
-              <View style={styles.weekGrid}>
-                {dailyGrid.map((day, i) => (
-                  <View key={i} style={styles.weekDay}>
-                    <View style={[
-                      styles.weekDot,
-                      day.isComplete
-                        ? styles.weekDotComplete
-                        : styles.weekDotEmpty,
-                    ]}>
-                      <Text style={[
-                        styles.weekDotMark,
-                        { color: day.isComplete ? C.textOnAccent : C.textSecondary },
-                      ]}>
-                        {day.isComplete ? '✓' : '·'}
-                      </Text>
-                    </View>
-                    <Text style={styles.weekDayLabel}>{day.dayLabel}</Text>
-                  </View>
-                ))}
-              </View>
-
-              {/* ── STATS 2×3 grid ── */}
+              {/* ── STATS 2×3 grid (Lucide outline Verdigris) ── */}
               <View style={styles.statsGrid}>
                 <View style={styles.statsRow}>
-                  <StatCard
-                    emoji="📅"
-                    value={String(diasContados)}
-                    label="dias"
-                    delta={null}
-                  />
-                  <StatCard
-                    emoji="🍖"
-                    value={String(totals.meals)}
-                    label="refeições"
-                    delta={formatDelta(totals.meals, previousTotals?.meals)}
-                  />
+                  <StatCard Icon={Calendar}   value={String(diasContados)}   label="dias" />
+                  <StatCard Icon={Drumstick}  value={String(totals.meals)}   label="refeições" />
                 </View>
                 <View style={styles.statsRow}>
-                  <StatCard
-                    emoji="💧"
-                    value={String(totals.water)}
-                    label="hidratações"
-                    delta={formatDelta(totals.water, previousTotals?.water)}
-                  />
-                  <StatCard
-                    emoji="🐾"
-                    value={String(totals.walks)}
-                    label="passeios"
-                    delta={formatDelta(totals.walks, previousTotals?.walks)}
-                  />
+                  <StatCard Icon={Droplet}    value={String(totals.water)}   label="hidratações" />
+                  <StatCard Icon={Footprints} value={String(totals.walks)}   label="passeios" />
                 </View>
                 <View style={styles.statsRow}>
-                  <StatCard
-                    emoji="🛁"
-                    value={String(banhos)}
-                    label="banho"
-                    delta={formatDelta(banhos, previousTotals?.banhos)}
-                  />
-                  <StatCard
-                    emoji="💊"
-                    value={String(medicamentos)}
-                    label="medic."
-                    delta={null}
-                  />
+                  <StatCard Icon={Bath}       value={String(banhos)}         label="banho" />
+                  <StatCard Icon={Pill}       value={String(medicamentos)}   label="medic." />
                 </View>
               </View>
 
@@ -491,8 +391,10 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   photo: {
-    width: '100%',
-    height: '100%',
+    // absoluteFillObject pra Image ocupar a área cheia do photoFrame
+    // (168x168), ignorando o "box-shrink" causado por borderWidth: 4.
+    // Sem isso, Image fica 160x160 e cover crop perde respiro do focinho.
+    ...StyleSheet.absoluteFillObject,
   },
   petName: {
     fontFamily: 'Nunito_800ExtraBold',
@@ -514,7 +416,8 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 8,
+    // Reserva espaço pro footer absoluto (~44px) + respiro.
+    paddingBottom: 56,
   },
 
   // weekIsEmpty
@@ -541,78 +444,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
 
-  // Streak hero
-  streakHero: {
-    backgroundColor: C.accent,
-    borderRadius: 16,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    marginBottom: 12,
-    alignItems: 'center',
-    position: 'relative',
-  },
-  streakNumber: {
-    fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 44,
-    fontWeight: '800',
-    color: C.textOnAccent,
-    lineHeight: 48,
-    textAlign: 'center',
-  },
-  streakFlame: {
-    position: 'absolute',
-    right: 16,
-    top: 14,
-    fontSize: 20,
-  },
-  streakLabel: {
-    fontSize: 9,
-    color: C.textOnAccent,
-    fontWeight: '700',
-    letterSpacing: 2,
-    marginTop: -2,
-    opacity: 0.92,
-  },
-
-  // 7-day grid
-  weekGrid: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  weekDay: {
-    alignItems: 'center',
-    width: 40,
-  },
-  weekDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  weekDotComplete: {
-    backgroundColor: C.accent,
-    borderColor: C.accent,
-  },
-  weekDotEmpty: {
-    backgroundColor: 'transparent',
-    borderColor: C.cardBorder,
-  },
-  weekDotMark: {
-    fontSize: 12,
-    fontWeight: '800',
-    lineHeight: 14,
-  },
-  weekDayLabel: {
-    fontSize: 9,
-    color: C.textSecondary,
-    fontWeight: '700',
-    marginTop: 4,
-    letterSpacing: 0.3,
-  },
-
   // Stats grid
   statsGrid: {
     marginBottom: 12,
@@ -634,7 +465,6 @@ const styles = StyleSheet.create({
   statHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     marginBottom: 4,
   },
   statIconBox: {
@@ -644,20 +474,6 @@ const styles = StyleSheet.create({
     backgroundColor: C.iconBg,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  statEmoji: {
-    fontSize: 16,
-  },
-  statDeltaPill: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 999,
-    backgroundColor: 'rgba(4,162,155,0.08)',
-  },
-  statDeltaText: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.2,
   },
   statValue: {
     fontFamily: 'Nunito_800ExtraBold',
@@ -718,12 +534,18 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
 
-  // Footer
+  // Footer — position absolute pra ficar ancorado ao bottom sem
+  // depender do flex flow do body (que pode estourar com conteúdo
+  // dinâmico). Bug 1 corrigido em 2026-06-13.
   footer: {
+    position: 'absolute',
+    bottom: 0, left: 0, right: 0,
     paddingHorizontal: 20,
     paddingBottom: 16,
     paddingTop: 8,
     alignItems: 'center',
+    // Fundo beige inferior pra footer não vazar visual do gradient.
+    backgroundColor: C.bgBottom,
   },
   footerBrand: {
     flexDirection: 'row',
