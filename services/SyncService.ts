@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/react-native';
 import { getSupabase } from './supabase';
+import { incrementFailure } from '@/lib/syncFailureCounter';
 import type { RealtimeChannel, SupabaseClient } from '@supabase/supabase-js';
 import type { FamilyGroup, FamilyMember } from '@/types/auth';
 import type {
@@ -160,19 +161,36 @@ export function pushActionLog(groupId: string, userId: string, log: ActionLog): 
   // SECURITY: timeout de 10s — não deixar sync hangar indefinidamente.
   // foto não sincronizada nesta versão — requer Supabase Storage.
   // Fire-and-forget mantido — só `await client()` pra resolver o singleton.
+  //
+  // Tags failure_path adicionadas na Ação A da [P0] sync silent fail
+  // pra triagem no Sentry. Não muda lógica de retry — ainda single-shot.
+  const extraBase = { action_kind: log.key, pet_id: log.petId ?? null, attempt_count: 1 };
   client().then((supabase) => {
     const op = supabase.from('action_logs').upsert(actionLogToRow(log, groupId, userId));
     const timer = setTimeout(() => {
-      Sentry.captureMessage('[Sync] pushActionLog timeout (10s)', 'warning');
+      incrementFailure('timeout');
+      Sentry.captureMessage('[Sync] pushActionLog timeout (10s)', {
+        level: 'warning',
+        tags:  { op: 'pushActionLog', failure_path: 'timeout' },
+        extra: extraBase,
+      });
     }, 10_000);
     op.then(({ error }) => {
       clearTimeout(timer);
       if (error) {
-        Sentry.captureException(new Error(error.message), { tags: { op: 'pushActionLog' } });
+        incrementFailure('rls_denied');
+        Sentry.captureException(new Error(error.message), {
+          tags:  { op: 'pushActionLog', failure_path: 'rls_denied' },
+          extra: extraBase,
+        });
       }
     });
   }).catch((err) => {
-    Sentry.captureException(err, { tags: { op: 'pushActionLog.clientInit' } });
+    incrementFailure('client_init');
+    Sentry.captureException(err, {
+      tags:  { op: 'pushActionLog', failure_path: 'client_init' },
+      extra: extraBase,
+    });
   });
 }
 
@@ -367,67 +385,157 @@ export function pushPet(groupId: string, pet: PetProfile): void {
 // getSession() é cached pelo SDK, então tipicamente é 1 RTT real.
 // Pra throughput crítico (bulk register), considerar batching no futuro.
 
-async function getSessionUser(): Promise<{ uid: string; groupId: string } | null> {
+// ─── Discriminated result pra revelar o motivo do skip ─────────
+//
+// Ação A da [P0] action_logs sync silent fail (docs/TODO.md):
+// antes retornava `| null` indistinto. Agora cada caller sabe SE
+// o sync foi skipped por session expirada ou por user sem family
+// group — distinção crítica pra triagem. NÃO muda comportamento:
+// callers seguem fazendo no-op em qualquer reason; só a etiqueta
+// que o Sentry recebe muda.
+type SessionResult =
+  | { ok: true;  uid: string; groupId: string }
+  | { ok: false; reason: 'session_expired' | 'no_family' };
+
+async function getSessionUser(): Promise<SessionResult> {
   const supabase = await client();
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  if (!user) return { ok: false, reason: 'session_expired' };
   // getMyFamilyGroup já chama getUser internamente — eficiente
   const group = await getMyFamilyGroup();
-  if (!group) return null;
-  return { uid: user.id, groupId: group.id };
+  if (!group) return { ok: false, reason: 'no_family' };
+  return { ok: true, uid: user.id, groupId: group.id };
+}
+
+// Instrumenta o skip silencioso de UM autoSync helper.
+// captureMessage (não exception) pq não é erro — é estado.
+// Tags + extras vão pra busca no Sentry e contador local persiste
+// caso Sentry esteja indisponível.
+function reportSkip(
+  op: string,
+  reason: 'session_expired' | 'no_family',
+  extra: Record<string, unknown>,
+): void {
+  incrementFailure(reason);
+  Sentry.captureMessage(`[Sync] ${op} skipped: ${reason}`, {
+    level: 'warning',
+    tags:  { op, failure_path: reason },
+    extra: { ...extra, attempt_count: 1 },
+  });
+}
+
+// Instrumenta o catch outer (Promise rejeitou — getSessionUser
+// throw, network, etc). attempt_count fixo 1 porque ainda não
+// existe retry (Ação B).
+function reportUnhandled(
+  op: string,
+  err: unknown,
+  extra: Record<string, unknown>,
+): void {
+  incrementFailure('no_internet');
+  Sentry.captureException(err, {
+    tags:  { op, failure_path: 'no_internet' },
+    extra: { ...extra, attempt_count: 1 },
+  });
 }
 
 /** Auto-sync pet: chamado em completeOnboarding e updatePetProfile. */
 export function autoSyncPet(pet: PetProfile): void {
   getSessionUser().then((ctx) => {
-    if (!ctx) return;
+    if (!ctx.ok) {
+      reportSkip('autoSyncPet', ctx.reason, { pet_id: pet.id ?? null });
+      return;
+    }
     pushPet(ctx.groupId, pet);
-  }).catch(() => { /* silencioso */ });
+  }).catch((err) => reportUnhandled('autoSyncPet', err, { pet_id: pet.id ?? null }));
 }
 
 /** Auto-sync action log: chamado em addActionLog. */
 export function autoSyncActionLog(log: ActionLog): void {
   getSessionUser().then((ctx) => {
-    if (!ctx) return;
+    if (!ctx.ok) {
+      reportSkip('autoSyncActionLog', ctx.reason, {
+        action_kind: log.key,
+        pet_id: log.petId ?? null,
+      });
+      return;
+    }
     pushActionLog(ctx.groupId, ctx.uid, log);
-  }).catch(() => { /* silencioso */ });
+  }).catch((err) => reportUnhandled('autoSyncActionLog', err, {
+    action_kind: log.key,
+    pet_id: log.petId ?? null,
+  }));
 }
 
 /** Auto-sync delete de action log: chamado em removeActionLog. */
 export function autoSyncDeleteActionLog(logId: string): void {
   getSessionUser().then(async (ctx) => {
-    if (!ctx) return;
+    if (!ctx.ok) {
+      reportSkip('autoSyncDeleteActionLog', ctx.reason, { log_id: logId });
+      return;
+    }
     const supabase = await client();
     supabase.from('action_logs').delete().eq('id', logId).then(({ error }) => {
       if (error) {
-        Sentry.captureException(new Error(error.message), { tags: { op: 'autoSyncDeleteActionLog' } });
+        incrementFailure('rls_denied');
+        Sentry.captureException(new Error(error.message), {
+          tags:  { op: 'autoSyncDeleteActionLog', failure_path: 'rls_denied' },
+          extra: { log_id: logId, attempt_count: 1 },
+        });
       }
     });
-  }).catch(() => { /* silencioso */ });
+  }).catch((err) => reportUnhandled('autoSyncDeleteActionLog', err, { log_id: logId }));
 }
 
 /** Auto-sync vacina (insert/update via upsert). */
 export function autoSyncVaccine(v: Vaccine): void {
   getSessionUser().then((ctx) => {
-    if (!ctx) return;
-    pushVaccines(ctx.groupId, [v]).catch(() => {});
-  }).catch(() => { /* silencioso */ });
+    if (!ctx.ok) {
+      reportSkip('autoSyncVaccine', ctx.reason, { pet_id: v.petId ?? null });
+      return;
+    }
+    pushVaccines(ctx.groupId, [v]).catch((err) => {
+      incrementFailure('rls_denied');
+      Sentry.captureException(err, {
+        tags:  { op: 'autoSyncVaccine', failure_path: 'rls_denied' },
+        extra: { pet_id: v.petId ?? null, attempt_count: 1 },
+      });
+    });
+  }).catch((err) => reportUnhandled('autoSyncVaccine', err, { pet_id: v.petId ?? null }));
 }
 
 /** Auto-sync consulta. */
 export function autoSyncAppointment(a: Appointment): void {
   getSessionUser().then((ctx) => {
-    if (!ctx) return;
-    pushAppointments(ctx.groupId, [a]).catch(() => {});
-  }).catch(() => { /* silencioso */ });
+    if (!ctx.ok) {
+      reportSkip('autoSyncAppointment', ctx.reason, { pet_id: a.petId ?? null });
+      return;
+    }
+    pushAppointments(ctx.groupId, [a]).catch((err) => {
+      incrementFailure('rls_denied');
+      Sentry.captureException(err, {
+        tags:  { op: 'autoSyncAppointment', failure_path: 'rls_denied' },
+        extra: { pet_id: a.petId ?? null, attempt_count: 1 },
+      });
+    });
+  }).catch((err) => reportUnhandled('autoSyncAppointment', err, { pet_id: a.petId ?? null }));
 }
 
 /** Auto-sync entrada de peso. */
 export function autoSyncWeightEntry(w: WeightEntry): void {
   getSessionUser().then((ctx) => {
-    if (!ctx) return;
-    pushWeightHistory(ctx.groupId, [w]).catch(() => {});
-  }).catch(() => { /* silencioso */ });
+    if (!ctx.ok) {
+      reportSkip('autoSyncWeightEntry', ctx.reason, { pet_id: w.petId ?? null });
+      return;
+    }
+    pushWeightHistory(ctx.groupId, [w]).catch((err) => {
+      incrementFailure('rls_denied');
+      Sentry.captureException(err, {
+        tags:  { op: 'autoSyncWeightEntry', failure_path: 'rls_denied' },
+        extra: { pet_id: w.petId ?? null, attempt_count: 1 },
+      });
+    });
+  }).catch((err) => reportUnhandled('autoSyncWeightEntry', err, { pet_id: w.petId ?? null }));
 }
 
 /**
