@@ -8,6 +8,57 @@
 
 ## Aberto
 
+### [P2] Redesign Bold v3 — port handoff pra produção
+**Origem:** Design handoff "Cronopet App.zip" recebido em 2026-06-14.
+Catalogado em `docs/design/redesign-bold-v3/` (18 arquivos, ~180KB).
+
+**Resumo:** redesign completo de 7 telas em direção "Bold" — alto
+contraste (painéis preto-grafite sobre menta), tipografia chunky
+(Bricolage Grotesque + Hanken Grotesk), foto do pet como herói,
+TabBar preta flutuante, FAB verdigris, sistema de Stamps SVG custom.
+
+Ler `docs/design/redesign-bold-v3/README.md` pra design tokens,
+escala tipográfica, raios, sombras e voz/tom. Cada tela tem seção
+descritiva no README + `.jsx` web como espelho visual (NÃO copiar
+direto — porta pra RN).
+
+**Mudanças sistêmicas (pré-requisito de todas as telas):**
+
+#### REDESIGN-00 — Sistema base
+- [ ] Instalar `@expo-google-fonts/bricolage-grotesque` + `@expo-google-fonts/hanken-grotesk`
+- [ ] Estender `constants/colors.ts` com tokens novos:
+      `ink/ink2/ink3/ink4`, `surfaceTint`, `mintSoft`, `mintDeep`,
+      `blk`, `onBlk`, `ruleSoft`. Cores de ação ganham `tintL`/`tintD`.
+- [ ] Suportar 4 tons de fundo (menta padrão, pastel, terroso, sólido) — depende de decisão sobre tweaks-panel
+- [ ] Criar `components/ui/Stamp.tsx` (SVG via `react-native-svg`, paths em `icons.jsx` → `STAMP_GLYPHS`)
+- [ ] Criar `components/ui/InkPanel.tsx` (painel preto-grafite radius 28)
+- [ ] Criar `components/ui/ProgressRing.tsx` (SVG `<Circle>` + `strokeDasharray/offset`)
+- [ ] **Decisão arquitetural:** NativeWind (README assume) vs StyleSheet (status quo). Padronizar **antes** de portar telas.
+- [ ] Auditoria contraste WCAG AA nas novas combinações (ink2 sobre bg, mint sobre blk, etc)
+
+#### Telas (cada uma ~1-3 dias de port, com testes em device)
+- [ ] **REDESIGN-01 — Início (Home)** — PetHero + TodayPanel preto + InsightCard âmbar + scroll horizontal de selos + timeline. Substitui `app/(tabs)/index.tsx`.
+- [ ] **REDESIGN-02 — Histórico** — StreakHero preto + WeekGoalsCard + Tendências com MiniBars + ReportCard. Substitui `app/(tabs)/history.tsx`.
+- [ ] **REDESIGN-03 — Saúde** — WeightCard + NutritionCard + AIGate Pro preto + AppointmentCard + Vacinas. Substitui `app/(tabs)/medical.tsx`.
+- [ ] **REDESIGN-04 — Nutrição (modal)** — CalorieHero preto com ProgressRing + Refeições + Composição (4 barras de macro) + banner de confiança. Modal novo.
+- [ ] **REDESIGN-05 — Premium (modal)** — Hero preto + 4 features + 2 planos (anual destacado). Refator de `app/premium.tsx`.
+- [ ] **REDESIGN-06 — Ajustes (modal)** — Conta + Família + toggles. Refator de `app/settings.tsx`.
+- [ ] **REDESIGN-07 — Onboarding (3 passos)** — pata preta gigante + selo comida + 3 avatares família + barra de progresso. Refator de `components/onboarding/*`.
+
+**Riscos / atenção:**
+- README do handoff assume **NativeWind** instalado — não está. Decisão arquitetural pendente.
+- TabBar preta flutuante muda hit-test de touch e safe-area handling — refazer P2-A1/P2-A2 com novo layout.
+- Mudança de fonts afeta TODOS os componentes existentes que hardcodaram `Nunito_*` — varredura preventiva necessária.
+- WeeklyReportCard (share) tem própria estética; pode ou não migrar pra Bold.
+
+**Não-objetivos:**
+- Não é hotfix. Não dá pra OTA num movimento só.
+- Sprint dedicada por tela; cada tela com smoke test em iOS + Android antes de mergear.
+
+**Arquivos referência:** `docs/design/redesign-bold-v3/README.md`, `docs/design/redesign-bold-v3/REDESIGN_LOG.md`, `docs/design/redesign-bold-v3/screens-*.jsx`, `docs/design/redesign-bold-v3/ui.jsx` (tokens), `docs/design/redesign-bold-v3/icons.jsx` (Stamps + glifos).
+
+---
+
 ### [P0] action_logs sync silent fail — observabilidade + outbox
 **Origem:** Hotfix WeeklyReportCard (Bug 2 investigado, 2026-06-13).
 
