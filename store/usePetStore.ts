@@ -6,6 +6,7 @@ import * as Sentry from '@sentry/react-native';
 import * as Crypto from 'expo-crypto';
 import { zustandMMKVStorage } from './storage';
 import { sanitizeName, sanitizeNote, INPUT_LIMITS } from '@/lib/security';
+import { migrateLegacyPalette, type Tone } from '@/constants/colors';
 import { getBreedSize } from '@/data/breed-meta';
 import { getLocalToday, tsToLocalYMD } from '@/lib/dateLocal';
 import { track } from '@/services/analytics';
@@ -434,6 +435,26 @@ interface PetStore extends PetState {
   paletteMode: 'cronopet' | 'light-neutral' | 'dark-neutral';
   setPaletteMode: (mode: 'cronopet' | 'light-neutral' | 'dark-neutral') => void;
 
+  /**
+   * Tom visual (Redesign Bold v3 — Fase 0a, 2026-06-14). Substitui
+   * conceito de "paleta neutra" pelos 4 tons sobre `cronopet`:
+   *   - 'mint'    (padrão) — bg #E7F4EC + surfaceTint #D8EFE2
+   *   - 'pastel'           — bg #F2F1E9 + surfaceTint #E7F2E9
+   *   - 'terroso'          — bg #EFEAD8 + surfaceTint #E7E2CB
+   *   - 'solido'           — bg #F4F3EC + surfaceTint #EBEFDB
+   *
+   * Aplicável apenas em modo claro — modo escuro tem fundos fixos.
+   * Consumido por `useTheme()` (sistema Bold v3). `useThemeColors()`
+   * antigo ignora este campo (continua via paletteMode).
+   *
+   * Migration (Q3 aprovada): paletteMode='light-neutral' / 'dark-neutral'
+   * mapeiam pra cronopet + tone='mint' no `onRehydrateStorage`. Beta
+   * testers que escolheram neutral perdem essa opção mas mantêm o
+   * light/dark deles via themeMode.
+   */
+  tone: Tone;
+  setTone: (tone: Tone) => void;
+
   /** Tour de boas-vindas (5 cards explicando as features). Aparece
    *  1 vez só, após o onboarding. Setado true quando o user conclui
    *  ou pula. Feedback TestFlight #13. */
@@ -505,6 +526,7 @@ export const usePetStore = create<PetStore>()(
       syncStatus:    'idle',
       themeMode: 'system',
       paletteMode: 'cronopet',
+      tone: 'mint',
       hasCompletedTour: false,
       aiConsentGiven: false,
       _hasHydrated:  false,
@@ -512,6 +534,7 @@ export const usePetStore = create<PetStore>()(
 
       setThemeMode: (mode) => set({ themeMode: mode }),
       setPaletteMode: (mode) => set({ paletteMode: mode }),
+      setTone: (tone) => set({ tone }),
       setHasCompletedTour: (v) => set({ hasCompletedTour: v }),
       setAiConsent: (v) => set({ aiConsentGiven: v }),
       setHasHydrated:   (v) => set({ _hasHydrated: v }),
@@ -1251,6 +1274,30 @@ export const usePetStore = create<PetStore>()(
           });
         }
 
+        // Redesign Bold v3 Fase 0a (2026-06-14): paletteMode 'light-neutral'
+        // e 'dark-neutral' deprecados em favor de `tone` + `themeMode`.
+        // Mapeamento delegado pra fn pura `migrateLegacyPalette` em
+        // constants/colors.ts (testada em test:theme).
+        const paletteMig = migrateLegacyPalette({
+          paletteMode: state.paletteMode,
+          themeMode:   state.themeMode,
+          tone:        state.tone,
+        });
+        if (paletteMig.migrated) {
+          state.paletteMode = paletteMig.paletteMode;
+          state.themeMode   = paletteMig.themeMode;
+          state.tone        = paletteMig.tone;
+          Sentry.addBreadcrumb({
+            category: 'migration',
+            message:  'legacy_palette_to_tone',
+            level:    'info',
+            data:     { from: state.paletteMode, to: `cronopet+${paletteMig.tone}` },
+          });
+        } else if (state.tone === undefined) {
+          // Device que nunca tocou no setting de tom — popula default.
+          state.tone = 'mint';
+        }
+
         state.setHasHydrated(true);
       },
       partialize: (state) => {
@@ -1270,6 +1317,7 @@ export const usePetStore = create<PetStore>()(
           resetStore,
           setUser, setFamilyGroupId, setSyncStatus,
           setThemeMode,
+          setTone,
           markMilestoneShown,
           markActivityMilestoneShown,
           markPremiumPromptShown,

@@ -196,3 +196,195 @@ export const semantic = {
 
 // ActionKey type-only export removido (não usado): a fonte de verdade
 // canônica é `ActionKey` em types/pet.ts. Aqui ficaria duplicado.
+
+// ═══════════════════════════════════════════════════════════════
+// ═══ Sistema Bold v3 (Redesign Bold v3 — Fase 0a, 2026-06-14) ═══
+// ═══════════════════════════════════════════════════════════════
+//
+// Adições coexistem com tokens legacy acima:
+//   • Tokens novos (Theme, makeTheme, ACTIONS_V3) usados via useTheme()
+//     pelos componentes do redesign.
+//   • Tokens legacy (neutral, neutralDark, actions, semantic) continuam
+//     servindo os 16 componentes existentes via useThemeColors().
+//   • Migration limpa de paletteMode legacy → tone (Q3 aprovada).
+//
+// Briefing fonte: files-redesign-bold-v3/03-sistema-design.md.
+
+import type { ActionKey } from '@/types/pet';
+
+// ─── Tons (Q3: substitui paletteMode neutral pelos 4 tons) ───
+//
+// Os 4 tons mudam apenas `bg` + `surfaceTint` no modo claro. Dark mode
+// tem um único conjunto de fundos (tons NÃO se aplicam no dark).
+
+export type Tone = 'mint' | 'pastel' | 'terroso' | 'solido';
+
+const TONE_BG_LIGHT: Record<Tone, { bg: string; surfaceTint: string }> = {
+  mint:    { bg: '#E7F4EC', surfaceTint: '#D8EFE2' },
+  pastel:  { bg: '#F2F1E9', surfaceTint: '#E7F2E9' },
+  terroso: { bg: '#EFEAD8', surfaceTint: '#E7E2CB' },
+  solido:  { bg: '#F4F3EC', surfaceTint: '#EBEFDB' },
+};
+
+// ─── Actions V3 (Q5: hexes do briefing) ───────────────────────
+//
+// Diferenças vs `actions` legacy:
+//   • Comida laranja mais quente (#C2620A vs #b45309)
+//   • Banho/água com hue distinto (#0E91A8 vs #0369a1 igual água)
+//   • Schema { primary, tintL, tintD } em vez de { primary, bg, border }
+//
+// Componentes Bold v3 importam via `actionTint(key, dark)`. Componentes
+// existentes seguem usando `actions` legacy até migrarem (Fase 8).
+
+export const ACTIONS_V3 = {
+  comida:  { primary: '#C2620A', tintL: '#FBEAD2', tintD: 'rgba(194,98,10,0.22)'  },
+  agua:    { primary: '#0B7BB5', tintL: '#D7ECF8', tintD: 'rgba(11,123,181,0.22)' },
+  passeio: { primary: '#0E8C5A', tintL: '#D3F0DF', tintD: 'rgba(14,140,90,0.22)'  },
+  xixi:    { primary: '#8B43E6', tintL: '#EBDFFB', tintD: 'rgba(139,67,230,0.22)' },
+  coco:    { primary: '#9A4D14', tintL: '#F0E2CC', tintD: 'rgba(154,77,20,0.24)'  },
+  banho:   { primary: '#0E91A8', tintL: '#D2EEF1', tintD: 'rgba(14,145,168,0.22)' },
+  tosa:    { primary: '#D11E73', tintL: '#FAD9E8', tintD: 'rgba(209,30,115,0.22)' },
+} as const satisfies Record<ActionKey, { primary: string; tintL: string; tintD: string }>;
+
+export function actionTint(key: ActionKey, dark: boolean): { primary: string; tint: string } {
+  const a = ACTIONS_V3[key];
+  return { primary: a.primary, tint: dark ? a.tintD : a.tintL };
+}
+
+// ─── Theme (token object completo retornado por useTheme) ─────
+
+export interface Theme {
+  // Fundos / superfícies
+  bg:          string;  // fundo da tela
+  surfaceTint: string;  // hero do pet, trilhas, wells
+  card:        string;  // cards brancos
+  panel:       string;  // superfície de painel não-preto
+  paper:       string;  // mesma cor de card (docs/PDF)
+  sunken:      string;  // superfície afundada (= surfaceTint)
+
+  // Texto (escala terra-quente)
+  ink:  string;
+  ink2: string;
+  ink3: string;
+  ink4: string;
+
+  // Linhas
+  rule:     string;
+  ruleSoft: string;
+
+  // Marca
+  primary:     string;  // verdigris (FAB, ativos, gráfico de peso)
+  primaryDeep: string;  // verdigris escuro (texto pequeno sobre menta)
+  onPrimary:   string;  // conteúdo sobre verdigris
+  mint:        string;  // celadon (aba ativa, anéis)
+  mintSoft:    string;  // menta diluída (chips, tints)
+  mintDeep:    string;  // menta mais forte
+  beige:       string;  // bege da marca (botão soft)
+  blk:         string;  // painel preto-grafite (alto contraste)
+  onBlk:       string;  // conteúdo sobre preto
+
+  // Sombras (RGB string p/ uso em rgba())
+  shadow: string;
+
+  // Meta
+  isDark: boolean;
+  tone:   Tone;
+}
+
+export function makeTheme(dark: boolean, tone: Tone): Theme {
+  if (dark) {
+    return {
+      bg:          '#1A1916',
+      surfaceTint: '#2E2C27',
+      card:        '#252320',
+      panel:       '#252320',
+      paper:       '#252320',
+      sunken:      '#2E2C27',
+      ink:         '#F3EFE2',
+      ink2:        '#CBC2AE',
+      ink3:        '#968C79',
+      ink4:        '#6B6354',
+      rule:        '#39362F',
+      ruleSoft:    '#332F29',
+      primary:     '#22C3B6',
+      primaryDeep: '#9BE4C6',
+      onPrimary:   '#0F2420',
+      mint:        '#9BE4C6',
+      mintSoft:    'rgba(155,228,198,0.14)',
+      mintDeep:    '#22C3B6',
+      beige:       '#39362F',
+      blk:         '#0F0E0C',
+      onBlk:       '#F3EFE2',
+      shadow:      '0,0,0',
+      isDark:      true,
+      tone,
+    };
+  }
+  const t = TONE_BG_LIGHT[tone];
+  return {
+    bg:          t.bg,
+    surfaceTint: t.surfaceTint,
+    card:        '#FFFFFF',
+    panel:       '#FBFAF2',
+    paper:       '#FFFFFF',
+    sunken:      t.surfaceTint,
+    ink:         '#1E1C17',
+    ink2:        '#564C3D',
+    ink3:        '#867C6A',
+    ink4:        '#ADA48F',
+    rule:        '#E1DCC9',
+    ruleSoft:    '#ECE7D7',
+    primary:     '#04A29B',
+    primaryDeep: '#036E69',
+    onPrimary:   '#FBFAF2',
+    mint:        '#9BE4C6',
+    mintSoft:    '#D8EFE2',
+    mintDeep:    '#7ED4B0',
+    beige:       '#E9F1CF',
+    blk:         '#1E1C17',
+    onBlk:       '#F6F4EA',
+    shadow:      '52,46,34',
+    isDark:      false,
+    tone,
+  };
+}
+
+// ─── Migration legacy paletteMode → cronopet + tone ──────────
+//
+// Fn pura testável (test:theme). Mapeia paletteMode legacy pros novos
+// campos. Idempotente: se entrada já é 'cronopet', preserva themeMode
+// e devolve `migrated: false`.
+//
+//   light-neutral → cronopet + themeMode='light' + tone='mint'
+//   dark-neutral  → cronopet + themeMode='dark'  + tone='mint'
+//   cronopet      → preserva themeMode atual + tone existente ou 'mint'
+
+export type ThemeModeChoice = 'system' | 'light' | 'dark';
+
+export interface LegacyPaletteInput {
+  paletteMode: string;
+  themeMode:   ThemeModeChoice;
+  tone?:       Tone;
+}
+
+export interface PaletteMigrationResult {
+  paletteMode: 'cronopet';
+  themeMode:   ThemeModeChoice;
+  tone:        Tone;
+  migrated:    boolean;
+}
+
+export function migrateLegacyPalette(input: LegacyPaletteInput): PaletteMigrationResult {
+  if (input.paletteMode === 'light-neutral') {
+    return { paletteMode: 'cronopet', themeMode: 'light', tone: 'mint', migrated: true };
+  }
+  if (input.paletteMode === 'dark-neutral') {
+    return { paletteMode: 'cronopet', themeMode: 'dark', tone: 'mint', migrated: true };
+  }
+  return {
+    paletteMode: 'cronopet',
+    themeMode:   input.themeMode,
+    tone:        input.tone ?? 'mint',
+    migrated:    false,
+  };
+}
