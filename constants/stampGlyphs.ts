@@ -53,9 +53,13 @@ export const STAMP_GLYPHS = {
 
   // ── Check (stroke-on-glyph, sem fill) ─────────────────────────
   // Convertido pra path único com stroke próprio: usado como overlay
-  // dentro do Stamp pra marcar ações cumpridas. Cor herda do wrapper.
+  // dentro do Stamp pra marcar ações cumpridas. Token `__FG__` é
+  // substituído pelo Stamp.tsx em runtime pela cor de foreground
+  // (sub-fase 0b — `currentColor` no XML não é interpretado
+  // confiavelmente pelo parser de SvgXml em RN, então usamos token
+  // explícito em vez de inheritance CSS).
   check:
-    '<path d="M6 12l4 4 8-8" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>',
+    '<path d="M6 12l4 4 8-8" fill="none" stroke="__FG__" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>',
 } as const;
 
 export type StampGlyph = keyof typeof STAMP_GLYPHS;

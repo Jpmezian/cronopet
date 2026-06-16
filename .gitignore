@@ -65,3 +65,12 @@ cronopet-credentials/
 
 # Relatórios internos (CEO/CMO/etc) — privados
 docs/reports/
+
+# ── Briefings internos do CTO (untracked permanente) ─────────
+# Material privado: roadmaps, decisões CTO, papéis de sócios.
+# NUNCA commitar. Sprint anterior (Doc Visual) e Bold v3.
+# Cleanup retroativo: 2026-06-14 (commit 1e08ce2 force-push rewrite).
+/files/
+/files-redesign-bold-v3/
+/files.zip
+/files 2.zip

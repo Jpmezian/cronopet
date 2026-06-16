@@ -349,6 +349,40 @@ export function makeTheme(dark: boolean, tone: Tone): Theme {
   };
 }
 
+// ─── Memoização de `makeTheme` (Fase 0b — R3 fix) ─────────────
+//
+// `makeTheme(dark, tone)` retorna um objeto novo a cada chamada.
+// `useTheme()` é chamado por cada primitivo da Bold v3 — em telas
+// densas (Home com 50+ logs) isso significa centenas de alocações
+// de `Theme` por render, todas com o mesmo conteúdo.
+//
+// Solução: cache externo `Map<key, Theme>` com no máximo 8 entradas
+// (2 isDark × 4 tones). Após warm-up no startup, toda chamada de
+// `useTheme` retorna a MESMA referência — `React.memo` em primitivos
+// passa a poder shortcut shallow-compare em `theme` prop.
+//
+// Por que `Map` e não `useMemo` por chamador:
+//   • `useMemo` aloca closure por componente. 50 componentes na tela
+//     = 50 closures separadas, mesmo retornando o mesmo Theme.
+//   • Cache externo é compartilhado, max 8 alocações na vida do app.
+//   • Zero overhead de subscription/Context.
+//
+// Edge case: hot-reload em dev pode crescer o cache acima de 8 (se
+// renomearmos tones). Em prod, `Tone` é union literal de 4 valores
+// e `isDark` boolean — bounded.
+
+const themeCache = new Map<string, Theme>();
+
+export function getMemoizedTheme(dark: boolean, tone: Tone): Theme {
+  const key = `${dark ? 'd' : 'l'}-${tone}`;
+  let cached = themeCache.get(key);
+  if (!cached) {
+    cached = makeTheme(dark, tone);
+    themeCache.set(key, cached);
+  }
+  return cached;
+}
+
 // ─── Migration legacy paletteMode → cronopet + tone ──────────
 //
 // Fn pura testável (test:theme). Mapeia paletteMode legacy pros novos

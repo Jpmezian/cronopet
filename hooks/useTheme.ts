@@ -24,7 +24,7 @@
 import { useColorScheme } from 'react-native';
 import { usePetStore } from '@/store/usePetStore';
 import { pickIsDark } from '@/hooks/useThemeColors';
-import { makeTheme, type Theme, type Tone } from '@/constants/colors';
+import { getMemoizedTheme, type Theme, type Tone } from '@/constants/colors';
 
 export type { Theme, Tone };
 
@@ -38,11 +38,15 @@ export type { Theme, Tone };
  *
  * Re-render condicional via seletores granulares — só re-renderiza
  * quando `tone` ou `themeMode` mudam (não em qualquer mutação do store).
+ *
+ * Performance: `getMemoizedTheme` (Map<key, Theme> com max 8 entries)
+ * garante que componentes recebam a MESMA referência de Theme entre
+ * renders consecutivos, habilitando `React.memo` shallow-compare.
  */
 export function useTheme(): Theme {
   const scheme    = useColorScheme();
   const themeMode = usePetStore((s) => s.themeMode);
   const tone      = usePetStore((s) => s.tone);
   const dark      = pickIsDark(themeMode, scheme);
-  return makeTheme(dark, tone);
+  return getMemoizedTheme(dark, tone);
 }
