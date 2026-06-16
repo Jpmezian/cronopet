@@ -42,6 +42,8 @@ import { useSmartHealthNotifications } from '@/hooks/useSmartHealthNotifications
 import { BirthdayCard } from '@/components/home/BirthdayCard';
 import { ActivityMilestoneCard } from '@/components/home/ActivityMilestoneCard';
 import { PetHero } from '@/components/home/PetHero';
+import { PetHeroV3 } from '@/components/home/PetHeroV3';
+import { TopBar } from '@/components/home/TopBar';
 import { QuickStats } from '@/components/home/QuickStats';
 import { calculateGoalCalories, kcalForGoal, estimateLifeStage, ageFromBirth, petTypeToSpecies, DEFAULT_FOOD_KCAL_PER_GRAM } from '@/data/calories';
 import { getBreedSize } from '@/data/breed-meta';
@@ -733,50 +735,24 @@ export default function PetDashboard() {
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24, gap: 16 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header compacto */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flex: 1, marginRight: 12 }}>
-            <Text style={{ color: colors.textTertiary, fontSize: 13, fontWeight: '500' }}>{greeting}</Text>
-            <ScalePress
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowPetSwitcher(true); }}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel={`Pet atual: ${pet.nome}. Toque para trocar de pet.`}
-              scaleValue={0.97}
-              style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start' }}
-            >
-              <Text style={{
-                color: colors.textPrimary, fontSize: 26, fontWeight: '800',
-                fontFamily: 'Nunito_800ExtraBold',
-              }}>
-                {pet.nome}
-              </Text>
-              <ChevronDown size={20} strokeWidth={2.5} color={colors.textSecondary} style={{ marginLeft: 4 }} />
-            </ScalePress>
-          </View>
-          <ScalePress
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/settings'); }}
-            accessible
-            accessibilityRole="button"
-            accessibilityLabel="Configurações"
-            style={{
-              backgroundColor: colors.bgCard, borderRadius: 14, width: 44, height: 44,
-              alignItems: 'center', justifyContent: 'center',
-              ...(Platform.OS === 'android' ? { elevation: 2 } : { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isDark ? 0.22 : 0.05, shadowRadius: 6 }),
-            }}
-          >
-            <Settings size={20} color={colors.textPrimary} strokeWidth={2} />
-          </ScalePress>
-        </View>
+        {/* Header — Bold v3 (Fase 1a) */}
+        <TopBar
+          petName={pet.nome}
+          alertCount={allInsights.filter((i) => i.severity === 'alert').length}
+          onPressPet={Object.keys(pets).length > 1 ? () => setShowPetSwitcher(true) : undefined}
+        />
 
-        {/* Pet Hero redesenhado */}
-        <PetHero
+        {/* Pet Hero — Bold v3 (Fase 1a) */}
+        <PetHeroV3
           nome={pet.nome}
           foto={pet.foto}
           tipo={pet.tipo}
           raca={pet.raca}
           idadeLabel={pet.nascimento ? getPetAge(pet.nascimento) : undefined}
           streak={streak}
+          petsCount={Object.keys(pets).length}
+          activeIndex={Object.keys(pets).indexOf(activePetId)}
+          onPressSwitcher={() => setShowPetSwitcher(true)}
         />
 
         {/* Banner crítico — só aparece com insight severity=alert ativo */}
