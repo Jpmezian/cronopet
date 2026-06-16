@@ -97,6 +97,8 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   label: {
+    // Hanken 11 800 UPPERCASE +1 (briefing 03 § Caption)
+    fontFamily:    'HankenGrotesk_800ExtraBold',
     fontSize:      11,
     fontWeight:    '800',
     letterSpacing: 1,

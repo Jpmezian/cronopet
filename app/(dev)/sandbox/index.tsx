@@ -30,6 +30,11 @@ const ROUTES: Route[] = [
     title: 'Primitivos compostos (0c)',
     desc:  'Chip · ProgressRing · MiniBars · SectionHeader · ScalePress',
   },
+  {
+    path:  '/sandbox/typography',
+    title: 'Tipografia (0d)',
+    desc:  'Bricolage Grotesque + Hanken Grotesk — escala canônica do briefing 03',
+  },
   // Fases 1+ adicionam: '/sandbox/screens-home', '/sandbox/screens-history', etc
 ];
 

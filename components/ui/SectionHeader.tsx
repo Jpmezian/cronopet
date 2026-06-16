@@ -55,6 +55,8 @@ export const SectionHeader = React.memo(function SectionHeader({
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <Text
           style={{
+            // Bricolage Grotesque 21 800 -0.6 (briefing 03 § Escala — "Título de seção")
+            fontFamily:    'BricolageGrotesque_800ExtraBold',
             color:         accent ?? T.ink,
             fontSize:      21,
             fontWeight:    '800',
@@ -77,6 +79,8 @@ export const SectionHeader = React.memo(function SectionHeader({
           >
             <Text
               style={{
+                // Hanken 13 700 (briefing 03 § Caption)
+                fontFamily: 'HankenGrotesk_700Bold',
                 color:      T.primary,
                 fontSize:   13,
                 fontWeight: '700',
@@ -91,6 +95,8 @@ export const SectionHeader = React.memo(function SectionHeader({
       {!!subtitle && (
         <Text
           style={{
+            // Hanken 12 500 — subtitle deprecated
+            fontFamily: 'HankenGrotesk_500Medium',
             color:      T.ink3,
             fontSize:   12,
             fontWeight: '500',

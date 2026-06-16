@@ -43,6 +43,8 @@ export const Kicker = React.memo(function Kicker({
 Kicker.displayName = 'Kicker';
 
 const KICKER_STYLE: TextStyle = {
+  // Hanken Grotesk 12 800 UPPERCASE +1 (briefing 03 § Eyebrow / label)
+  fontFamily:    'HankenGrotesk_800ExtraBold',
   fontSize:      12,
   fontWeight:    '800',
   letterSpacing: 1,

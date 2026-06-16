@@ -117,8 +117,8 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
   },
   label: {
-    // Tipografia será Bricolage/Hanken na 0d. Por enquanto fontFamily
-    // omitido = system font weight controlado.
+    // Hanken Grotesk 15 700 (CTA briefing 03 § Escala tipográfica).
+    fontFamily: 'HankenGrotesk_700Bold',
     fontSize:   15,
     fontWeight: '700',
     letterSpacing: 0.2,

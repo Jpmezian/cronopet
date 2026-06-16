@@ -7,6 +7,17 @@ import { useEffect, useRef, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import * as Sentry from '@sentry/react-native';
 import { Nunito_700Bold, Nunito_800ExtraBold } from '@expo-google-fonts/nunito';
+import {
+  BricolageGrotesque_700Bold,
+  BricolageGrotesque_800ExtraBold,
+} from '@expo-google-fonts/bricolage-grotesque';
+import {
+  HankenGrotesk_400Regular,
+  HankenGrotesk_500Medium,
+  HankenGrotesk_600SemiBold,
+  HankenGrotesk_700Bold,
+  HankenGrotesk_800ExtraBold,
+} from '@expo-google-fonts/hanken-grotesk';
 
 import { usePetStore } from '@/store/usePetStore';
 import { View } from 'react-native';
@@ -84,11 +95,22 @@ export { ErrorBoundary } from 'expo-router';
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  // Redesign Bold v3 — Fase 0d (2026-06-14): Bricolage + Hanken
+  // entram paralelos a Nunito. Nunito segue carregada por back-compat
+  // (Q1 da decisão CTO: coexistem até Fase 9, quando legacy components
+  // tiverem migrado). Splash bloqueia até as 3 famílias prontas.
   const [fontsLoaded, fontError] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
     Nunito_700Bold,
     Nunito_800ExtraBold,
+    BricolageGrotesque_700Bold,
+    BricolageGrotesque_800ExtraBold,
+    HankenGrotesk_400Regular,
+    HankenGrotesk_500Medium,
+    HankenGrotesk_600SemiBold,
+    HankenGrotesk_700Bold,
+    HankenGrotesk_800ExtraBold,
   });
 
   const hasOnboarded = usePetStore((s) => s.hasOnboarded);

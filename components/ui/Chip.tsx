@@ -81,6 +81,8 @@ const styles = StyleSheet.create({
     alignSelf:         'flex-start',
   },
   label: {
+    // Hanken 13 600 (briefing 03 § Caption — chips)
+    fontFamily: 'HankenGrotesk_600SemiBold',
     fontSize:   13,
     textAlign:  'center',
     letterSpacing: 0.2,
