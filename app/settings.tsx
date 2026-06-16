@@ -70,6 +70,8 @@ export default function SettingsScreen() {
   const notificationHour    = usePetStore((s) => s.notificationHour);
   const notificationMinute  = usePetStore((s) => s.notificationMinute);
   const setNotificationTime = usePetStore((s) => s.setNotificationTime);
+  const reengagementEnabled    = usePetStore((s) => s.reengagementEnabled);
+  const setReengagementEnabled = usePetStore((s) => s.setReengagementEnabled);
   const streakShieldCount   = usePetStore((s) => s.streakShieldCount);
   const streak              = usePetStore((s) => s.streak);
   const resetStore          = usePetStore((s) => s.resetStore);
@@ -628,6 +630,45 @@ export default function SettingsScreen() {
                   Lembrete às {pad(notificationHour)}:{pad(notificationMinute)}
                 </Text>
               </View>
+            </View>
+
+            {/* ── Toggle: re-engajamento (24h+ sem registro) ── */}
+            <View style={{
+              marginTop: 20, paddingTop: 16,
+              borderTopWidth: 1, borderTopColor: colors.border,
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+              gap: 16,
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: '700' }}>
+                  Lembrete pós-inatividade
+                </Text>
+                <Text style={{ color: colors.textTertiary, fontSize: 12, marginTop: 2, lineHeight: 16 }}>
+                  Avisa quando passa 24h+ sem registrar nada. Sem spam.
+                </Text>
+              </View>
+              <ScalePress
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setReengagementEnabled(!reengagementEnabled);
+                }}
+                accessible
+                accessibilityRole="switch"
+                accessibilityLabel="Lembrete pós-inatividade"
+                accessibilityState={{ checked: reengagementEnabled }}
+                style={{
+                  width: 50, height: 30, borderRadius: 999,
+                  backgroundColor: reengagementEnabled ? colors.tabActive : colors.bgInput,
+                  padding: 3,
+                  justifyContent: 'center',
+                  alignItems: reengagementEnabled ? 'flex-end' : 'flex-start',
+                }}
+              >
+                <View style={{
+                  width: 24, height: 24, borderRadius: 12,
+                  backgroundColor: '#ffffff',
+                }} />
+              </ScalePress>
             </View>
           </View>
         </View>

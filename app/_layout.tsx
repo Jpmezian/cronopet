@@ -30,6 +30,8 @@ import { createPostHogClient, posthogBackend } from '@/services/analytics-postho
 import { initPurchases } from '@/services/purchases';
 import { getSession, hydrateStoreFromCloud } from '@/services/AuthService';
 import { applyDevAutoGrant } from '@/lib/devPremium';
+import * as Notifications from 'expo-notifications';
+import { useReengagementNotifications } from '@/hooks/useReengagementNotifications';
 // global.css removido junto com NativeWind (R7-B). Mantemos o arquivo
 // só pra preservar o gap visual no diff — sem side effects.
 
@@ -200,6 +202,26 @@ export default function RootLayout() {
   }, [storageReady, recordFirstAppOpen]);
 
   const router = useRouter();
+
+  // Hook side-effect: agenda/cancela notificação de re-engajamento
+  // baseado em (toggle) + (permission) + (horas desde último log).
+  useReengagementNotifications();
+
+  // ── Tap em notificação → abre Home ────────────────────────
+  // Re-engajamento + lembrete diário → deep link pra /(tabs)
+  // (rota raiz da Home). Outros tipos (consultas) podem ganhar deep
+  // links próprios em iteração futura.
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener(() => {
+      try {
+        router.push('/(tabs)' as never);
+      } catch {
+        // Router não pronto — ignora (notification chega em cold start
+        // antes do navigation tree, expo-router faz fallback pra route inicial)
+      }
+    });
+    return () => sub.remove();
+  }, [router]);
 
   // ── Recovery deep-link → tela de set-password ─────────────
   // Quando o user clica no link de recuperação de senha do e-mail,

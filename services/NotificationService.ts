@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 
 const CHANNEL_ID       = 'cronopet-daily';
 const CHANNEL_APPT_ID  = 'cronopet-appointments';
+const CHANNEL_REENGAGE = 'cronopet-reengagement';
 
 // ─── Handler de foreground ─────────────────────────────────────
 
@@ -31,6 +32,11 @@ async function ensureChannels(): Promise<void> {
     name:       'Consultas e Compromissos',
     importance: Notifications.AndroidImportance.HIGH,
     lightColor: '#60A5FA',
+  });
+  await Notifications.setNotificationChannelAsync(CHANNEL_REENGAGE, {
+    name:       'Lembretes Pós-Inatividade',
+    importance: Notifications.AndroidImportance.DEFAULT,
+    lightColor: '#04A29B',
   });
 }
 
@@ -256,6 +262,64 @@ function nextMorning(hour: number): Date {
  */
 export async function cancelNotification(id: string): Promise<void> {
   await Notifications.cancelScheduledNotificationAsync(id);
+}
+
+// ─── Re-engajamento (24h+ sem registro) ───────────────────────
+//
+// Identifier dedicado pra cancel/reschedule cirúrgico — evita
+// colisão com cancelAllReminders e com o lembrete diário recorrente.
+
+import {
+  REENGAGEMENT_NOTIFICATION_ID,
+} from '@/constants/notifications';
+
+/**
+ * Agenda 1 notificação one-shot de re-engajamento pra `when`.
+ *
+ * SEMPRE cancela qualquer notificação pré-existente com o mesmo
+ * identifier antes de agendar — re-enqueue idempotente.
+ *
+ * `when` deve estar no futuro (caller calcula via `nextSensibleTriggerTime`).
+ * Se `when <= now`, ignora silenciosamente (defensive — caller pode
+ * ter calculado errado).
+ */
+export async function scheduleReengagementNotification(
+  when: Date,
+  body: string,
+): Promise<void> {
+  await ensureChannels();
+  // Cancel previous pra evitar stack
+  try {
+    await Notifications.cancelScheduledNotificationAsync(REENGAGEMENT_NOTIFICATION_ID);
+  } catch {
+    // Não existia — segue
+  }
+
+  const now = Date.now();
+  if (when.getTime() <= now) return;
+
+  await Notifications.scheduleNotificationAsync({
+    identifier: REENGAGEMENT_NOTIFICATION_ID,
+    content: {
+      title: 'CronoPet 🐾',
+      body,
+      sound: true,
+      ...(Platform.OS === 'android' && { channelId: CHANNEL_REENGAGE }),
+    },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DATE,
+      date: when,
+    },
+  });
+}
+
+/** Cancela apenas a notificação de re-engajamento (não toca em outras). */
+export async function cancelReengagementNotification(): Promise<void> {
+  try {
+    await Notifications.cancelScheduledNotificationAsync(REENGAGEMENT_NOTIFICATION_ID);
+  } catch {
+    // Idempotente — não existia, OK
+  }
 }
 
 /**

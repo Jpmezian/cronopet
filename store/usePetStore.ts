@@ -461,6 +461,17 @@ interface PetStore extends PetState {
   hasCompletedTour: boolean;
   setHasCompletedTour: (v: boolean) => void;
 
+  /** Toggle de notificações de re-engajamento (24h+ sem registro).
+   *  Default ON. Quando OFF, useReengagementNotifications cancela
+   *  a notificação pendente e fica no-op até toggle voltar pra ON. */
+  reengagementEnabled: boolean;
+  setReengagementEnabled: (v: boolean) => void;
+
+  /** Timestamp ms da última vez que useReengagementNotifications
+   *  agendou. Usado como guard anti-stack (REENGAGEMENT_RESCHEDULE_MIN_HOURS). */
+  lastReengagementScheduledAt: number | null;
+  setLastReengagementScheduledAt: (ts: number | null) => void;
+
   /** Consentimento opt-in para envio de dados anonimizados pra IA
    *  (Anthropic via Edge Function). LGPD art. 7º I + art. 20. User
    *  pode revogar a qualquer momento em Settings. */
@@ -528,6 +539,8 @@ export const usePetStore = create<PetStore>()(
       paletteMode: 'cronopet',
       tone: 'mint',
       hasCompletedTour: false,
+      reengagementEnabled: true,
+      lastReengagementScheduledAt: null,
       aiConsentGiven: false,
       _hasHydrated:  false,
       _cloudHydrated: false,
@@ -536,6 +549,8 @@ export const usePetStore = create<PetStore>()(
       setPaletteMode: (mode) => set({ paletteMode: mode }),
       setTone: (tone) => set({ tone }),
       setHasCompletedTour: (v) => set({ hasCompletedTour: v }),
+      setReengagementEnabled: (v) => set({ reengagementEnabled: v }),
+      setLastReengagementScheduledAt: (ts) => set({ lastReengagementScheduledAt: ts }),
       setAiConsent: (v) => set({ aiConsentGiven: v }),
       setHasHydrated:   (v) => set({ _hasHydrated: v }),
       setCloudHydrated: (v) => set({ _cloudHydrated: v }),
