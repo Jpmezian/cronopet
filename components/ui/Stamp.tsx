@@ -97,6 +97,15 @@ export const Stamp = React.memo(function Stamp({
     }
   } else {
     // Glifos não-ação: cor vem do token de marca direto
+    // R-novo-2 (sub-fase 0c): tints específicos de ação não fazem
+    // sentido sem action color — defensive warn em DEV revela uso
+    // errado sem quebrar prod (fallback mint silencioso).
+    if (__DEV__ && (effectiveTint === 'tintL' || effectiveTint === 'tintD' || effectiveTint === 'solid')) {
+      console.warn(
+        `[Stamp] tint "${effectiveTint}" inválido pra glyph "${glyph}" (não-ação) — fallback mint. ` +
+        `Use 'mint' | 'blk' | 'beige' pra glyphs não-ação.`,
+      );
+    }
     switch (effectiveTint) {
       case 'tintL':
       case 'tintD':

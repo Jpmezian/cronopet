@@ -25,7 +25,11 @@ const ROUTES: Route[] = [
     title: 'Primitivos base (0b)',
     desc:  'Stamp · InkPanel · Card · Button · Pill · Kicker',
   },
-  // 0c adiciona: '/sandbox/primitives-comp' (Chip · ProgressRing · MiniBars · SectionHeader v2)
+  {
+    path:  '/sandbox/primitives-comp',
+    title: 'Primitivos compostos (0c)',
+    desc:  'Chip · ProgressRing · MiniBars · SectionHeader · ScalePress',
+  },
   // Fases 1+ adicionam: '/sandbox/screens-home', '/sandbox/screens-history', etc
 ];
 
