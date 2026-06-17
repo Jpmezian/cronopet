@@ -19,6 +19,10 @@ import { PetPhoto } from '@/components/PetPhoto';
 import { DailyProgress } from '@/components/home/DailyProgress';
 import { ActionButton } from '@/components/home/ActionButton';
 import type { ActionConfig } from '@/components/home/ActionButton';
+import { TodayPanel } from '@/components/home/TodayPanel';
+import { RegisterStrip } from '@/components/home/RegisterStrip';
+import { InsightCard as InsightCardV3 } from '@/components/home/InsightCard';
+import { TimelineToday } from '@/components/home/TimelineToday';
 import {
   Settings, Check, ChevronDown, Plus, Crown,
   Utensils, Droplet, Footprints, Droplets,
@@ -408,6 +412,12 @@ export default function PetDashboard() {
     return { todayCounts: counts, todayFoodGrams: foodGrams, todayWalkMinutes: walkMinutes };
   }, [actionHistory]);
 
+  // Logs do dia atual pra TimelineToday (Fase 1b)
+  const todayActionLogs = useMemo(() => {
+    const today = getLocalToday();
+    return actionHistory.filter((log) => tsToLocalYMD(log.timestamp) === today);
+  }, [actionHistory]);
+
   const latestWeight = useMemo(() => {
     if (weightHistory.length === 0) return null;
     return [...weightHistory].sort((a, b) => b.data.localeCompare(a.data))[0].peso;
@@ -726,7 +736,8 @@ export default function PetDashboard() {
   }, [modalAction, logNote, logPhoto, logQuantity, logVolumeMl, logDuration, subXixi, subCoco, logAcceptance, logConsistency, logAppearance, saving, addActionLog]);
 
   // ── Greeting contextual ───────────────────────────────────
-  const greeting = getSmartGreeting(pet.nome, todayCounts, pet.tipo, isDayComplete, currentHour);
+  // greeting removido na Fase 1a (TopBar Bold v3 não usa string contextual)
+  // — getSmartGreeting fn ainda existe pra back-compat se outro caller surgir
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bgScreen }}>
@@ -777,8 +788,8 @@ export default function PetDashboard() {
           ]}
         />
 
-        {/* Progresso diário */}
-        <DailyProgress
+        {/* Today Panel — Bold v3 (Fase 1b, substitui DailyProgress) */}
+        <TodayPanel
           todayCounts={todayCounts}
           petTipo={pet.tipo}
           onFirstComplete={handleFirstComplete}
@@ -824,41 +835,23 @@ export default function PetDashboard() {
           </View>
         )}
 
-        {/* ═══════════ Seção HOJE ═══════════ */}
-        <SectionHeader
-          title="HOJE"
-          subtitle={`${totalDone} de ${actions.length} ${actions.length === 1 ? 'registrada' : 'registradas'}`}
-        />
-
-        {/* Action grid — foco principal do dashboard.
-            Layout adapta ao número de ações pra evitar "1 sozinho na
-            última linha" (era o caso de gato: 4 ações em layout de 3
-            colunas → o 4º virava um retangulão esticado embaixo).
-            Regras: 4 ações → 2x2; demais → 3 colunas (cachorro tem 5
-            ações → 3+2, com os 2 últimos alinhados à esquerda). */}
+        {/* Register Strip — Bold v3 (Fase 1b, substitui ActionButton grid).
+            Gate de cloudHydrated mantido: opacity + pointerEvents bloqueia
+            taps enquanto a hidratação do MMKV/cloud não termina, evitando
+            action_log órfão com pet_id null (bug #22 antigo). */}
         <View
           style={{
-            flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: -4,
-            // Gate visual + interativo enquanto pull cloud não terminou.
-            // Defesa em camadas: opacity sinaliza loading; pointerEvents
-            // bloqueia click; onPress=undefined no ActionButton garante
-            // que mesmo via accessibility action o handler não dispara.
             opacity: cloudHydrated ? 1 : 0.4,
+            marginHorizontal: -20,  // RegisterStrip já tem padding 20 — anula o do parent
           }}
           pointerEvents={cloudHydrated ? 'auto' : 'none'}
           accessibilityState={{ disabled: !cloudHydrated, busy: !cloudHydrated }}
         >
-          {actions.map((action) => (
-            <ActionButton
-              key={action.key}
-              action={action}
-              count={todayCounts[action.key] ?? 0}
-              isUrgent={urgentMap[action.key]}
-              onPress={cloudHydrated ? () => openModal(action) : NO_OP}
-              progressLabel={action.key === 'comida' ? comidaProgressLabel : undefined}
-              cols={actions.length === 4 ? 2 : 3}
-            />
-          ))}
+          <RegisterStrip
+            todayCounts={todayCounts}
+            petTipo={pet.tipo}
+            onRegister={(key) => addActionLog(key)}
+          />
         </View>
 
         {/* Weather — feedback TestFlight R2-3: antes ficava entre nutrição
@@ -905,12 +898,11 @@ export default function PetDashboard() {
             1º insight (titulo truncado) + CTA pra paywall. Pro vê o
             card completo com todos os insights. CriticalInsightBanner
             (acima) continua livre — alertas críticos sempre passam. */}
+        {/* Insight Card — Bold v3 (Fase 1b, substitui HealthInsightsCard pra Pro).
+            Free users seguem com InsightsPremiumGate (gate intacto, fase 6 redesena). */}
         {healthInsights.length > 0 && (
           isPremium ? (
-            <HealthInsightsCard
-              insights={healthInsights}
-              onDismiss={dismissInsight}
-            />
+            <InsightCardV3 insight={healthInsights[0]} />
           ) : (
             <InsightsPremiumGate
               insightCount={healthInsights.length}
@@ -930,6 +922,19 @@ export default function PetDashboard() {
         {pet.nascimento && (
           <BirthdayCard petNome={pet.nome} nascimento={pet.nascimento} />
         )}
+
+        {/* Timeline de hoje — Bold v3 (Fase 1b, briefing 05 § 3.8).
+            Logs do dia atual em ordem cronológica reversa. "Ver tudo" empurra
+            pra Histórico. */}
+        <SectionHeader
+          title="Hoje"
+          actionLabel={todayActionLogs.length > 0 ? 'Ver tudo' : undefined}
+          onActionPress={() => router.push('/(tabs)/history' as never)}
+        />
+        <TimelineToday
+          logs={todayActionLogs}
+          onSeeAll={() => router.push('/(tabs)/history' as never)}
+        />
 
         <NutritionEntryCard
           targetKcal={nutritionTargetKcal}
