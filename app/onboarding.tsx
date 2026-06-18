@@ -20,9 +20,14 @@ import { BreedPickerField } from '@/components/ui/BreedPickerField';
 import { track } from '@/services/analytics';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { PetPhoto } from '@/components/PetPhoto';
-import { IllustrationWelcome } from '@/components/onboarding/IllustrationWelcome';
-import { IllustrationRoutine } from '@/components/onboarding/IllustrationRoutine';
-import { IllustrationSetup } from '@/components/onboarding/IllustrationSetup';
+// Illustrations legacy substituídas em 2026-06-16 (Fase 2 Bold v3,
+// decisão CTO Q-D: visual-only refresh — preserva todos os 4 steps
+// funcionais existentes, só troca os 3 hero visuals).
+// Arquivos das illustrations antigas permanecem no repo até Fase 9
+// cleanup pra cobrir back-compat caso CTO queira A/B test depois.
+import { HeroPaw } from '@/components/onboarding/HeroPaw';
+import { HeroFood } from '@/components/onboarding/HeroFood';
+import { HeroFamily } from '@/components/onboarding/HeroFamily';
 import { StepAuth } from '@/components/onboarding/StepAuth';
 import { BirthdayPickerField } from '@/components/ui/BirthdayPickerField';
 import type { PetType } from '@/types/pet';
@@ -144,9 +149,11 @@ export default function OnboardingScreen() {
   // Step 1 (Auth) reusa IllustrationWelcome — mantém continuidade visual
   // (o welcome convida, e a auth ainda é "boas-vindas" no contexto do user).
   const HeroIllustration = () => {
-    if (displayStep === 0 || displayStep === 1) return <IllustrationWelcome />;
-    if (displayStep === 2) return <IllustrationRoutine />;
-    return <IllustrationSetup />;
+    // Steps 0=Welcome e 1=Auth compartilham hero (continuidade visual —
+    // o welcome convida, e a auth ainda é "boas-vindas" no contexto do user)
+    if (displayStep === 0 || displayStep === 1) return <HeroPaw />;
+    if (displayStep === 2) return <HeroFood />;
+    return <HeroFamily />;
   };
 
   return (
