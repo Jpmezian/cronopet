@@ -70,7 +70,9 @@ docs/reports/
 # Material privado: roadmaps, decisões CTO, papéis de sócios.
 # NUNCA commitar. Sprint anterior (Doc Visual) e Bold v3.
 # Cleanup retroativo: 2026-06-14 (commit 1e08ce2 force-push rewrite).
-/files/
-/files-redesign-bold-v3/
-/files.zip
-/files 2.zip
+#
+# Globs cobrem Mac duplicate naming: ao baixar mesmo material 2+ vezes,
+# Finder cria 'files 2/', 'files 3.zip', etc. Endurecido 2026-06-16
+# após appearance de 'files 2/' antes do commit da Fase 1b.
+/files*/
+/files*.zip
