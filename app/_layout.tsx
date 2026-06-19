@@ -341,6 +341,13 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="nutrition-plan"
+          options={{
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
+        <Stack.Screen
           name="photos"
           options={{
             presentation: 'modal',
