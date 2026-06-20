@@ -1,9 +1,17 @@
 import React, { forwardRef } from 'react';
 import type { ComponentType } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
+import { SvgXml } from 'react-native-svg';
 import { Bath, Calendar, Drumstick, Droplet, Footprints, Pill } from 'lucide-react-native';
 import { resolvePhotoUri } from '@/lib/photoPath';
 import { brand, verdigrisDeep } from '@/constants/colors';
+import { STAMP_GLYPHS } from '@/constants/stampGlyphs';
+
+// SVG XMLs pré-montados — STAMP_GLYPHS retorna paths com placeholder
+// __FG__ que substituímos pela cor de cada local de uso. Pré-monta
+// fora do render pra evitar string concat em cada captureRef.
+const PASSEIO_XML_WHITE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#FFFFFF">${STAMP_GLYPHS.passeio.replace(/__FG__/g, '#FFFFFF')}</svg>`;
+const SPARKLE_XML_WHITE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#FFFFFF">${STAMP_GLYPHS.sparkle.replace(/__FG__/g, '#FFFFFF')}</svg>`;
 
 // Lucide icon prop signature comum a todos os 6 stats.
 type StatIconProps = { size?: number; color?: string; strokeWidth?: number };
@@ -54,7 +62,6 @@ const C = {
 
   // Hex auxiliares com alpha (impossível derivar de tokens sem RGBA helper)
   whiteSoft:  'rgba(255,255,255,0.92)',
-  textOnAccent: '#FFFFFF',
 
   // Bg de ícone sobre card branco (celadon diluído)
   iconBg: brand.beige,
@@ -210,7 +217,7 @@ export const WeeklyReportCard = forwardRef<View, WeeklyReportCardProps>(
         <View style={styles.header}>
           <View style={styles.brandRow}>
             <View style={styles.brandLogo}>
-              <Text style={styles.brandLogoGlyph}>🐾</Text>
+              <SvgXml xml={PASSEIO_XML_WHITE} width={16} height={16} />
             </View>
             <View>
               <Text style={styles.brandName}>CronoPet</Text>
@@ -276,7 +283,7 @@ export const WeeklyReportCard = forwardRef<View, WeeklyReportCardProps>(
               {/* ── HIGHLIGHT card (destaque da semana) ── */}
               <View style={styles.highlightCard}>
                 <View style={styles.highlightStar}>
-                  <Text style={styles.highlightStarGlyph}>⭐</Text>
+                  <SvgXml xml={SPARKLE_XML_WHITE} width={20} height={20} />
                 </View>
                 <View style={styles.highlightTextBox}>
                   <Text style={styles.highlightLabel}>
@@ -295,7 +302,7 @@ export const WeeklyReportCard = forwardRef<View, WeeklyReportCardProps>(
         <View style={styles.footer}>
           <View style={styles.footerBrand}>
             <View style={styles.footerLogo}>
-              <Text style={styles.footerLogoGlyph}>🐾</Text>
+              <SvgXml xml={PASSEIO_XML_WHITE} width={12} height={12} />
             </View>
             <Text style={styles.footerDomain}>cronopet.com.br</Text>
           </View>
@@ -340,10 +347,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  brandLogoGlyph: {
-    fontSize: 14,
-    color: C.textOnAccent,
-  },
   brandName: {
     fontFamily: 'Nunito_800ExtraBold',
     fontSize: 14,
@@ -370,20 +373,21 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Hero
+  // Hero — encolhido em 2026-06-17 (hotfix overflow): photoFrame
+  // 168→140 + petName 36→30 economizam ~38px verticais. Era esse o
+  // gap que fazia o body invadir o footer absolute.
   hero: {
     alignItems: 'center',
-    marginTop: 16,
+    marginTop: 12,
   },
   photoFrame: {
-    width: 168,
-    height: 168,
-    borderRadius: 84,
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     borderWidth: 4,
     borderColor: C.accent,
     overflow: 'hidden',
     backgroundColor: C.accentDim,
-    // Glow sutil
     shadowColor: C.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -391,18 +395,15 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   photo: {
-    // absoluteFillObject pra Image ocupar a área cheia do photoFrame
-    // (168x168), ignorando o "box-shrink" causado por borderWidth: 4.
-    // Sem isso, Image fica 160x160 e cover crop perde respiro do focinho.
     ...StyleSheet.absoluteFillObject,
   },
   petName: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 36,
+    fontSize: 30,
     fontWeight: '800',
     color: C.textPrimary,
-    marginTop: 12,
-    lineHeight: 40,
+    marginTop: 10,
+    lineHeight: 34,
     letterSpacing: -0.6,
   },
   petSubtitle: {
@@ -411,13 +412,13 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  // Body
+  // Body — paddingBottom 56→68 dá folga extra entre highlight e footer
+  // pra evitar overlap quando highlight quebra em 2 linhas.
   body: {
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 12,
-    // Reserva espaço pro footer absoluto (~44px) + respiro.
-    paddingBottom: 56,
+    paddingBottom: 68,
   },
 
   // weekIsEmpty
@@ -510,10 +511,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  highlightStarGlyph: {
-    fontSize: 18,
-    color: C.textOnAccent,
-  },
   highlightTextBox: {
     flex: 1,
   },
@@ -559,10 +556,6 @@ const styles = StyleSheet.create({
     backgroundColor: C.accent,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  footerLogoGlyph: {
-    fontSize: 10,
-    color: C.textOnAccent,
   },
   footerDomain: {
     fontSize: 11,
