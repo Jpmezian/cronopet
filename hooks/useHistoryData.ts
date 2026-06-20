@@ -13,16 +13,14 @@
 // (slot `[len, type]` na dep array — comparação shallow do array
 // completo seria O(N) a cada render).
 //
-// Goals canônicos duplicam DailyProgress/TodayPanel (P3 Fase 9
-// centraliza em constants/dailyGoals.ts).
+// Goals canônicos vêm de constants/dailyGoals.ts (centralizado na
+// Fase 9a — antes triplicado em DailyProgress/TodayPanel/aqui).
 
 import { useMemo } from 'react';
 import type { ActionKey, ActionLog, PetType } from '@/types/pet';
 import { tsToLocalYMD, getLocalToday } from '@/lib/dateLocal';
 
-// ─── Goals canônicos (duplicado consciente — vide cabeçalho) ─
-const GOALS_CACHORRO: ActionKey[] = ['comida', 'agua', 'passeio'];
-const GOALS_GATO:     ActionKey[] = ['comida', 'agua'];
+import { dailyGoalsFor } from '@/constants/dailyGoals';
 
 const TRACKED_ACTIONS: ActionKey[] = ['comida', 'agua', 'passeio'];
 
@@ -163,7 +161,7 @@ export function useHistoryData(
   const memoKey = `${actionHistory.length}-${petTipo}-${currentStreak}`;
 
   return useMemo(() => {
-    const goals = petTipo === 'gato' ? GOALS_GATO : GOALS_CACHORRO;
+    const goals = dailyGoalsFor(petTipo);
     const goalsTotalPerDay = goals.length;
     const todayYMD = getLocalToday();
     const sunday   = getSundayOfThisWeek();

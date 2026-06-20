@@ -13,10 +13,7 @@ import { PoopIcon } from '@/components/icons/PoopIcon';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import type { ActionKey, PetType } from '@/types/pet';
 
-// ─── Metas canônicas diárias ──────────────────────────────────
-
-const GOALS_CACHORRO: ActionKey[] = ['comida', 'agua', 'passeio'];
-const GOALS_GATO: ActionKey[]     = ['comida', 'agua'];
+import { dailyGoalsFor } from '@/constants/dailyGoals';
 
 interface GoalIconProps { size?: number; color?: string; strokeWidth?: number }
 
@@ -45,7 +42,7 @@ export function DailyProgress({ todayCounts, petTipo, onFirstComplete }: DailyPr
   const { colors, actionTheme } = useThemeColors();
   const isReducedMotion = useReducedMotion();
 
-  const goals     = petTipo === 'gato' ? GOALS_GATO : GOALS_CACHORRO;
+  const goals     = dailyGoalsFor(petTipo);
   const doneCount = goals.filter((key) => (todayCounts[key] ?? 0) > 0).length;
   const allComplete = doneCount === goals.length;
 

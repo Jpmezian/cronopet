@@ -13,9 +13,7 @@ import { Stamp } from '@/components/ui/Stamp';
 import { Kicker } from '@/components/ui/Kicker';
 import type { ActionKey, PetType } from '@/types/pet';
 
-// ─── Metas canônicas (espelha DailyProgress legacy) ──────────
-const GOALS_CACHORRO: ActionKey[] = ['comida', 'agua', 'passeio'];
-const GOALS_GATO:     ActionKey[] = ['comida', 'agua'];
+import { dailyGoalsFor } from '@/constants/dailyGoals';
 
 interface TodayPanelProps {
   todayCounts: Record<ActionKey, number>;
@@ -36,7 +34,7 @@ export function TodayPanel({ todayCounts, petTipo, onFirstComplete }: TodayPanel
   const T = useTheme();
   const reducedMotion = useReducedMotion();
 
-  const goals     = petTipo === 'gato' ? GOALS_GATO : GOALS_CACHORRO;
+  const goals     = dailyGoalsFor(petTipo);
   const doneCount = goals.filter((k) => (todayCounts[k] ?? 0) > 0).length;
   const total     = goals.length;
   const progress  = total > 0 ? doneCount / total : 0;
