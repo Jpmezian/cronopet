@@ -1,16 +1,16 @@
 import React, { useState, useCallback } from 'react';
+import { View, Text, TextInput, Image, StyleSheet } from 'react-native';
 import {
-  Modal, View, Text, TextInput, Pressable, Image,
-  KeyboardAvoidingView, Platform,
-} from 'react-native';
-import {
-  Stethoscope, Check, Droplet, Thermometer, BicepsFlexed,
+  Stethoscope, Camera, Droplet, Thermometer, BicepsFlexed,
   Footprints, UtensilsCrossed, ClipboardList,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import { ModalShell } from '@/components/chrome/ModalShell';
+import { Button } from '@/components/ui/Button';
 import { ScalePress } from '@/components/ui/ScalePress';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { ACTIONS_V3 } from '@/constants/colors';
+import { useTheme } from '@/hooks/useTheme';
 import type { MedicalEventType } from '@/types/pet';
 
 interface SymptomModalProps {
@@ -30,11 +30,13 @@ const SYMPTOM_OPTIONS: { type: MedicalEventType; Icon: typeof Stethoscope; label
 ];
 
 /**
- * Modal de registrar ocorrência — visual LEGACY preservado intacto
- * (Fase 9 migra). Extraído de medical.tsx pra manter o screen ≤300L.
+ * SymptomModal — migrado pra ModalShell (Fase 9b). Chips de sintoma
+ * + foto opcional + textarea de observação. CTA destrutivo trocado
+ * pelo Button preto padrão (Bold v3 usa cor de Pill warning quando
+ * o ato é destrutivo; registrar sintoma NÃO é destrutivo).
  */
 export function SymptomModal({ visible, onClose, onSave }: SymptomModalProps) {
-  const { colors } = useThemeColors();
+  const T = useTheme();
   const [type, setType]   = useState<MedicalEventType>('outro');
   const [note, setNote]   = useState('');
   const [photo, setPhoto] = useState<string | null>(null);
@@ -59,98 +61,93 @@ export function SymptomModal({ visible, onClose, onSave }: SymptomModalProps) {
   }, [type, note, photo, onSave, reset]);
 
   const handleClose = useCallback(() => { reset(); onClose(); }, [reset, onClose]);
-
   const selected = SYMPTOM_OPTIONS.find((s) => s.type === type);
 
-  const inputStyle = {
-    backgroundColor: colors.bgInput, borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 15, color: colors.textPrimary,
-  };
-
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <Pressable style={{ flex: 1, backgroundColor: 'rgba(28,25,23,0.35)' }} onPress={handleClose} accessibilityLabel="Fechar" />
-        <View style={{
-          backgroundColor: colors.bgCard, borderTopLeftRadius: 28, borderTopRightRadius: 28,
-          paddingHorizontal: 24, paddingTop: 8, paddingBottom: 40,
-        }}>
-          <View style={{ alignItems: 'center', paddingVertical: 12 }}>
-            <View style={{ width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2 }} />
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <Stethoscope size={20} color={colors.textPrimary} strokeWidth={2} />
-            <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: 18, fontFamily: 'Nunito_700Bold' }}>
-              Registrar Ocorrência
-            </Text>
-          </View>
-
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-            {SYMPTOM_OPTIONS.map((opt) => {
-              const sel = type === opt.type;
-              return (
-                <ScalePress
-                  key={opt.type}
-                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setType(opt.type); }}
-                  style={{
-                    borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8,
-                    flexDirection: 'row', alignItems: 'center', gap: 6,
-                    backgroundColor: sel ? '#dc2626' : colors.bgInput,
-                  }}
-                  accessible accessibilityRole="button"
-                  accessibilityLabel={`${opt.label}${sel ? ', selecionado' : ''}`}
-                >
-                  <opt.Icon size={16} strokeWidth={2.2} color={sel ? '#FFFEF8' : colors.textSecondary} />
-                  <Text style={{ fontWeight: '600', fontSize: 13, color: sel ? '#FFFEF8' : colors.textSecondary }}>
-                    {opt.label}
-                  </Text>
-                </ScalePress>
-              );
-            })}
-          </View>
-
-          <ScalePress
-            onPress={pickPhoto}
-            style={{
-              borderRadius: 14, overflow: 'hidden', marginBottom: 12,
-              borderWidth: 2, borderColor: colors.border, borderStyle: 'dashed',
-            }}
-            accessible accessibilityRole="button"
-            accessibilityLabel={photo ? 'Alterar foto da ocorrência' : 'Adicionar foto da ocorrência'}
-          >
-            {photo ? (
-              <Image source={{ uri: photo }} style={{ width: '100%', height: 120 }} resizeMode="cover" />
-            ) : (
-              <View style={{ height: 64, alignItems: 'center', justifyContent: 'center' }}>
-                <Text style={{ color: colors.textTertiary, fontSize: 13 }}>📷 Adicionar foto (opcional)</Text>
-              </View>
-            )}
-          </ScalePress>
-
-          <TextInput
-            value={note} onChangeText={setNote}
-            placeholder="Descreva o que observou..."
-            placeholderTextColor={colors.textTertiary}
-            multiline numberOfLines={3} maxLength={300}
-            style={{ ...inputStyle, marginBottom: 16, textAlignVertical: 'top', minHeight: 80 }}
-          />
-
-          <ScalePress
-            onPress={handleSave}
-            style={{ backgroundColor: '#dc2626', borderRadius: 16, height: 56, alignItems: 'center', justifyContent: 'center' }}
-            accessible accessibilityRole="button"
-            accessibilityLabel={`Registrar ${selected?.label ?? 'ocorrência'}`}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Check size={18} color="#ffffff" strokeWidth={2.5} />
-              <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 16, fontFamily: 'Nunito_700Bold' }}>
-                Registrar {selected?.label}
+    <ModalShell
+      visible={visible}
+      onClose={handleClose}
+      title="Registrar ocorrência"
+      kicker="Saúde"
+      avoidKeyboard
+      scrollable
+    >
+      <View style={s.chipsRow}>
+        {SYMPTOM_OPTIONS.map((opt) => {
+          const sel = type === opt.type;
+          return (
+            <ScalePress
+              key={opt.type}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setType(opt.type); }}
+              accessible accessibilityRole="button"
+              accessibilityLabel={`${opt.label}${sel ? ', selecionado' : ''}`}
+              style={[
+                s.chip,
+                { backgroundColor: sel ? ACTIONS_V3.comida.primary : T.surfaceTint },
+              ]}
+            >
+              <opt.Icon size={16} strokeWidth={2.2} color={sel ? '#FFFFFF' : T.ink2} />
+              <Text style={[s.chipLabel, { color: sel ? '#FFFFFF' : T.ink }]}>
+                {opt.label}
               </Text>
-            </View>
-          </ScalePress>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+            </ScalePress>
+          );
+        })}
+      </View>
+
+      <ScalePress
+        onPress={pickPhoto}
+        accessible accessibilityRole="button"
+        accessibilityLabel={photo ? 'Alterar foto da ocorrência' : 'Adicionar foto da ocorrência'}
+        style={[s.photoBtn, { borderColor: T.rule }]}
+      >
+        {photo ? (
+          <Image source={{ uri: photo }} style={{ width: '100%', height: 120, borderRadius: 12 }} resizeMode="cover" />
+        ) : (
+          <View style={s.photoPlaceholder}>
+            <Camera size={20} color={T.ink3} strokeWidth={2.2} />
+            <Text style={[s.photoLabel, { color: T.ink3 }]}>Adicionar foto (opcional)</Text>
+          </View>
+        )}
+      </ScalePress>
+
+      <TextInput
+        value={note} onChangeText={setNote}
+        placeholder="Descreva o que observou..."
+        placeholderTextColor={T.ink4}
+        multiline numberOfLines={3} maxLength={300}
+        style={[s.textarea, { backgroundColor: T.surfaceTint, color: T.ink }]}
+      />
+
+      <Button
+        label={`Registrar ${selected?.label.toLowerCase() ?? 'ocorrência'}`}
+        onPress={handleSave}
+        variant="black"
+        fullWidth
+        style={{ marginTop: 8 }}
+        accessibilityHint="Salva a ocorrência no histórico de saúde"
+      />
+    </ModalShell>
   );
 }
+
+const s = StyleSheet.create({
+  chipsRow:  { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  chip:      {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderRadius: 12, paddingHorizontal: 12, paddingVertical: 8,
+  },
+  chipLabel: { fontFamily: 'HankenGrotesk_700Bold', fontSize: 13, fontWeight: '700' },
+  photoBtn:  {
+    borderRadius: 14, overflow: 'hidden', marginBottom: 12,
+    borderWidth: 2, borderStyle: 'dashed',
+  },
+  photoPlaceholder: { height: 64, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  photoLabel: { fontFamily: 'HankenGrotesk_500Medium', fontSize: 13, fontWeight: '500' },
+  textarea: {
+    fontFamily: 'HankenGrotesk_500Medium',
+    borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12,
+    fontSize: 15, marginBottom: 16,
+    textAlignVertical: 'top', minHeight: 80,
+  },
+});

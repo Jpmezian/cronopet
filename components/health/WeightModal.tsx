@@ -1,27 +1,24 @@
 import React, { useState, useCallback } from 'react';
-import {
-  Modal, View, Text, TextInput, Pressable,
-  KeyboardAvoidingView, Platform,
-} from 'react-native';
-import { Scale, Check } from 'lucide-react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { ScalePress } from '@/components/ui/ScalePress';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { ModalShell } from '@/components/chrome/ModalShell';
+import { Button } from '@/components/ui/Button';
+import { useTheme } from '@/hooks/useTheme';
 import { getLocalToday } from '@/lib/dateLocal';
 
 interface WeightModalProps {
-  visible:  boolean;
-  onClose:  () => void;
-  onSave:   (peso: number, data: string, nota: string | undefined) => void;
+  visible: boolean;
+  onClose: () => void;
+  onSave:  (peso: number, data: string, nota: string | undefined) => void;
 }
 
 /**
- * Modal de registro de peso — visual LEGACY preservado intacto (decisão
- * da Fase 4: modais migram pro Bold v3 só na Fase 9). Extraído de
- * medical.tsx pra manter o screen ≤300L.
+ * WeightModal — migrado pra ModalShell (Fase 9b). Antes tinha header
+ * Nunito + buttons hardcoded; agora delega chrome pro ModalShell e
+ * usa Button primitivo. avoidKeyboard pros TextInputs.
  */
 export function WeightModal({ visible, onClose, onSave }: WeightModalProps) {
-  const { colors, actionTheme } = useThemeColors();
+  const T = useTheme();
   const [peso, setPeso] = useState('');
   const [data, setData] = useState(() => getLocalToday());
   const [nota, setNota] = useState('');
@@ -39,85 +36,73 @@ export function WeightModal({ visible, onClose, onSave }: WeightModalProps) {
   }, [peso, data, nota, onSave, reset]);
 
   const handleClose = useCallback(() => { reset(); onClose(); }, [reset, onClose]);
-
-  const valid = peso.trim() && data.trim();
-
-  const inputStyle = {
-    backgroundColor:    colors.bgInput,
-    borderRadius:       12,
-    paddingHorizontal:  14,
-    paddingVertical:    12,
-    fontSize:           15,
-    color:              colors.textPrimary,
-  };
+  const valid = !!peso.trim() && !!data.trim();
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <Pressable style={{ flex: 1, backgroundColor: 'rgba(28,25,23,0.35)' }} onPress={handleClose} accessibilityLabel="Fechar" />
-        <View style={{
-          backgroundColor: colors.bgCard, borderTopLeftRadius: 28, borderTopRightRadius: 28,
-          paddingHorizontal: 24, paddingTop: 8, paddingBottom: 40,
-        }}>
-          <View style={{ alignItems: 'center', paddingVertical: 12 }}>
-            <View style={{ width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2 }} />
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-            <Scale size={20} color={colors.textPrimary} strokeWidth={2} />
-            <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: 18, fontFamily: 'Nunito_700Bold' }}>
-              Registrar Peso
-            </Text>
-          </View>
+    <ModalShell
+      visible={visible}
+      onClose={handleClose}
+      title="Registrar peso"
+      kicker="Saúde"
+      avoidKeyboard
+      scrollable
+    >
+      <Field T={T} label="Peso (kg) *">
+        <TextInput
+          value={peso} onChangeText={setPeso}
+          placeholder="Ex: 8.5" placeholderTextColor={T.ink4}
+          keyboardType="decimal-pad" maxLength={10}
+          style={[s.input, { backgroundColor: T.surfaceTint, color: T.ink }]}
+        />
+      </Field>
+      <Field T={T} label="Data * (AAAA-MM-DD)">
+        <TextInput
+          value={data} onChangeText={setData}
+          placeholder="Ex: 2025-04-01" placeholderTextColor={T.ink4}
+          autoCorrect={false} maxLength={10}
+          style={[s.input, { backgroundColor: T.surfaceTint, color: T.ink }]}
+        />
+      </Field>
+      <Field T={T} label="Observação">
+        <TextInput
+          value={nota} onChangeText={setNota}
+          placeholder="Ex: Após castração (opcional)" placeholderTextColor={T.ink4}
+          maxLength={100}
+          style={[s.input, { backgroundColor: T.surfaceTint, color: T.ink }]}
+        />
+      </Field>
 
-          <View style={{ marginBottom: 14 }}>
-            <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 13, marginBottom: 6 }}>Peso (kg) *</Text>
-            <TextInput
-              value={peso} onChangeText={setPeso}
-              placeholder="Ex: 8.5" placeholderTextColor={colors.textTertiary}
-              keyboardType="decimal-pad" maxLength={10}
-              style={inputStyle}
-            />
-          </View>
-          <View style={{ marginBottom: 14 }}>
-            <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 13, marginBottom: 6 }}>Data * (AAAA-MM-DD)</Text>
-            <TextInput
-              value={data} onChangeText={setData}
-              placeholder="Ex: 2025-04-01" placeholderTextColor={colors.textTertiary}
-              autoCorrect={false} maxLength={10}
-              style={inputStyle}
-            />
-          </View>
-          <View style={{ marginBottom: 20 }}>
-            <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 13, marginBottom: 6 }}>Observação</Text>
-            <TextInput
-              value={nota} onChangeText={setNota}
-              placeholder="Ex: Após castração (opcional)" placeholderTextColor={colors.textTertiary}
-              maxLength={100}
-              style={inputStyle}
-            />
-          </View>
-
-          <ScalePress
-            onPress={handleSave}
-            disabled={!valid}
-            style={{
-              borderRadius: 16, height: 56, alignItems: 'center', justifyContent: 'center',
-              backgroundColor: valid ? actionTheme.xixi.primary : colors.bgMuted,
-            }}
-            accessible accessibilityRole="button" accessibilityLabel="Salvar peso"
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Check size={18} color={valid ? '#ffffff' : colors.textDisabled} strokeWidth={2.5} />
-              <Text style={{
-                fontWeight: '700', fontSize: 16, fontFamily: 'Nunito_700Bold',
-                color: valid ? '#ffffff' : colors.textDisabled,
-              }}>
-                Salvar Peso
-              </Text>
-            </View>
-          </ScalePress>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+      <Button
+        label="Salvar peso"
+        onPress={handleSave}
+        variant="black"
+        fullWidth
+        disabled={!valid}
+        style={{ marginTop: 8 }}
+        accessibilityHint="Salva o registro de peso na carteira de saúde"
+      />
+    </ModalShell>
   );
 }
+
+function Field({
+  T, label, children,
+}: { T: ReturnType<typeof useTheme>; label: string; children: React.ReactNode }) {
+  return (
+    <View style={{ marginBottom: 14 }}>
+      <Text style={[s.label, { color: T.ink2 }]}>{label}</Text>
+      {children}
+    </View>
+  );
+}
+
+const s = StyleSheet.create({
+  label: { fontFamily: 'HankenGrotesk_700Bold', fontSize: 13, fontWeight: '700', marginBottom: 6 },
+  input: {
+    fontFamily:        'HankenGrotesk_500Medium',
+    borderRadius:      12,
+    paddingHorizontal: 14,
+    paddingVertical:   12,
+    fontSize:          15,
+  },
+});

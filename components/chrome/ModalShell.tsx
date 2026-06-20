@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   Modal, View, Text, Pressable, ScrollView, StyleSheet, Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -22,6 +23,10 @@ interface ModalShellProps {
   /** Modal full-screen (sheet vs bottom sheet). Default false = bottom
    *  sheet. true = ocupa quase toda a tela com header sticky. */
   fullScreen?: boolean;
+  /** Envolve em KeyboardAvoidingView. Use quando o modal tem TextInput
+   *  ou outros campos que precisam ficar visíveis sobre o teclado.
+   *  iOS: behavior='padding'. Android: 'height'. */
+  avoidKeyboard?: boolean;
 }
 
 /**
@@ -39,7 +44,7 @@ interface ModalShellProps {
  * BirthdayPickerField (R-fase-8-modalshell-scope).
  */
 export function ModalShell({
-  visible, onClose, title, kicker, children, scrollable, fullScreen,
+  visible, onClose, title, kicker, children, scrollable, fullScreen, avoidKeyboard,
 }: ModalShellProps) {
   const T = useTheme();
   const insets = useSafeAreaInsets();
@@ -61,8 +66,14 @@ export function ModalShell({
     ? { showsVerticalScrollIndicator: false, keyboardShouldPersistTaps: 'handled' as const, contentContainerStyle: { paddingBottom: insets.bottom + 24 } }
     : { style: { paddingBottom: insets.bottom + 24 } };
 
+  const Wrapper = avoidKeyboard ? KeyboardAvoidingView : View;
+  const wrapperProps = avoidKeyboard
+    ? { behavior: (Platform.OS === 'ios' ? 'padding' : 'height') as 'padding' | 'height', style: { flex: 1 } }
+    : { style: { flex: 1 } };
+
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={onClose}>
+      <Wrapper {...wrapperProps}>
       <Pressable
         onPress={onClose}
         accessibilityLabel="Fechar"
@@ -111,6 +122,7 @@ export function ModalShell({
           {children}
         </Body>
       </Animated.View>
+      </Wrapper>
     </Modal>
   );
 }

@@ -1,14 +1,13 @@
 import React from 'react';
-import { View, Text, Modal, Pressable, Platform } from 'react-native';
-import Animated, {
-  SlideInDown, SlideOutDown, FadeIn, FadeOut,
-  useReducedMotion,
-} from 'react-native-reanimated';
+import { View, Text, StyleSheet } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
-import { X } from 'lucide-react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { Gift } from 'lucide-react-native';
+import { ModalShell } from '@/components/chrome/ModalShell';
+import { Button } from '@/components/ui/Button';
+import { Pill } from '@/components/ui/Pill';
 import { ScalePress } from '@/components/ui/ScalePress';
+import { useTheme } from '@/hooks/useTheme';
 import type { PremiumTrigger } from '@/hooks/usePremiumTriggers';
 
 interface PremiumTriggerSheetProps {
@@ -16,161 +15,88 @@ interface PremiumTriggerSheetProps {
   onDismiss: () => void;
 }
 
+/**
+ * PremiumTriggerSheet — migrado pra ModalShell (Fase 9b). Sheet de
+ * lembrete contextual de Pro: hero emoji + headline + subtitle + Pill
+ * "7 dias grátis" + CTA Button preto + ghost "talvez mais tarde".
+ *
+ * Tap CTA → /premium com source=premium_trigger_sheet. Delay 200ms
+ * antes do push pra permitir dismiss animation finalizar.
+ */
 export function PremiumTriggerSheet({ trigger, onDismiss }: PremiumTriggerSheetProps) {
+  const T = useTheme();
   const router = useRouter();
-  const { colors, isDark } = useThemeColors();
-  const isReduced = useReducedMotion();
 
-  const modalOverlay = isDark ? 'rgba(0,0,0,0.55)' : 'rgba(28,25,23,0.35)';
-  const darkCardBg = isDark ? colors.bgCard : colors.textPrimary;
+  const handleUpgrade = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onDismiss();
+    setTimeout(
+      () => router.push({ pathname: '/premium', params: { source: 'premium_trigger_sheet' } }),
+      200,
+    );
+  };
 
-  const entering = isReduced ? FadeIn.duration(200) : SlideInDown.springify().damping(20).stiffness(280);
-  const exiting  = isReduced ? FadeOut.duration(150) : SlideOutDown.duration(200);
+  const handleDismiss = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onDismiss();
+  };
 
   return (
-    <Modal
+    <ModalShell
       visible={trigger !== null}
-      transparent
-      animationType="none"
-      onRequestClose={onDismiss}
+      onClose={onDismiss}
+      title={trigger?.headline ?? ''}
+      kicker="Pro"
     >
-      <View style={{ flex: 1 }}>
-        <Pressable
-          style={{ flex: 1, backgroundColor: modalOverlay }}
-          onPress={onDismiss}
-        />
-
-        <Animated.View
-          entering={entering}
-          exiting={exiting}
-          style={{
-            backgroundColor: colors.bgCard,
-            borderTopLeftRadius: 28,
-            borderTopRightRadius: 28,
-            paddingHorizontal: 24,
-            paddingTop: 8,
-            paddingBottom: Platform.OS === 'ios' ? 40 : 28,
-          }}
-        >
-          {/* Close button */}
-          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingTop: 8 }}>
-            <ScalePress
-              onPress={onDismiss}
-              accessible accessibilityRole="button"
-              accessibilityLabel="Fechar"
-              style={{
-                width: 32, height: 32, borderRadius: 10,
-                backgroundColor: colors.bgInput,
-                alignItems: 'center', justifyContent: 'center',
-              }}
-            >
-              <X size={16} color={colors.textSecondary} strokeWidth={2.5} />
-            </ScalePress>
+      {trigger && (
+        <View style={s.body}>
+          <View style={[s.heroIcon, { backgroundColor: T.mint }]}>
+            <Text style={s.emoji} importantForAccessibility="no">{trigger.emoji}</Text>
           </View>
 
-          {/* Drag handle */}
-          <View style={{ alignItems: 'center', position: 'absolute', top: 8, left: 0, right: 0 }}>
-            <View style={{ width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2 }} />
+          <Text style={[s.subtitle, { color: T.ink2 }]}>{trigger.subtitle}</Text>
+
+          <View style={s.pillWrap}>
+            <Pill label="7 dias grátis · sem cartão" tone="pro" />
+            <Gift size={14} color={T.primaryDeep} strokeWidth={2.4} />
           </View>
 
-          {trigger && (
-            <>
-              {/* Hero icon */}
-              <View style={{
-                width: 72, height: 72, borderRadius: 20,
-                backgroundColor: 'rgba(251,191,36,0.15)',
-                borderWidth: 2, borderColor: '#04A29B',
-                alignItems: 'center', justifyContent: 'center',
-                alignSelf: 'center',
-                marginTop: 4, marginBottom: 20,
-              }}>
-                <Text style={{ fontSize: 40 }}>{trigger.emoji}</Text>
-              </View>
+          <Button
+            label={trigger.cta}
+            onPress={handleUpgrade}
+            variant="black"
+            fullWidth
+            accessibilityHint="Abre a tela de assinatura Pro"
+          />
 
-              {/* Copy */}
-              <Text style={{
-                color: colors.textPrimary,
-                fontFamily: 'Nunito_800ExtraBold',
-                fontSize: 22, fontWeight: '800',
-                textAlign: 'center',
-                lineHeight: 28,
-                marginBottom: 10,
-              }}>
-                {trigger.headline}
-              </Text>
-              <Text style={{
-                color: colors.textSecondary,
-                fontSize: 14, lineHeight: 20,
-                textAlign: 'center',
-                marginBottom: 20,
-              }}>
-                {trigger.subtitle}
-              </Text>
-
-              {/* Trial badge */}
-              <View style={{
-                backgroundColor: 'rgba(251,191,36,0.12)',
-                borderWidth: 1, borderColor: 'rgba(251,191,36,0.4)',
-                borderRadius: 12,
-                paddingHorizontal: 14, paddingVertical: 10,
-                marginBottom: 16,
-                flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <Text style={{ fontSize: 14, marginRight: 6 }}>🎁</Text>
-                <Text style={{
-                  color: '#b45309',
-                  fontFamily: 'Nunito_700Bold',
-                  fontSize: 12, fontWeight: '700',
-                  letterSpacing: 0.5,
-                }}>
-                  7 DIAS GRÁTIS · SEM CARTÃO
-                </Text>
-              </View>
-
-              {/* Primary CTA */}
-              <ScalePress
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  onDismiss();
-                  setTimeout(() => router.push({ pathname: '/premium', params: { source: 'premium_trigger_sheet' } }), 200);
-                }}
-                accessible accessibilityRole="button"
-                accessibilityLabel={trigger.cta}
-                style={{
-                  backgroundColor: darkCardBg,
-                  borderRadius: 16,
-                  height: 54,
-                  alignItems: 'center', justifyContent: 'center',
-                  marginBottom: 10,
-                }}
-              >
-                <Text style={{
-                  color: '#ffffff',
-                  fontFamily: 'Nunito_800ExtraBold',
-                  fontSize: 15, fontWeight: '800',
-                }}>
-                  {trigger.cta} →
-                </Text>
-              </ScalePress>
-
-              {/* Dismiss ghost */}
-              <ScalePress
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  onDismiss();
-                }}
-                accessible accessibilityRole="button"
-                accessibilityLabel="Talvez mais tarde"
-                style={{ height: 44, alignItems: 'center', justifyContent: 'center' }}
-              >
-                <Text style={{ color: colors.textTertiary, fontSize: 13 }}>
-                  Talvez mais tarde
-                </Text>
-              </ScalePress>
-            </>
-          )}
-        </Animated.View>
-      </View>
-    </Modal>
+          <ScalePress
+            onPress={handleDismiss}
+            accessible accessibilityRole="button"
+            accessibilityLabel="Talvez mais tarde"
+            style={s.ghost}
+          >
+            <Text style={[s.ghostLabel, { color: T.ink3 }]}>Talvez mais tarde</Text>
+          </ScalePress>
+        </View>
+      )}
+    </ModalShell>
   );
 }
+
+const s = StyleSheet.create({
+  body:       { alignItems: 'center', gap: 18 },
+  heroIcon:   {
+    width: 72, height: 72, borderRadius: 20,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  emoji:      { fontSize: 38 },
+  subtitle:   {
+    fontFamily: 'HankenGrotesk_500Medium',
+    fontSize: 14, fontWeight: '500',
+    lineHeight: 20, textAlign: 'center',
+    marginBottom: 2,
+  },
+  pillWrap:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  ghost:      { paddingVertical: 10 },
+  ghostLabel: { fontFamily: 'HankenGrotesk_700Bold', fontSize: 13, fontWeight: '700' },
+});

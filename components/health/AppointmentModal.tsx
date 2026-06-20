@@ -1,13 +1,10 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import {
-  Modal, View, Text, TextInput, Pressable, ScrollView,
-  KeyboardAvoidingView, Platform, ActivityIndicator,
-} from 'react-native';
-import { CalendarPlus, Check } from 'lucide-react-native';
+import { View, Text, TextInput, StyleSheet } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { ScalePress } from '@/components/ui/ScalePress';
+import { ModalShell } from '@/components/chrome/ModalShell';
+import { Button } from '@/components/ui/Button';
 import { DateTimeField } from '@/components/ui/DateTimeField';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import type { Appointment } from '@/types/pet';
 
 interface AppointmentModalProps {
@@ -17,12 +14,11 @@ interface AppointmentModalProps {
 }
 
 /**
- * Modal de agendar consulta — visual LEGACY preservado intacto (Fase 9
- * migra). Extraído de medical.tsx pra manter o screen ≤300L.
+ * AppointmentModal — migrado pra ModalShell (Fase 9b). DateTimeField
+ * interno (também migrado) cuida da seleção de data/hora.
  */
 export function AppointmentModal({ visible, onClose, onSave }: AppointmentModalProps) {
-  const { colors, isDark } = useThemeColors();
-  const infoText = isDark ? '#93c5fd' : '#1d4ed8';
+  const T = useTheme();
 
   const [titulo, setTitulo] = useState('');
   const [data,   setData]   = useState('');
@@ -51,7 +47,7 @@ export function AppointmentModal({ visible, onClose, onSave }: AppointmentModalP
   }, [titulo, data, hora, vet, nota, onSave, reset]);
 
   const handleClose = useCallback(() => { reset(); onClose(); }, [reset, onClose]);
-  const valid = titulo.trim() && data.trim();
+  const valid = !!titulo.trim() && !!data.trim();
 
   const dateBounds = useMemo(() => {
     const min = new Date();
@@ -61,104 +57,84 @@ export function AppointmentModal({ visible, onClose, onSave }: AppointmentModalP
     return { min, max };
   }, []);
 
-  const inputStyle = {
-    backgroundColor: colors.bgInput, borderRadius: 12,
-    paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 15, color: colors.textPrimary,
-  };
-
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-        <Pressable style={{ flex: 1, backgroundColor: 'rgba(28,25,23,0.35)' }} onPress={handleClose} accessibilityLabel="Fechar" />
-        <View style={{
-          backgroundColor: colors.bgCard, borderTopLeftRadius: 28, borderTopRightRadius: 28,
-          paddingHorizontal: 24, paddingTop: 8, paddingBottom: 40, maxHeight: '85%',
-        }}>
-          <View style={{ alignItems: 'center', paddingVertical: 12 }}>
-            <View style={{ width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2 }} />
-          </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-            <CalendarPlus size={20} color={colors.textPrimary} strokeWidth={2} />
-            <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: 18, fontFamily: 'Nunito_700Bold' }}>
-              Agendar Consulta
-            </Text>
-          </View>
-          <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-            <View style={{ marginBottom: 14 }}>
-              <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 13, marginBottom: 6 }}>Título *</Text>
-              <TextInput
-                value={titulo} onChangeText={setTitulo}
-                placeholder="Ex: Consulta anual, Banho e tosa"
-                placeholderTextColor={colors.textTertiary}
-                autoCorrect={false} maxLength={100}
-                style={inputStyle}
-              />
-            </View>
+    <ModalShell
+      visible={visible}
+      onClose={handleClose}
+      title="Agendar consulta"
+      kicker="Saúde"
+      avoidKeyboard
+      scrollable
+    >
+      <View style={{ marginBottom: 14 }}>
+        <Text style={[s.label, { color: T.ink2 }]}>Título *</Text>
+        <TextInput
+          value={titulo} onChangeText={setTitulo}
+          placeholder="Ex: Consulta anual, Banho e tosa"
+          placeholderTextColor={T.ink4}
+          autoCorrect={false} maxLength={100}
+          style={[s.input, { backgroundColor: T.surfaceTint, color: T.ink }]}
+        />
+      </View>
 
-            <View style={{ marginBottom: 14 }}>
-              <DateTimeField
-                label="Data *"
-                mode="date"
-                value={data}
-                onChange={setData}
-                placeholder="Toque para escolher a data"
-                minimumDate={dateBounds.min}
-                maximumDate={dateBounds.max}
-              />
-            </View>
-            <View style={{ marginBottom: 14 }}>
-              <DateTimeField
-                label="Horário (opcional)"
-                mode="time"
-                value={hora}
-                onChange={setHora}
-                placeholder="Toque para escolher o horário"
-                clearable
-              />
-            </View>
+      <View style={{ marginBottom: 14 }}>
+        <DateTimeField
+          label="Data *"
+          mode="date"
+          value={data}
+          onChange={setData}
+          placeholder="Toque para escolher a data"
+          minimumDate={dateBounds.min}
+          maximumDate={dateBounds.max}
+        />
+      </View>
+      <View style={{ marginBottom: 14 }}>
+        <DateTimeField
+          label="Horário (opcional)"
+          mode="time"
+          value={hora}
+          onChange={setHora}
+          placeholder="Toque para escolher o horário"
+          clearable
+        />
+      </View>
 
-            {[
-              { label: 'Veterinário', value: vet,  setter: setVet,  placeholder: 'Nome do vet (opcional)' },
-              { label: 'Observação',  value: nota, setter: setNota, placeholder: 'Notas adicionais' },
-            ].map((field) => (
-              <View key={field.label} style={{ marginBottom: 14 }}>
-                <Text style={{ color: colors.textSecondary, fontWeight: '600', fontSize: 13, marginBottom: 6 }}>
-                  {field.label}
-                </Text>
-                <TextInput
-                  value={field.value} onChangeText={field.setter}
-                  placeholder={field.placeholder} placeholderTextColor={colors.textTertiary}
-                  autoCorrect={false} maxLength={100}
-                  style={inputStyle}
-                />
-              </View>
-            ))}
-
-            <ScalePress
-              onPress={handleSave}
-              disabled={!valid || saving}
-              style={{
-                borderRadius: 16, height: 56, alignItems: 'center', justifyContent: 'center', marginTop: 4,
-                backgroundColor: valid ? infoText : colors.bgMuted,
-              }}
-              accessible accessibilityRole="button" accessibilityLabel="Salvar consulta"
-            >
-              {saving ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Check size={18} color={valid ? '#ffffff' : colors.textDisabled} strokeWidth={2.5} />
-                  <Text style={{
-                    fontWeight: '700', fontSize: 16, fontFamily: 'Nunito_700Bold',
-                    color: valid ? '#ffffff' : colors.textDisabled,
-                  }}>Salvar Consulta</Text>
-                </View>
-              )}
-            </ScalePress>
-          </ScrollView>
+      {[
+        { label: 'Veterinário', value: vet,  setter: setVet,  placeholder: 'Nome do vet (opcional)' },
+        { label: 'Observação',  value: nota, setter: setNota, placeholder: 'Notas adicionais' },
+      ].map((field) => (
+        <View key={field.label} style={{ marginBottom: 14 }}>
+          <Text style={[s.label, { color: T.ink2 }]}>{field.label}</Text>
+          <TextInput
+            value={field.value} onChangeText={field.setter}
+            placeholder={field.placeholder} placeholderTextColor={T.ink4}
+            autoCorrect={false} maxLength={100}
+            style={[s.input, { backgroundColor: T.surfaceTint, color: T.ink }]}
+          />
         </View>
-      </KeyboardAvoidingView>
-    </Modal>
+      ))}
+
+      <Button
+        label="Salvar consulta"
+        onPress={handleSave}
+        variant="black"
+        fullWidth
+        loading={saving}
+        disabled={!valid}
+        style={{ marginTop: 8 }}
+        accessibilityHint="Agenda a consulta"
+      />
+    </ModalShell>
   );
 }
+
+const s = StyleSheet.create({
+  label: { fontFamily: 'HankenGrotesk_700Bold', fontSize: 13, fontWeight: '700', marginBottom: 6 },
+  input: {
+    fontFamily:        'HankenGrotesk_500Medium',
+    borderRadius:      12,
+    paddingHorizontal: 14,
+    paddingVertical:   12,
+    fontSize:          15,
+  },
+});
