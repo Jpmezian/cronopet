@@ -11,7 +11,8 @@ import * as Haptics from 'expo-haptics';
 import * as Sharing from 'expo-sharing';
 import { captureRef } from 'react-native-view-shot';
 import { Share2 } from 'lucide-react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
+import { ACTIONS_V3 } from '@/constants/colors';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { SocialCardView } from '@/components/ui/SocialCardView';
 import { useToastStore } from '@/store/useToastStore';
@@ -75,7 +76,7 @@ interface MilestoneSheetProps {
 
 // ─── Componente ───────────────────────────────────────────────
 export function MilestoneSheet({ milestone, petNome, petFoto, streak, onClose }: MilestoneSheetProps) {
-  const { colors, actionTheme, brand, isDark } = useThemeColors();
+  const T = useTheme();
   const showToast  = useToastStore((s) => s.showToast);
   const isReduced  = useReducedMotion();
 
@@ -84,7 +85,7 @@ export function MilestoneSheet({ milestone, petNome, petFoto, streak, onClose }:
   const [sharing, setSharing] = useState(false);
 
   const data         = milestone ? MILESTONE_DATA[milestone] : null;
-  const modalOverlay = isDark ? 'rgba(0,0,0,0.55)' : 'rgba(28,25,23,0.35)';
+  const modalOverlay = T.isDark ? 'rgba(0,0,0,0.55)' : 'rgba(28,25,23,0.35)';
 
   // ── Animação do badge ao abrir ─────────────────────────────
   useEffect(() => {
@@ -151,7 +152,7 @@ export function MilestoneSheet({ milestone, petNome, petFoto, streak, onClose }:
           entering={entering}
           exiting={exiting}
           style={{
-            backgroundColor: colors.bgCard,
+            backgroundColor: T.card,
             borderTopLeftRadius: 28,
             borderTopRightRadius: 28,
             paddingHorizontal: 24,
@@ -161,15 +162,15 @@ export function MilestoneSheet({ milestone, petNome, petFoto, streak, onClose }:
         >
           {/* Drag handle */}
           <View style={{ alignItems: 'center', paddingVertical: 12 }}>
-            <View style={{ width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2 }} />
+            <View style={{ width: 40, height: 4, backgroundColor: T.rule, borderRadius: 2 }} />
           </View>
 
           {/* Badge animado — borda em verdigris (marca), miolo em amber soft */}
           <View style={{ alignItems: 'center', marginTop: 4, marginBottom: 20 }}>
             <Animated.View style={[{
               width: 100, height: 100, borderRadius: 50,
-              backgroundColor: actionTheme.comida.bg,
-              borderWidth: 2, borderColor: brand.primary,
+              backgroundColor: ACTIONS_V3.comida.tintL,
+              borderWidth: 2, borderColor: T.primary,
               alignItems: 'center', justifyContent: 'center',
             }, badgeStyle]}>
               <Text style={{ fontSize: 48 }}>{data.emoji}</Text>
@@ -181,7 +182,7 @@ export function MilestoneSheet({ milestone, petNome, petFoto, streak, onClose }:
             accessible
             accessibilityRole="header"
             style={{
-              color: colors.textPrimary, fontFamily: 'Nunito_800ExtraBold',
+              color: T.ink, fontFamily: 'Nunito_800ExtraBold',
               fontSize: 26, fontWeight: '800', textAlign: 'center', marginBottom: 10,
             }}
           >
@@ -190,7 +191,7 @@ export function MilestoneSheet({ milestone, petNome, petFoto, streak, onClose }:
 
           {/* Subtítulo */}
           <Text style={{
-            color: colors.textSecondary, fontSize: 15,
+            color: T.ink2, fontSize: 15,
             textAlign: 'center', lineHeight: 22, marginBottom: 24,
           }}>
             {data.subtitle}
@@ -204,7 +205,7 @@ export function MilestoneSheet({ milestone, petNome, petFoto, streak, onClose }:
             <Text style={{ fontSize: 28 }}>🔥</Text>
             <Text style={{
               fontFamily: 'Nunito_800ExtraBold', fontSize: 34,
-              color: actionTheme.comida.primary, fontWeight: '800',
+              color: ACTIONS_V3.comida.primary, fontWeight: '800',
             }}>
               {streak} dias
             </Text>
@@ -222,18 +223,18 @@ export function MilestoneSheet({ milestone, petNome, petFoto, streak, onClose }:
             accessibilityLabel="Compartilhar conquista"
             accessibilityHint="Gera uma imagem comemorativa para compartilhar"
             style={{
-              backgroundColor: actionTheme.comida.bg,
-              borderWidth: 1.5, borderColor: brand.primary,
+              backgroundColor: ACTIONS_V3.comida.tintL,
+              borderWidth: 1.5, borderColor: T.primary,
               borderRadius: 16, height: 56,
               flexDirection: 'row', alignItems: 'center',
               justifyContent: 'center', gap: 8,
               marginBottom: 12,
             }}
           >
-            <Share2 size={20} color={brand.primary} strokeWidth={2} />
+            <Share2 size={20} color={T.primary} strokeWidth={2} />
             <Text style={{
               fontFamily: 'Nunito_700Bold', fontWeight: '700',
-              fontSize: 16, color: brand.primary,
+              fontSize: 16, color: T.primary,
             }}>
               {sharing ? 'Gerando...' : 'Compartilhar Conquista'}
             </Text>
@@ -250,7 +251,7 @@ export function MilestoneSheet({ milestone, petNome, petFoto, streak, onClose }:
             accessibilityLabel="Continuar"
             style={{ height: 48, alignItems: 'center', justifyContent: 'center' }}
           >
-            <Text style={{ color: colors.textSecondary, fontSize: 15 }}>
+            <Text style={{ color: T.ink2, fontSize: 15 }}>
               Continuar
             </Text>
           </ScalePress>

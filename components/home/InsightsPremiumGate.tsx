@@ -3,7 +3,7 @@ import { View, Text, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { Sparkles, Lock, ChevronRight } from 'lucide-react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import { ScalePress } from '@/components/ui/ScalePress';
 import type { HealthInsight } from '@/services/HealthInsights';
 
@@ -32,7 +32,7 @@ interface InsightsPremiumGateProps {
  */
 export function InsightsPremiumGate({ insightCount, previewInsight }: InsightsPremiumGateProps) {
   const router = useRouter();
-  const { colors, brand, isDark } = useThemeColors();
+  const T = useTheme();
 
   if (insightCount === 0) return null;
 
@@ -47,15 +47,15 @@ export function InsightsPremiumGate({ insightCount, previewInsight }: InsightsPr
       accessibilityLabel={`${insightCount} ${insightCount === 1 ? 'sinal de saúde detectado' : 'sinais de saúde detectados'}. Toque pra desbloquear com Pro.`}
       accessibilityHint="Abre a tela de assinatura premium"
       style={{
-        backgroundColor: colors.bgCard,
+        backgroundColor: T.card,
         borderRadius: 20,
         padding: 16,
         borderWidth: 1.5,
-        borderColor: brand.accent,
+        borderColor: T.mint,
         ...(Platform.OS === 'android' ? { elevation: 3 } : {
-          shadowColor: brand.primary,
+          shadowColor: T.primary,
           shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: isDark ? 0.35 : 0.12,
+          shadowOpacity: T.isDark ? 0.35 : 0.12,
           shadowRadius: 12,
         }),
       }}
@@ -64,28 +64,28 @@ export function InsightsPremiumGate({ insightCount, previewInsight }: InsightsPr
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 }}>
         <View style={{
           width: 36, height: 36, borderRadius: 12,
-          backgroundColor: brand.accent,
+          backgroundColor: T.mint,
           alignItems: 'center', justifyContent: 'center',
         }}>
-          <Sparkles size={18} color={brand.primaryDeep} strokeWidth={2.4} />
+          <Sparkles size={18} color={T.primaryDeep} strokeWidth={2.4} />
         </View>
         <View style={{ flex: 1 }}>
           <Text style={{
-            color: colors.textPrimary,
+            color: T.ink,
             fontFamily: 'Nunito_700Bold',
             fontSize: 14, fontWeight: '700',
           }}>
             Sinais de saúde detectados
           </Text>
           <Text style={{
-            color: colors.textSecondary,
+            color: T.ink2,
             fontSize: 12, marginTop: 2,
           }}>
             Análise automática da rotina do seu pet
           </Text>
         </View>
         <View style={{
-          backgroundColor: brand.primary,
+          backgroundColor: T.primary,
           paddingHorizontal: 8, paddingVertical: 3,
           borderRadius: 999,
         }}>
@@ -102,18 +102,18 @@ export function InsightsPremiumGate({ insightCount, previewInsight }: InsightsPr
       {/* Preview blur — mostra título do 1º insight mas borra */}
       {previewInsight && (
         <View style={{
-          backgroundColor: colors.bgInput,
+          backgroundColor: T.surfaceTint,
           borderRadius: 12,
           paddingHorizontal: 12, paddingVertical: 10,
           flexDirection: 'row', alignItems: 'center', gap: 10,
           marginBottom: 10,
         }}>
-          <Lock size={14} color={colors.textTertiary} strokeWidth={2} />
+          <Lock size={14} color={T.ink3} strokeWidth={2} />
           <Text
             numberOfLines={1}
             style={{
               flex: 1,
-              color: colors.textTertiary,
+              color: T.ink3,
               fontSize: 13,
               fontWeight: '600',
               // Truque pra "borrar" sem usar filter: trunca depois de
@@ -127,7 +127,7 @@ export function InsightsPremiumGate({ insightCount, previewInsight }: InsightsPr
           </Text>
           {insightCount > 1 && (
             <Text style={{
-              color: brand.primary,
+              color: T.primary,
               fontSize: 11, fontWeight: '700',
             }}>
               +{insightCount - 1} {insightCount - 1 === 1 ? 'sinal' : 'sinais'}
@@ -143,13 +143,13 @@ export function InsightsPremiumGate({ insightCount, previewInsight }: InsightsPr
         paddingTop: 4,
       }}>
         <Text style={{
-          color: brand.primary,
+          color: T.primary,
           fontFamily: 'Nunito_700Bold',
           fontSize: 13, fontWeight: '700',
         }}>
           Desbloquear com CronoPet Pro
         </Text>
-        <ChevronRight size={16} color={brand.primary} strokeWidth={2.4} />
+        <ChevronRight size={16} color={T.primary} strokeWidth={2.4} />
       </View>
     </ScalePress>
   );

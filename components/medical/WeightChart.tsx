@@ -5,7 +5,8 @@ import Svg, {
   Defs, LinearGradient, Stop, Path,
 } from 'react-native-svg';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
+import { ACTIONS_V3 } from '@/constants/colors';
 import type { WeightEntry } from '@/types/pet';
 
 interface WeightChartProps {
@@ -21,7 +22,7 @@ const PAD_LEFT = 4;
 const PAD_RIGHT = 4;
 
 export function WeightChart({ entries, maxPoints = 10 }: WeightChartProps) {
-  const { colors, actionTheme } = useThemeColors();
+  const T = useTheme();
 
   const data = useMemo(() => entries.slice(-maxPoints), [entries, maxPoints]);
 
@@ -31,7 +32,7 @@ export function WeightChart({ entries, maxPoints = 10 }: WeightChartProps) {
   if (data.length === 1) {
     return (
       <View style={{ paddingVertical: 12 }}>
-        <Text style={{ color: colors.textTertiary, fontSize: 12 }}>
+        <Text style={{ color: T.ink3, fontSize: 12 }}>
           Registre mais um peso para ver a evolução.
         </Text>
       </View>
@@ -80,12 +81,12 @@ export function WeightChart({ entries, maxPoints = 10 }: WeightChartProps) {
   const diff = last - first;
   const pctDiff = first > 0 ? (diff / first) * 100 : 0;
   const trendLabel = (() => {
-    if (Math.abs(pctDiff) < 1) return { icon: <Minus size={12} color={colors.textTertiary} strokeWidth={2.5} />, color: colors.textTertiary, text: 'Estável' };
-    if (diff > 0) return { icon: <TrendingUp size={12} color={actionTheme.coco.primary} strokeWidth={2.5} />, color: actionTheme.coco.primary, text: `+${diff.toFixed(1)} kg` };
-    return { icon: <TrendingDown size={12} color={actionTheme.passeio.primary} strokeWidth={2.5} />, color: actionTheme.passeio.primary, text: `${diff.toFixed(1)} kg` };
+    if (Math.abs(pctDiff) < 1) return { icon: <Minus size={12} color={T.ink3} strokeWidth={2.5} />, color: T.ink3, text: 'Estável' };
+    if (diff > 0) return { icon: <TrendingUp size={12} color={ACTIONS_V3.coco.primary} strokeWidth={2.5} />, color: ACTIONS_V3.coco.primary, text: `+${diff.toFixed(1)} kg` };
+    return { icon: <TrendingDown size={12} color={ACTIONS_V3.passeio.primary} strokeWidth={2.5} />, color: ACTIONS_V3.passeio.primary, text: `${diff.toFixed(1)} kg` };
   })();
 
-  const accentColor = actionTheme.xixi.primary;
+  const accentColor = ACTIONS_V3.xixi.primary;
 
   return (
     <View>
@@ -93,7 +94,7 @@ export function WeightChart({ entries, maxPoints = 10 }: WeightChartProps) {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
         marginBottom: 8,
       }}>
-        <Text style={{ color: colors.textTertiary, fontSize: 12, fontWeight: '600' }}>
+        <Text style={{ color: T.ink3, fontSize: 12, fontWeight: '600' }}>
           Evolução ({data.length} {data.length === 1 ? 'registro' : 'registros'})
         </Text>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -116,7 +117,7 @@ export function WeightChart({ entries, maxPoints = 10 }: WeightChartProps) {
         {/* Linha do peso médio (tracejada) */}
         <SvgLine
           x1={PAD_LEFT} y1={avgY} x2={W - PAD_RIGHT} y2={avgY}
-          stroke={colors.border} strokeWidth={1} strokeDasharray="3,3"
+          stroke={T.rule} strokeWidth={1} strokeDasharray="3,3"
         />
 
         {/* Área hachurada */}
@@ -141,7 +142,7 @@ export function WeightChart({ entries, maxPoints = 10 }: WeightChartProps) {
               cx={p.x}
               cy={p.y}
               r={isLast ? 4.5 : 3}
-              fill={isLast ? accentColor : colors.bgCard}
+              fill={isLast ? accentColor : T.card}
               stroke={accentColor}
               strokeWidth={2}
             />
@@ -149,13 +150,13 @@ export function WeightChart({ entries, maxPoints = 10 }: WeightChartProps) {
         })}
       </Svg>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 }}>
-        <Text style={{ color: colors.textTertiary, fontSize: 10 }}>
+        <Text style={{ color: T.ink3, fontSize: 10 }}>
           {data[0].peso.toFixed(1)} kg
         </Text>
-        <Text style={{ color: colors.textTertiary, fontSize: 10 }}>
+        <Text style={{ color: T.ink3, fontSize: 10 }}>
           média {avg.toFixed(1)} kg
         </Text>
-        <Text style={{ color: colors.textPrimary, fontSize: 10, fontWeight: '700' }}>
+        <Text style={{ color: T.ink, fontSize: 10, fontWeight: '700' }}>
           {data[data.length - 1].peso.toFixed(1)} kg
         </Text>
       </View>

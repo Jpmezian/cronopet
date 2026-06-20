@@ -1,7 +1,8 @@
 import React, { type ComponentType } from 'react';
 import { View, Text, Platform } from 'react-native';
 import { ScalePress } from './ScalePress';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
+import { ACTIONS_V3 } from '@/constants/colors';
 import * as Haptics from 'expo-haptics';
 
 interface IconProps { size?: number; color?: string; strokeWidth?: number }
@@ -15,9 +16,9 @@ interface EmptyStateProps {
   subtitle: string;
   ctaLabel?: string;
   onCta?: () => void;
-  /** Cor primária do CTA e ícone — padrão: actionTheme.passeio.primary */
+  /** Cor primária do CTA e ícone — padrão: ACTIONS_V3.passeio.primary */
   accentColor?: string;
-  /** Fundo do chip do ícone — padrão: actionTheme.passeio.bg */
+  /** Fundo do chip do ícone — padrão: ACTIONS_V3.passeio.tintL */
   accentBg?: string;
 }
 
@@ -35,11 +36,11 @@ export function EmptyState({
   accentColor,
   accentBg,
 }: EmptyStateProps) {
-  const { colors, actionTheme } = useThemeColors();
+  const T = useTheme();
 
   // Fallback semântico: cores de "passeio" (verde) como neutro positivo
-  const resolvedAccentColor = accentColor ?? actionTheme.passeio.primary;
-  const resolvedAccentBg    = accentBg    ?? actionTheme.passeio.bg;
+  const resolvedAccentColor = accentColor ?? ACTIONS_V3.passeio.primary;
+  const resolvedAccentBg    = accentBg    ?? ACTIONS_V3.passeio.tintL;
 
   const handleCta = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -49,7 +50,7 @@ export function EmptyState({
   return (
     <View
       style={{
-        backgroundColor: colors.bgCard,
+        backgroundColor: T.card,
         borderRadius: 20,
         paddingHorizontal: 24,
         paddingVertical: 36,
@@ -85,7 +86,7 @@ export function EmptyState({
 
       <Text
         style={{
-          color: colors.textPrimary,
+          color: T.ink,
           fontSize: 16,
           fontFamily: 'Nunito_700Bold',
           textAlign: 'center',
@@ -97,7 +98,7 @@ export function EmptyState({
 
       <Text
         style={{
-          color: colors.textSecondary,
+          color: T.ink2,
           fontSize: 14,
           lineHeight: 22,
           textAlign: 'center',

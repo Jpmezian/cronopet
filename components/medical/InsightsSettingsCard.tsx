@@ -18,7 +18,8 @@ import React, { useCallback } from 'react';
 import { View, Text, Switch, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Activity, Award } from 'lucide-react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
+import { ACTIONS_V3 } from '@/constants/colors';
 import { usePetStore } from '@/store/usePetStore';
 import type { InsightCategory } from '@/services/HealthInsights';
 
@@ -54,7 +55,7 @@ const GROUP_LABELS: Record<CategoryConfig['group'], string> = {
 };
 
 export function InsightsSettingsCard() {
-  const { colors, isDark, actionTheme } = useThemeColors();
+  const T = useTheme();
   const disabled = usePetStore((s) => s.disabledInsightCategories);
   const toggle = usePetStore((s) => s.toggleInsightCategory);
   const handledCount = usePetStore((s) => s.alertsHandledCount);
@@ -69,7 +70,7 @@ export function InsightsSettingsCard() {
 
   return (
     <View style={{
-      backgroundColor: colors.bgCard,
+      backgroundColor: T.card,
       borderRadius: 20,
       overflow: 'hidden',
       ...(Platform.OS === 'android' ? { elevation: 2 } : {
@@ -79,36 +80,36 @@ export function InsightsSettingsCard() {
       {/* Métrica em destaque */}
       <View style={{
         padding: 20,
-        backgroundColor: actionTheme.passeio.bg,
+        backgroundColor: ACTIONS_V3.passeio.tintL,
         borderBottomWidth: 1,
-        borderBottomColor: actionTheme.passeio.border,
+        borderBottomColor: 'rgba(14,140,90,0.22)',
         flexDirection: 'row',
         alignItems: 'center',
         gap: 14,
       }}>
         <View style={{
           width: 44, height: 44, borderRadius: 12,
-          backgroundColor: isDark ? 'rgba(4, 120, 87, 0.30)' : '#dcfce7',
+          backgroundColor: T.isDark ? 'rgba(4, 120, 87, 0.30)' : '#dcfce7',
           alignItems: 'center', justifyContent: 'center',
         }}>
-          <Award size={22} color={actionTheme.passeio.primary} strokeWidth={2.2} />
+          <Award size={22} color={ACTIONS_V3.passeio.primary} strokeWidth={2.2} />
         </View>
         <View style={{ flex: 1 }}>
           {handledCount === 0 ? (
             <>
-              <Text style={{ color: actionTheme.passeio.primary, fontWeight: '700', fontSize: 14, marginBottom: 2 }}>
+              <Text style={{ color: ACTIONS_V3.passeio.primary, fontWeight: '700', fontSize: 14, marginBottom: 2 }}>
                 Cuidando antes de dar problema
               </Text>
-              <Text style={{ color: actionTheme.passeio.primary, fontSize: 12, lineHeight: 17, opacity: 0.85 }}>
+              <Text style={{ color: ACTIONS_V3.passeio.primary, fontSize: 12, lineHeight: 17, opacity: 0.85 }}>
                 O app vai sugerir consultas quando notar algo que merece atenção.
               </Text>
             </>
           ) : (
             <>
-              <Text style={{ color: actionTheme.passeio.primary, fontWeight: '700', fontSize: 14, marginBottom: 2 }}>
+              <Text style={{ color: ACTIONS_V3.passeio.primary, fontWeight: '700', fontSize: 14, marginBottom: 2 }}>
                 {handledCount} {handledCount === 1 ? 'consulta marcada' : 'consultas marcadas'} a partir de alertas
               </Text>
-              <Text style={{ color: actionTheme.passeio.primary, fontSize: 12, opacity: 0.85 }}>
+              <Text style={{ color: ACTIONS_V3.passeio.primary, fontSize: 12, opacity: 0.85 }}>
                 {handledLastAt ? `Última: ${formatRelative(handledLastAt)}` : 'Continue acompanhando.'}
               </Text>
             </>
@@ -119,12 +120,12 @@ export function InsightsSettingsCard() {
       {/* Header da lista */}
       <View style={{ paddingHorizontal: 20, paddingTop: 18, paddingBottom: 6 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <Activity size={16} color={colors.textSecondary} strokeWidth={2.2} />
-          <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: 14 }}>
+          <Activity size={16} color={T.ink2} strokeWidth={2.2} />
+          <Text style={{ color: T.ink, fontWeight: '700', fontSize: 14 }}>
             Tipos de aviso
           </Text>
         </View>
-        <Text style={{ color: colors.textTertiary, fontSize: 12, lineHeight: 17 }}>
+        <Text style={{ color: T.ink3, fontSize: 12, lineHeight: 17 }}>
           Desligue o que não quer ser avisado. As detecções continuam rodando, só param de aparecer.
         </Text>
       </View>
@@ -139,7 +140,7 @@ export function InsightsSettingsCard() {
             fontSize: 10,
             fontWeight: '700',
             letterSpacing: 0.8,
-            color: colors.textTertiary,
+            color: T.ink3,
             textTransform: 'uppercase',
           }}>
             {GROUP_LABELS[group]}
@@ -157,12 +158,12 @@ export function InsightsSettingsCard() {
                   alignItems: 'center',
                   gap: 14,
                   borderBottomWidth: isLast ? 0 : 1,
-                  borderBottomColor: colors.border,
+                  borderBottomColor: T.rule,
                 }}
               >
                 <View style={{ flex: 1 }}>
                   <Text style={{
-                    color: colors.textPrimary,
+                    color: T.ink,
                     fontSize: 14,
                     fontWeight: '600',
                     marginBottom: 2,
@@ -170,7 +171,7 @@ export function InsightsSettingsCard() {
                     {cat.label}
                   </Text>
                   <Text style={{
-                    color: colors.textSecondary,
+                    color: T.ink2,
                     fontSize: 12,
                     lineHeight: 17,
                   }}>
@@ -182,11 +183,11 @@ export function InsightsSettingsCard() {
                   value={enabled}
                   onValueChange={() => onToggle(cat.key, enabled)}
                   trackColor={{
-                    false: isDark ? '#48433D' : '#E0D9C4',
-                    true:  actionTheme.passeio.primary,
+                    false: T.isDark ? '#48433D' : '#E0D9C4',
+                    true:  ACTIONS_V3.passeio.primary,
                   }}
                   thumbColor={Platform.OS === 'android' ? (enabled ? '#ffffff' : '#A09684') : undefined}
-                  ios_backgroundColor={isDark ? '#48433D' : '#E0D9C4'}
+                  ios_backgroundColor={T.isDark ? '#48433D' : '#E0D9C4'}
                 />
               </View>
             );

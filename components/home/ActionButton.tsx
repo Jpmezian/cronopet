@@ -6,7 +6,7 @@ import Animated, {
   useReducedMotion,
 } from 'react-native-reanimated';
 import { ScalePress } from '@/components/ui/ScalePress';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import type { ActionKey } from '@/types/pet';
 
 // ─── Tipo compartilhado ───────────────────────────────────────
@@ -46,7 +46,7 @@ interface ActionButtonProps {
 // ─── Componente ───────────────────────────────────────────────
 
 export function ActionButton({ action, count, isUrgent, onPress, progressLabel, cols = 3 }: ActionButtonProps) {
-  const { colors } = useThemeColors();
+  const T = useTheme();
   const isReducedMotion = useReducedMotion();
   const done = count > 0;
   const Icon = action.Icon;
@@ -93,14 +93,14 @@ export function ActionButton({ action, count, isUrgent, onPress, progressLabel, 
         accessibilityLabel={`Registrar ${action.label.toLowerCase()}. ${done ? `Registrado ${count} ${count === 1 ? 'vez' : 'vezes'} hoje.` : 'Não registrado hoje.'}${isUrgent && !done ? ' Atenção: ação atrasada.' : ''}`}
         accessibilityHint="Toque para registrar"
         style={{
-          backgroundColor: done ? action.bg : colors.bgCard,
+          backgroundColor: done ? action.bg : T.card,
           borderRadius: 16,
           paddingVertical: 14,
           paddingHorizontal: 8,
           alignItems: 'center',
           gap: 4,
           borderWidth: 2,
-          borderColor: done ? action.border : colors.bgInput,
+          borderColor: done ? action.border : T.surfaceTint,
           ...(Platform.OS === 'android'
             ? { elevation: done ? 3 : 1 }
             : {
@@ -120,7 +120,7 @@ export function ActionButton({ action, count, isUrgent, onPress, progressLabel, 
         }}>
           <View style={{
             width: 40, height: 40, borderRadius: 12,
-            backgroundColor: done ? action.color : colors.bgInput,
+            backgroundColor: done ? action.color : T.surfaceTint,
             alignItems: 'center', justifyContent: 'center',
           }}>
             <Icon size={22} strokeWidth={2.2} color={done ? '#FFFEF8' : action.color} />
@@ -128,7 +128,7 @@ export function ActionButton({ action, count, isUrgent, onPress, progressLabel, 
           {count > 0 && (
             <View style={{
               position: 'absolute', top: -4, right: -6,
-              backgroundColor: colors.bgCard,
+              backgroundColor: T.card,
               borderWidth: 2, borderColor: action.color,
               borderRadius: 11, minWidth: 22, height: 22,
               alignItems: 'center', justifyContent: 'center',
@@ -139,12 +139,12 @@ export function ActionButton({ action, count, isUrgent, onPress, progressLabel, 
           )}
         </View>
 
-        <Text style={{ fontSize: 12, fontWeight: '600', color: done ? action.color : colors.textSecondary }}>
+        <Text style={{ fontSize: 12, fontWeight: '600', color: done ? action.color : T.ink2 }}>
           {action.label}
         </Text>
         <Text
           numberOfLines={1}
-          style={{ fontSize: 10, color: done ? action.color : colors.textTertiary, fontWeight: progressLabel ? '700' : '500' }}
+          style={{ fontSize: 10, color: done ? action.color : T.ink3, fontWeight: progressLabel ? '700' : '500' }}
         >
           {progressLabel ?? (done ? `${count}x hoje` : '+ Registrar')}
         </Text>

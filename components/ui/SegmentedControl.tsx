@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, Platform } from 'react-native';
 import { ScalePress } from './ScalePress';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 
 // ─── Props ────────────────────────────────────────────────────
 
@@ -9,7 +9,7 @@ interface SegmentedControlProps {
   segments: string[];
   selectedIndex: number;
   onChange: (index: number) => void;
-  /** Cor do segmento ativo — default: colors.textPrimary */
+  /** Cor do segmento ativo — default: T.ink */
   accentColor?: string;
   accentBg?: string;
 }
@@ -17,7 +17,7 @@ interface SegmentedControlProps {
 /**
  * Controle segmentado horizontal com ScalePress.
  * Usa scroll se os segmentos não couberem na tela.
- * Respeita dark mode via useThemeColors().
+ * Respeita dark mode via useTheme().
  */
 export function SegmentedControl({
   segments,
@@ -26,15 +26,15 @@ export function SegmentedControl({
   accentColor,
   accentBg,
 }: SegmentedControlProps) {
-  const { colors } = useThemeColors();
+  const T = useTheme();
 
-  const resolvedAccentColor = accentColor ?? colors.textPrimary;
-  const resolvedAccentBg    = accentBg    ?? colors.bgInput;
+  const resolvedAccentColor = accentColor ?? T.ink;
+  const resolvedAccentBg    = accentBg    ?? T.surfaceTint;
 
   return (
     <View
       style={{
-        backgroundColor: colors.bgInput,
+        backgroundColor: T.surfaceTint,
         borderRadius: 14,
         padding: 4,
         flexDirection: 'row',
@@ -80,7 +80,7 @@ export function SegmentedControl({
                 style={{
                   fontSize: 13,
                   fontWeight: active ? '700' : '500',
-                  color: active ? resolvedAccentColor : colors.textSecondary,
+                  color: active ? resolvedAccentColor : T.ink2,
                   textAlign: 'center',
                 }}
                 numberOfLines={1}

@@ -3,7 +3,8 @@ import { View, Text, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { ChefHat, ChevronRight } from 'lucide-react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
+import { ACTIONS_V3 } from '@/constants/colors';
 import { ScalePress } from '@/components/ui/ScalePress';
 import type { NutritionGoal } from '@/types/pet';
 
@@ -31,7 +32,7 @@ export function NutritionEntryCard({
   hasWeight,
 }: NutritionEntryCardProps) {
   const router = useRouter();
-  const { colors, actionTheme, isDark } = useThemeColors();
+  const T = useTheme();
 
   const goalText = currentGoal ? GOAL_LABELS[currentGoal] : 'personalize seu plano';
   const goalEmoji = currentGoal ? GOAL_EMOJIS[currentGoal] : '🥗';
@@ -53,7 +54,7 @@ export function NutritionEntryCard({
       }`}
       accessibilityHint="Toque para ver rações recomendadas e metas calóricas completas"
       style={{
-        backgroundColor: colors.bgCard,
+        backgroundColor: T.card,
         borderRadius: 20,
         paddingHorizontal: 18,
         paddingVertical: 16,
@@ -62,7 +63,7 @@ export function NutritionEntryCard({
         ...(Platform.OS === 'android' ? { elevation: 3 } : {
           shadowColor: '#000',
           shadowOffset: { width: 0, height: 3 },
-          shadowOpacity: isDark ? 0.25 : 0.07,
+          shadowOpacity: T.isDark ? 0.25 : 0.07,
           shadowRadius: 8,
         }),
       }}
@@ -72,9 +73,9 @@ export function NutritionEntryCard({
         width: 52,
         height: 52,
         borderRadius: 14,
-        backgroundColor: actionTheme.comida.bg,
+        backgroundColor: ACTIONS_V3.comida.tintL,
         borderWidth: 1,
-        borderColor: actionTheme.comida.border,
+        borderColor: 'rgba(194,98,10,0.22)',
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 14,
@@ -85,9 +86,9 @@ export function NutritionEntryCard({
       {/* Conteúdo */}
       <View style={{ flex: 1 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-          <ChefHat size={13} color={actionTheme.comida.primary} strokeWidth={2.5} />
+          <ChefHat size={13} color={ACTIONS_V3.comida.primary} strokeWidth={2.5} />
           <Text style={{
-            color: actionTheme.comida.primary,
+            color: ACTIONS_V3.comida.primary,
             fontSize: 11,
             fontWeight: '700',
             letterSpacing: 1,
@@ -101,7 +102,7 @@ export function NutritionEntryCard({
           <>
             <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
               <Text style={{
-                color: colors.textPrimary,
+                color: T.ink,
                 fontFamily: 'Nunito_800ExtraBold',
                 fontSize: 22,
                 fontWeight: '800',
@@ -109,7 +110,7 @@ export function NutritionEntryCard({
                 {targetKcal.toLocaleString('pt-BR')}
               </Text>
               <Text style={{
-                color: colors.textSecondary,
+                color: T.ink2,
                 fontSize: 13,
                 fontWeight: '600',
                 marginLeft: 4,
@@ -118,7 +119,7 @@ export function NutritionEntryCard({
               </Text>
             </View>
             <Text style={{
-              color: colors.textTertiary,
+              color: T.ink3,
               fontSize: 12,
               marginTop: 1,
             }}>
@@ -128,7 +129,7 @@ export function NutritionEntryCard({
         ) : hasWeight ? (
           <>
             <Text style={{
-              color: colors.textPrimary,
+              color: T.ink,
               fontFamily: 'Nunito_700Bold',
               fontSize: 15,
               fontWeight: '700',
@@ -136,7 +137,7 @@ export function NutritionEntryCard({
               Configurar plano
             </Text>
             <Text style={{
-              color: colors.textTertiary,
+              color: T.ink3,
               fontSize: 12,
               marginTop: 1,
             }}>
@@ -146,7 +147,7 @@ export function NutritionEntryCard({
         ) : (
           <>
             <Text style={{
-              color: colors.textPrimary,
+              color: T.ink,
               fontFamily: 'Nunito_700Bold',
               fontSize: 15,
               fontWeight: '700',
@@ -154,7 +155,7 @@ export function NutritionEntryCard({
               Plano nutricional
             </Text>
             <Text style={{
-              color: colors.textTertiary,
+              color: T.ink3,
               fontSize: 12,
               marginTop: 1,
             }}>
@@ -164,7 +165,7 @@ export function NutritionEntryCard({
         )}
       </View>
 
-      <ChevronRight size={20} color={colors.textTertiary} strokeWidth={2} />
+      <ChevronRight size={20} color={T.ink3} strokeWidth={2} />
     </ScalePress>
   );
 }

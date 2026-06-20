@@ -16,7 +16,7 @@ import { View, Text, Modal, Pressable } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Bug, Lightbulb, MessageCircleQuestion, LifeBuoy, X } from 'lucide-react-native';
 import { ScalePress } from '@/components/ui/ScalePress';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import { useToastStore } from '@/store/useToastStore';
 import { openSupportEmail, SUPPORT_EMAIL, type SupportCategory } from '@/lib/support';
 
@@ -55,7 +55,7 @@ const OPTIONS: Option[] = [
 ];
 
 export function SupportSection({ variant = 'full' }: Props) {
-  const { colors } = useThemeColors();
+  const T = useTheme();
   const showToast = useToastStore((s) => s.showToast);
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -89,9 +89,9 @@ export function SupportSection({ variant = 'full' }: Props) {
           accessibilityLabel="Suporte e feedback"
           accessibilityHint="Abre opções pra reportar bug, sugerir melhoria ou tirar dúvida"
           style={{
-            backgroundColor: colors.bgCard,
+            backgroundColor: T.card,
             borderWidth: 1,
-            borderColor: colors.border,
+            borderColor: T.rule,
             borderRadius: 16,
             paddingVertical: 16,
             paddingHorizontal: 16,
@@ -103,17 +103,17 @@ export function SupportSection({ variant = 'full' }: Props) {
           <View
             style={{
               width: 36, height: 36, borderRadius: 12,
-              backgroundColor: colors.bgInput,
+              backgroundColor: T.surfaceTint,
               alignItems: 'center', justifyContent: 'center',
             }}
           >
-            <LifeBuoy size={18} color={colors.textPrimary} strokeWidth={2} />
+            <LifeBuoy size={18} color={T.ink} strokeWidth={2} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: '700' }}>
+            <Text style={{ color: T.ink, fontSize: 14, fontWeight: '700' }}>
               Encontrou algo? Conta pra gente
             </Text>
-            <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
+            <Text style={{ color: T.ink2, fontSize: 12, marginTop: 2 }}>
               Bug, sugestão ou dúvida — toque pra abrir
             </Text>
           </View>
@@ -123,7 +123,6 @@ export function SupportSection({ variant = 'full' }: Props) {
           visible={sheetOpen}
           onClose={() => setSheetOpen(false)}
           onSelect={handlePress}
-          colors={colors}
         />
       </>
     );
@@ -134,7 +133,7 @@ export function SupportSection({ variant = 'full' }: Props) {
     <View style={{ gap: 12 }}>
       <Text
         style={{
-          color: colors.textSecondary,
+          color: T.ink2,
           fontSize: 12,
           fontWeight: '600',
           textTransform: 'uppercase',
@@ -143,7 +142,7 @@ export function SupportSection({ variant = 'full' }: Props) {
       >
         Suporte e feedback
       </Text>
-      <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 20 }}>
+      <Text style={{ color: T.ink2, fontSize: 13, lineHeight: 20 }}>
         Seu retorno ajuda a melhorar o app. Toque numa opção pra
         abrir seu app de email com tudo pré-preenchido.
       </Text>
@@ -162,31 +161,31 @@ export function SupportSection({ variant = 'full' }: Props) {
               gap: 12,
               paddingVertical: 12,
               paddingHorizontal: 14,
-              backgroundColor: colors.bgInput,
+              backgroundColor: T.surfaceTint,
               borderRadius: 14,
             }}
           >
             <View
               style={{
                 width: 36, height: 36, borderRadius: 10,
-                backgroundColor: colors.bgCard,
+                backgroundColor: T.card,
                 alignItems: 'center', justifyContent: 'center',
               }}
             >
-              <Icon size={18} color={colors.textPrimary} strokeWidth={2} />
+              <Icon size={18} color={T.ink} strokeWidth={2} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: '600' }}>
+              <Text style={{ color: T.ink, fontSize: 14, fontWeight: '600' }}>
                 {label}
               </Text>
-              <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
+              <Text style={{ color: T.ink2, fontSize: 12, marginTop: 2 }}>
                 {hint}
               </Text>
             </View>
           </ScalePress>
         ))}
       </View>
-      <Text style={{ color: colors.textTertiary, fontSize: 11, marginTop: 4 }}>
+      <Text style={{ color: T.ink3, fontSize: 11, marginTop: 4 }}>
         Ou escreva direto pra {SUPPORT_EMAIL}
       </Text>
     </View>
@@ -203,10 +202,10 @@ interface SheetProps {
   visible:  boolean;
   onClose:  () => void;
   onSelect: (category: SupportCategory) => void;
-  colors:   ReturnType<typeof useThemeColors>['colors'];
 }
 
-function BottomSheet({ visible, onClose, onSelect, colors }: SheetProps) {
+function BottomSheet({ visible, onClose, onSelect }: SheetProps) {
+  const T = useTheme();
   return (
     <Modal
       visible={visible}
@@ -225,7 +224,7 @@ function BottomSheet({ visible, onClose, onSelect, colors }: SheetProps) {
         <Pressable
           onPress={(e) => e.stopPropagation()}
           style={{
-            backgroundColor: colors.bgCard,
+            backgroundColor: T.card,
             borderTopLeftRadius: 28,
             borderTopRightRadius: 28,
             paddingHorizontal: 20,
@@ -240,13 +239,13 @@ function BottomSheet({ visible, onClose, onSelect, colors }: SheetProps) {
               alignSelf: 'center',
               width: 36, height: 4,
               borderRadius: 2,
-              backgroundColor: colors.border,
+              backgroundColor: T.rule,
               marginBottom: 8,
             }}
           />
 
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={{ color: colors.textPrimary, fontSize: 17, fontWeight: '700' }}>
+            <Text style={{ color: T.ink, fontSize: 17, fontWeight: '700' }}>
               Suporte e feedback
             </Text>
             <ScalePress
@@ -254,11 +253,11 @@ function BottomSheet({ visible, onClose, onSelect, colors }: SheetProps) {
               accessible accessibilityRole="button" accessibilityLabel="Fechar"
               style={{ padding: 4 }}
             >
-              <X size={20} color={colors.textSecondary} strokeWidth={2} />
+              <X size={20} color={T.ink2} strokeWidth={2} />
             </ScalePress>
           </View>
 
-          <Text style={{ color: colors.textSecondary, fontSize: 13, lineHeight: 18 }}>
+          <Text style={{ color: T.ink2, fontSize: 13, lineHeight: 18 }}>
             Toque numa opção pra abrir seu app de email.
           </Text>
 
@@ -277,24 +276,24 @@ function BottomSheet({ visible, onClose, onSelect, colors }: SheetProps) {
                   gap: 12,
                   paddingVertical: 14,
                   paddingHorizontal: 14,
-                  backgroundColor: colors.bgInput,
+                  backgroundColor: T.surfaceTint,
                   borderRadius: 14,
                 }}
               >
                 <View
                   style={{
                     width: 36, height: 36, borderRadius: 10,
-                    backgroundColor: colors.bgCard,
+                    backgroundColor: T.card,
                     alignItems: 'center', justifyContent: 'center',
                   }}
                 >
-                  <Icon size={18} color={colors.textPrimary} strokeWidth={2} />
+                  <Icon size={18} color={T.ink} strokeWidth={2} />
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: colors.textPrimary, fontSize: 14, fontWeight: '600' }}>
+                  <Text style={{ color: T.ink, fontSize: 14, fontWeight: '600' }}>
                     {label}
                   </Text>
-                  <Text style={{ color: colors.textSecondary, fontSize: 12, marginTop: 2 }}>
+                  <Text style={{ color: T.ink2, fontSize: 12, marginTop: 2 }}>
                     {hint}
                   </Text>
                 </View>
@@ -302,7 +301,7 @@ function BottomSheet({ visible, onClose, onSelect, colors }: SheetProps) {
             ))}
           </View>
 
-          <Text style={{ color: colors.textTertiary, fontSize: 11, textAlign: 'center', marginTop: 4 }}>
+          <Text style={{ color: T.ink3, fontSize: 11, textAlign: 'center', marginTop: 4 }}>
             Ou escreva direto pra {SUPPORT_EMAIL}
           </Text>
         </Pressable>

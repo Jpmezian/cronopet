@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, Platform } from 'react-native';
 import { ShieldCheck, BookOpen, Calendar } from 'lucide-react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
+import { ACTIONS_V3 } from '@/constants/colors';
 import { FOODS_DB_UPDATED_AT } from '@/data/foods';
 
 /**
@@ -17,17 +18,17 @@ import { FOODS_DB_UPDATED_AT } from '@/data/foods';
  *   • Metodologia NRC + FEDIAF (fontes científicas reconhecidas)
  *   • Data da última atualização do banco de dados de rações
  *
- * Continua usando a paleta `actionTheme.passeio` (verde — "seguro/ok")
+ * Continua usando a paleta `ACTIONS_V3.passeio` (verde — "seguro/ok")
  * em vez de uma cor de alerta, porque é informação afirmativa, não aviso.
  */
 export function NutritionTrustBanner() {
-  const { colors, actionTheme, isDark } = useThemeColors();
+  const T = useTheme();
 
-  const chipBg = isDark
+  const chipBg = T.isDark
     ? 'rgba(4, 120, 87, 0.18)'
-    : actionTheme.passeio.bg;
-  const chipBorder = actionTheme.passeio.border;
-  const chipFg = actionTheme.passeio.primary;
+    : ACTIONS_V3.passeio.tintL;
+  const chipBorder = 'rgba(14,140,90,0.22)';
+  const chipFg = ACTIONS_V3.passeio.primary;
 
   return (
     <View
@@ -35,7 +36,7 @@ export function NutritionTrustBanner() {
       accessibilityRole="text"
       accessibilityLabel={`Transparência: CronoPet não tem parceria comercial com nenhuma marca de ração. Recomendações baseadas em metodologia NRC e FEDIAF. Banco de rações atualizado em ${FOODS_DB_UPDATED_AT}.`}
       style={{
-        backgroundColor: colors.bgCard,
+        backgroundColor: T.card,
         borderWidth: 1,
         borderColor: chipBorder,
         borderRadius: 16,
@@ -43,7 +44,7 @@ export function NutritionTrustBanner() {
         gap: 10,
         ...(Platform.OS === 'android' ? { elevation: 1 } : {
           shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: isDark ? 0.18 : 0.04, shadowRadius: 4,
+          shadowOpacity: T.isDark ? 0.18 : 0.04, shadowRadius: 4,
         }),
       }}
     >
@@ -66,7 +67,7 @@ export function NutritionTrustBanner() {
         fg={chipFg}
         primary="Sem parceria comercial"
         secondary="CronoPet não é afiliado a nenhuma marca de ração. Não recebemos comissão por nada que aparece aqui."
-        colors={colors}
+        colors={{ textPrimary: T.ink, textSecondary: T.ink2 }}
       />
 
       <Row
@@ -75,7 +76,7 @@ export function NutritionTrustBanner() {
         fg={chipFg}
         primary="Baseado em NRC 2006 + FEDIAF"
         secondary="Cálculo calórico segue o National Research Council. Recomendações de porções seguem diretrizes da FEDIAF (federação europeia de alimentos pra pet)."
-        colors={colors}
+        colors={{ textPrimary: T.ink, textSecondary: T.ink2 }}
       />
 
       <Row
@@ -84,7 +85,7 @@ export function NutritionTrustBanner() {
         fg={chipFg}
         primary={`Banco atualizado em ${FOODS_DB_UPDATED_AT}`}
         secondary="Preços e composições verificados manualmente. Variam por região e ponto de venda — use como referência inicial."
-        colors={colors}
+        colors={{ textPrimary: T.ink, textSecondary: T.ink2 }}
       />
     </View>
   );

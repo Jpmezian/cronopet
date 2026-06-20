@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, Platform } from 'react-native';
 import { Flame, BookOpen } from 'lucide-react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
+import { ACTIONS_V3 } from '@/constants/colors';
 import { calculateWellnessEstimate } from '@/data/calories';
 import { CalorieBadge } from '@/components/home/CalorieBadge';
 
@@ -12,7 +13,7 @@ interface WellnessCardProps {
 }
 
 export function WellnessCard({ todayFoodGrams, todayWalkMinutes, latestWeightKg }: WellnessCardProps) {
-  const { colors, actionTheme, isDark } = useThemeColors();
+  const T = useTheme();
   const est = calculateWellnessEstimate(todayFoodGrams, todayWalkMinutes, latestWeightKg);
 
   // Cor do indicador baseada no balanço
@@ -22,8 +23,8 @@ export function WellnessCard({ todayFoodGrams, todayWalkMinutes, latestWeightKg 
   const isOk     = !isOver && !isUnder;
 
   const statusTheme = isOk
-    ? { primary: actionTheme.passeio.primary, bg: actionTheme.passeio.bg, border: actionTheme.passeio.border }
-    : { primary: actionTheme.comida.primary, bg: actionTheme.comida.bg, border: actionTheme.comida.border };
+    ? { primary: ACTIONS_V3.passeio.primary, bg: ACTIONS_V3.passeio.tintL, border: 'rgba(14,140,90,0.22)' }
+    : { primary: ACTIONS_V3.comida.primary,  bg: ACTIONS_V3.comida.tintL,  border: 'rgba(194,98,10,0.22)' };
 
   const getMessage = (): string => {
     if (isOk) return 'Ingestão adequada para o dia!';
@@ -41,7 +42,7 @@ export function WellnessCard({ todayFoodGrams, todayWalkMinutes, latestWeightKg 
       accessibilityRole="text"
       accessibilityLabel={`Estimativa de calorias. Ingestão: ${est.intake} quilocalorias. Recomendado: ${est.recommended} quilocalorias. ${getMessage()}`}
       style={{
-        backgroundColor: colors.bgCard, borderRadius: 20, padding: 20,
+        backgroundColor: T.card, borderRadius: 20, padding: 20,
         ...(Platform.OS === 'android' ? { elevation: 2 } : {
           shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.06, shadowRadius: 8,
@@ -62,7 +63,7 @@ export function WellnessCard({ todayFoodGrams, todayWalkMinutes, latestWeightKg 
             <Flame size={18} color={statusTheme.primary} strokeWidth={2} />
           </View>
           <Text style={{
-            color: colors.textPrimary, fontFamily: 'Nunito_700Bold',
+            color: T.ink, fontFamily: 'Nunito_700Bold',
             fontSize: 16, fontWeight: '700',
           }}>
             Estimativa de Calorias
@@ -74,14 +75,14 @@ export function WellnessCard({ todayFoodGrams, todayWalkMinutes, latestWeightKg 
           accessibilityLabel="Baseado em fórmula do National Research Council, edição 2006"
           style={{
             flexDirection: 'row', alignItems: 'center', gap: 4,
-            backgroundColor: colors.bgInput,
+            backgroundColor: T.surfaceTint,
             paddingHorizontal: 8, paddingVertical: 3,
             borderRadius: 999,
           }}
         >
-          <BookOpen size={10} color={colors.textSecondary} strokeWidth={2.4} />
+          <BookOpen size={10} color={T.ink2} strokeWidth={2.4} />
           <Text style={{
-            color: colors.textSecondary,
+            color: T.ink2,
             fontSize: 10, fontWeight: '700',
             letterSpacing: 0.3,
           }}>
@@ -102,7 +103,7 @@ export function WellnessCard({ todayFoodGrams, todayWalkMinutes, latestWeightKg 
 
       {/* Disclaimer L5 — texto reforçado conforme parecer jurídico
           (Seção 7.4). Diferenciação explícita de prescrição veterinária. */}
-      <Text style={{ color: colors.textTertiary, fontSize: 11, lineHeight: 16 }}>
+      <Text style={{ color: T.ink3, fontSize: 11, lineHeight: 16 }}>
         Cálculo baseado no <Text style={{ fontWeight: '700' }}>National Research Council (NRC 2006)</Text>: RER × fator de atividade. <Text style={{ fontWeight: '700' }}>Referência informativa, não é prescrição veterinária.</Text> Animais com condições clínicas (renal, diabetes, alergia, gestação) requerem avaliação individualizada por médico-veterinário inscrito no CRMV.
       </Text>
     </View>

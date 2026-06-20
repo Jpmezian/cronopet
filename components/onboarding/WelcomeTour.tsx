@@ -11,7 +11,8 @@ import {
   Sparkles, Bell, Check,
 } from 'lucide-react-native';
 import { ScalePress } from '@/components/ui/ScalePress';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
+import { ACTIONS_V3 } from '@/constants/colors';
 
 /**
  * Tour de boas-vindas — 5 cards explicando as principais funções do app.
@@ -25,7 +26,7 @@ import { useThemeColors } from '@/hooks/useThemeColors';
  *   • Sempre permitir skip visível no topo, não no rodapé
  *   • Cada card faz UMA coisa: descreve UMA feature com UM ícone
  *   • Linguagem afirmativa ("Toque pra registrar"), não imperativa
- *   • Cores: usa actionTheme pra "ensinar" o código visual do app
+ *   • Cores: usa ACTIONS_V3 pra "ensinar" o código visual do app
  *   • Sem screenshots/animações pesadas — texto+ícone é suficiente
  *
  * NÃO desenha tooltips sobre elementos reais (evita medição absoluta
@@ -48,7 +49,7 @@ interface Step {
 }
 
 export function WelcomeTour({ visible, petNome, onComplete }: WelcomeTourProps) {
-  const { colors, actionTheme, isDark } = useThemeColors();
+  const T = useTheme();
   const insets = useSafeAreaInsets();
   const isReducedMotion = useReducedMotion();
   const [stepIndex, setStepIndex] = useState(0);
@@ -90,7 +91,7 @@ export function WelcomeTour({ visible, petNome, onComplete }: WelcomeTourProps) 
 
   const isLast = stepIndex === STEPS.length - 1;
   const step = STEPS[stepIndex];
-  const accent = actionTheme[step.toneKey];
+  const accent = ACTIONS_V3[step.toneKey];
 
   const handleNext = useCallback(() => {
     try {
@@ -135,7 +136,7 @@ export function WelcomeTour({ visible, petNome, onComplete }: WelcomeTourProps) 
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent>
       <View style={{
         flex: 1,
-        backgroundColor: isDark ? 'rgba(0,0,0,0.85)' : 'rgba(28,25,23,0.72)',
+        backgroundColor: T.isDark ? 'rgba(0,0,0,0.85)' : 'rgba(28,25,23,0.72)',
         paddingTop: insets.top + 16,
         paddingBottom: insets.bottom + 24,
         paddingHorizontal: 20,
@@ -172,7 +173,7 @@ export function WelcomeTour({ visible, petNome, onComplete }: WelcomeTourProps) 
             entering={cardEnter}
             exiting={cardExit}
             style={{
-              backgroundColor: colors.bgCard,
+              backgroundColor: T.card,
               borderRadius: 24,
               padding: 28,
               gap: 18,
@@ -185,9 +186,9 @@ export function WelcomeTour({ visible, petNome, onComplete }: WelcomeTourProps) 
             {/* Ícone grande com fundo color-coded da feature */}
             <View style={{
               width: 64, height: 64, borderRadius: 20,
-              backgroundColor: accent.bg,
+              backgroundColor: accent.tintL,
               borderWidth: 1.5,
-              borderColor: accent.border,
+              borderColor: accent.tintL,
               alignItems: 'center', justifyContent: 'center',
               alignSelf: 'flex-start',
             }}>
@@ -196,7 +197,7 @@ export function WelcomeTour({ visible, petNome, onComplete }: WelcomeTourProps) 
 
             <View style={{ gap: 8 }}>
               <Text style={{
-                color: colors.textPrimary,
+                color: T.ink,
                 fontFamily: 'Nunito_800ExtraBold',
                 fontSize: 24, fontWeight: '800',
                 lineHeight: 28,
@@ -204,7 +205,7 @@ export function WelcomeTour({ visible, petNome, onComplete }: WelcomeTourProps) 
                 {step.title}
               </Text>
               <Text style={{
-                color: colors.textSecondary,
+                color: T.ink2,
                 fontSize: 15, lineHeight: 22,
               }}>
                 {step.body}
@@ -223,13 +224,13 @@ export function WelcomeTour({ visible, petNome, onComplete }: WelcomeTourProps) 
                     width: i === stepIndex ? 22 : 8,
                     height: 8,
                     borderRadius: 4,
-                    backgroundColor: i === stepIndex ? accent.primary : colors.border,
+                    backgroundColor: i === stepIndex ? accent.primary : T.rule,
                   }}
                 />
               ))}
               <Text style={{
                 marginLeft: 8,
-                color: colors.textTertiary,
+                color: T.ink3,
                 fontSize: 12, fontWeight: '600',
               }}>
                 {stepIndex + 1} / {STEPS.length}
@@ -248,7 +249,7 @@ export function WelcomeTour({ visible, petNome, onComplete }: WelcomeTourProps) 
                   accessibilityRole="button"
                   accessibilityLabel="Voltar pro passo anterior"
                   style={{
-                    backgroundColor: colors.bgInput,
+                    backgroundColor: T.surfaceTint,
                     borderRadius: 14,
                     paddingVertical: 14, paddingHorizontal: 16,
                     flexDirection: 'row',
@@ -256,9 +257,9 @@ export function WelcomeTour({ visible, petNome, onComplete }: WelcomeTourProps) 
                     gap: 6,
                   }}
                 >
-                  <ChevronLeft size={16} color={colors.textSecondary} strokeWidth={2.6} />
+                  <ChevronLeft size={16} color={T.ink2} strokeWidth={2.6} />
                   <Text style={{
-                    color: colors.textSecondary,
+                    color: T.ink2,
                     fontFamily: 'Nunito_700Bold',
                     fontSize: 14, fontWeight: '700',
                   }}>

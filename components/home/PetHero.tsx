@@ -3,7 +3,8 @@ import { View, Text, Image, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { Pencil, Flame, Dog, Cat, PawPrint } from 'lucide-react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
+import { ACTIONS_V3 } from '@/constants/colors';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { resolvePhotoUri } from '@/lib/photoPath';
 import type { PetType } from '@/types/pet';
@@ -33,7 +34,7 @@ function isUsablePhoto(foto?: string | null): foto is string {
 
 export function PetHero({ nome, foto, tipo, raca, idadeLabel, streak }: PetHeroProps) {
   const router = useRouter();
-  const { colors, actionTheme, isDark } = useThemeColors();
+  const T = useTheme();
   const hasPhoto = isUsablePhoto(foto);
 
   const subtitle = [
@@ -43,25 +44,25 @@ export function PetHero({ nome, foto, tipo, raca, idadeLabel, streak }: PetHeroP
 
   // Fallback colors + icon por tipo (mesmo pattern do <PetPhoto/>)
   const fallbackBg = tipo === 'gato'
-    ? actionTheme.xixi.bg
+    ? ACTIONS_V3.xixi.tintL
     : tipo === 'outro'
-    ? actionTheme.banho.bg
-    : actionTheme.passeio.bg;
+    ? ACTIONS_V3.banho.tintL
+    : ACTIONS_V3.passeio.tintL;
   const fallbackFg = tipo === 'gato'
-    ? actionTheme.xixi.primary
+    ? ACTIONS_V3.xixi.primary
     : tipo === 'outro'
-    ? actionTheme.banho.primary
-    : actionTheme.passeio.primary;
+    ? ACTIONS_V3.banho.primary
+    : ACTIONS_V3.passeio.primary;
   const FallbackIcon = tipo === 'gato' ? Cat : tipo === 'cachorro' ? Dog : PawPrint;
 
   return (
     <View style={{
-      backgroundColor: colors.bgCard,
+      backgroundColor: T.card,
       borderRadius: 24,
       overflow: 'hidden',
       ...(Platform.OS === 'android' ? { elevation: 4 } : {
         shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: isDark ? 0.3 : 0.08, shadowRadius: 12,
+        shadowOpacity: T.isDark ? 0.3 : 0.08, shadowRadius: 12,
       }),
     }}>
       {/* Foto do pet — ou fallback estilizado quando não tem foto.

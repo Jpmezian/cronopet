@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeInRight, useReducedMotion } from 'react-native-reanimated';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { signIn, signUp, resendConfirmationEmail, sendPasswordReset } from '@/services/AuthService';
 import { hydrateFromCloud } from '@/services/SyncService';
@@ -39,9 +39,9 @@ interface StepAuthProps {
 }
 
 export function StepAuth({ defaultName = '', onSuccess, onBack }: StepAuthProps) {
-  const { colors, isDark } = useThemeColors();
+  const T = useTheme();
   const isReduced  = useReducedMotion();
-  const darkCardBg = isDark ? colors.bgCard : colors.textPrimary;
+  const darkCardBg = T.isDark ? T.card : T.ink;
   const textEntering = isReduced ? FadeIn.duration(200) : FadeInRight.duration(280);
 
   const [tab,      setTab]      = useState<AuthTab>('signup');
@@ -56,12 +56,12 @@ export function StepAuth({ defaultName = '', onSuccess, onBack }: StepAuthProps)
   const [recovering,   setRecovering]   = useState(false);
 
   const inputStyle = {
-    backgroundColor: colors.bgInput,
+    backgroundColor: T.surfaceTint,
     borderRadius: 12,
     paddingHorizontal: 14 as const,
     paddingVertical: 12 as const,
     fontSize: 15 as const,
-    color: colors.textPrimary,
+    color: T.ink,
     marginBottom: 12 as const,
   };
 
@@ -188,16 +188,16 @@ export function StepAuth({ defaultName = '', onSuccess, onBack }: StepAuthProps)
       showsVerticalScrollIndicator={false}
     >
       <Animated.View entering={textEntering}>
-        <Text style={{ color: colors.textTertiary, fontSize: 13, fontWeight: '500' }}>
+        <Text style={{ color: T.ink3, fontSize: 13, fontWeight: '500' }}>
           Passo 1 de 3
         </Text>
         <Text style={{
-          color: colors.textPrimary, fontFamily: 'Nunito_800ExtraBold',
+          color: T.ink, fontFamily: 'Nunito_800ExtraBold',
           fontSize: 24, fontWeight: '800', marginTop: 4, lineHeight: 30,
         }}>
           {tab === 'signup' ? 'Crie sua conta' : 'Entre na sua conta'}
         </Text>
-        <Text style={{ color: colors.textTertiary, fontSize: 13, marginTop: 6, lineHeight: 18 }}>
+        <Text style={{ color: T.ink3, fontSize: 13, marginTop: 6, lineHeight: 18 }}>
           {tab === 'signup'
             ? 'Pra seus dados ficarem salvos mesmo se você trocar de celular.'
             : 'Bem-vindo de volta. Seus pets te esperam.'}
@@ -215,14 +215,14 @@ export function StepAuth({ defaultName = '', onSuccess, onBack }: StepAuthProps)
               style={{
                 flex: 1, paddingVertical: 10, alignItems: 'center',
                 borderRadius: 10,
-                backgroundColor: active ? darkCardBg : colors.bgCard,
+                backgroundColor: active ? darkCardBg : T.card,
               }}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
               accessibilityLabel={t === 'signup' ? 'Aba criar conta' : 'Aba já tenho conta'}
             >
               <Text style={{
-                color: active ? '#ffffff' : colors.textSecondary,
+                color: active ? '#ffffff' : T.ink2,
                 fontSize: 14, fontWeight: '700', fontFamily: 'Nunito_700Bold',
               }}>
                 {t === 'signup' ? 'Criar conta' : 'Já tenho conta'}
@@ -236,14 +236,14 @@ export function StepAuth({ defaultName = '', onSuccess, onBack }: StepAuthProps)
       <View>
         {tab === 'signup' && (
           <>
-            <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500', marginBottom: 6 }}>
+            <Text style={{ color: T.ink2, fontSize: 13, fontWeight: '500', marginBottom: 6 }}>
               Seu nome
             </Text>
             <TextInput
               value={nome}
               onChangeText={setNome}
               placeholder="Como podemos te chamar?"
-              placeholderTextColor={colors.textTertiary}
+              placeholderTextColor={T.ink3}
               style={inputStyle}
               autoCapitalize="words"
               returnKeyType="next"
@@ -253,14 +253,14 @@ export function StepAuth({ defaultName = '', onSuccess, onBack }: StepAuthProps)
           </>
         )}
 
-        <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500', marginBottom: 6 }}>
+        <Text style={{ color: T.ink2, fontSize: 13, fontWeight: '500', marginBottom: 6 }}>
           E-mail
         </Text>
         <TextInput
           value={email}
           onChangeText={setEmail}
           placeholder="seu@email.com"
-          placeholderTextColor={colors.textTertiary}
+          placeholderTextColor={T.ink3}
           style={inputStyle}
           autoCapitalize="none"
           autoCorrect={false}
@@ -270,14 +270,14 @@ export function StepAuth({ defaultName = '', onSuccess, onBack }: StepAuthProps)
           textContentType={tab === 'signup' ? 'newPassword' : 'username'}
         />
 
-        <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500', marginBottom: 6 }}>
+        <Text style={{ color: T.ink2, fontSize: 13, fontWeight: '500', marginBottom: 6 }}>
           Senha
         </Text>
         <TextInput
           value={password}
           onChangeText={setPassword}
           placeholder={tab === 'signup' ? 'Mín. 8 chars, 1 maiúscula, 1 número' : 'Sua senha'}
-          placeholderTextColor={colors.textTertiary}
+          placeholderTextColor={T.ink3}
           style={inputStyle}
           secureTextEntry
           autoCapitalize="none"
@@ -290,17 +290,17 @@ export function StepAuth({ defaultName = '', onSuccess, onBack }: StepAuthProps)
       </View>
 
       {/* Disclaimer LGPD curto */}
-      <Text style={{ color: colors.textTertiary, fontSize: 11, lineHeight: 16 }}>
+      <Text style={{ color: T.ink3, fontSize: 11, lineHeight: 16 }}>
         Ao continuar você concorda com nossos{' '}
         <Text
-          style={{ color: colors.tabActive, fontWeight: '600' }}
+          style={{ color: T.primary, fontWeight: '600' }}
           onPress={() => Linking.openURL('https://cronopet.com.br/termos').catch(() => {})}
         >
           Termos
         </Text>{' '}
         e{' '}
         <Text
-          style={{ color: colors.tabActive, fontWeight: '600' }}
+          style={{ color: T.primary, fontWeight: '600' }}
           onPress={() => Linking.openURL('https://cronopet.com.br/privacidade').catch(() => {})}
         >
           Política de Privacidade
@@ -315,17 +315,17 @@ export function StepAuth({ defaultName = '', onSuccess, onBack }: StepAuthProps)
         accessibilityLabel={tab === 'signup' ? 'Criar conta e continuar' : 'Entrar e continuar'}
         accessibilityState={{ disabled: !isValidForm || loading, busy: loading }}
         style={{
-          backgroundColor: isValidForm && !loading ? darkCardBg : colors.bgInput,
+          backgroundColor: isValidForm && !loading ? darkCardBg : T.surfaceTint,
           borderRadius: 16, height: 56,
           alignItems: 'center', justifyContent: 'center',
           marginTop: 4,
         }}
       >
         {loading ? (
-          <ActivityIndicator color={isDark ? colors.textPrimary : '#ffffff'} />
+          <ActivityIndicator color={T.isDark ? T.ink : '#ffffff'} />
         ) : (
           <Text style={{
-            color: isValidForm ? '#ffffff' : colors.textDisabled,
+            color: isValidForm ? '#ffffff' : T.ink4,
             fontWeight: '700', fontSize: 16, fontFamily: 'Nunito_700Bold',
           }}>
             {tab === 'signup' ? 'Criar conta →' : 'Entrar →'}
@@ -338,7 +338,7 @@ export function StepAuth({ defaultName = '', onSuccess, onBack }: StepAuthProps)
           e "esqueci a senha"; estes caminhos dão saída ao usuário. */}
       {tab === 'signin' && showRecovery && (
         <Animated.View entering={isReduced ? FadeIn.duration(200) : FadeIn.duration(280)} style={{ gap: 8, marginTop: 2 }}>
-          <Text style={{ color: colors.textTertiary, fontSize: 12, lineHeight: 17, textAlign: 'center' }}>
+          <Text style={{ color: T.ink3, fontSize: 12, lineHeight: 17, textAlign: 'center' }}>
             Não recebeu o e-mail de confirmação? Ou esqueceu a senha?
           </Text>
           <View style={{ flexDirection: 'row', gap: 10 }}>
@@ -350,10 +350,10 @@ export function StepAuth({ defaultName = '', onSuccess, onBack }: StepAuthProps)
               accessibilityHint="Envia novamente o e-mail para confirmar sua conta"
               style={{
                 flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: 'center',
-                backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,
+                backgroundColor: T.card, borderWidth: 1, borderColor: T.rule,
               }}
             >
-              <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '700', fontFamily: 'Nunito_700Bold', textAlign: 'center' }}>
+              <Text style={{ color: T.ink2, fontSize: 13, fontWeight: '700', fontFamily: 'Nunito_700Bold', textAlign: 'center' }}>
                 Reenviar confirmação
               </Text>
             </ScalePress>
@@ -365,10 +365,10 @@ export function StepAuth({ defaultName = '', onSuccess, onBack }: StepAuthProps)
               accessibilityHint="Envia um link de recuperação de senha para seu e-mail"
               style={{
                 flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: 'center',
-                backgroundColor: colors.bgCard, borderWidth: 1, borderColor: colors.border,
+                backgroundColor: T.card, borderWidth: 1, borderColor: T.rule,
               }}
             >
-              <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '700', fontFamily: 'Nunito_700Bold', textAlign: 'center' }}>
+              <Text style={{ color: T.ink2, fontSize: 13, fontWeight: '700', fontFamily: 'Nunito_700Bold', textAlign: 'center' }}>
                 Esqueci a senha
               </Text>
             </ScalePress>
@@ -383,7 +383,7 @@ export function StepAuth({ defaultName = '', onSuccess, onBack }: StepAuthProps)
         accessibilityLabel="Voltar"
         style={{ alignSelf: 'center', paddingVertical: 8 }}
       >
-        <Text style={{ color: colors.textTertiary, fontSize: 13, fontWeight: '500' }}>
+        <Text style={{ color: T.ink3, fontSize: 13, fontWeight: '500' }}>
           ← Voltar
         </Text>
       </Pressable>

@@ -23,7 +23,7 @@ import { View, Text, Platform } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { CalendarPlus, Clock } from 'lucide-react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { useToastStore } from '@/store/useToastStore';
 import { usePetStore } from '@/store/usePetStore';
@@ -50,7 +50,7 @@ function suggestAppointmentDate(): string {
 }
 
 export function CriticalInsightBanner({ insights, pet }: Props) {
-  const { colors, isDark } = useThemeColors();
+  const T = useTheme();
   const showToast = useToastStore((s) => s.showToast);
   const snoozeInsight = usePetStore((s) => s.snoozeInsight);
   const snoozedInsights = usePetStore((s) => s.snoozedInsights);
@@ -104,10 +104,10 @@ export function CriticalInsightBanner({ insights, pet }: Props) {
         accessibilityRole="alert"
         accessibilityLabel={`Importante: ${copy.title}. ${copy.body} ${copy.nextStep}`}
         style={{
-          backgroundColor: colors.bgCard,
+          backgroundColor: T.card,
           borderRadius: 20,
           borderWidth: 1,
-          borderColor: colors.border,
+          borderColor: T.rule,
           overflow: 'hidden',
           flexDirection: 'row',
           ...Platform.select({
@@ -119,7 +119,7 @@ export function CriticalInsightBanner({ insights, pet }: Props) {
         {/* Indicador lateral — único elemento de cor "alarmista", e mesmo assim contido */}
         <View style={{
           width: 4,
-          backgroundColor: isDark ? '#fca5a5' : '#b91c1c',
+          backgroundColor: T.isDark ? '#fca5a5' : '#b91c1c',
         }} />
 
         <View style={{ flex: 1, padding: 18, gap: 12 }}>
@@ -130,7 +130,7 @@ export function CriticalInsightBanner({ insights, pet }: Props) {
               fontSize: 10,
               fontWeight: '700',
               letterSpacing: 1.4,
-              color: isDark ? '#fca5a5' : '#b91c1c',
+              color: T.isDark ? '#fca5a5' : '#b91c1c',
               textTransform: 'uppercase',
             }}
           >
@@ -142,7 +142,7 @@ export function CriticalInsightBanner({ insights, pet }: Props) {
             style={{
               fontSize: 20,
               fontWeight: '800',
-              color: colors.textPrimary,
+              color: T.ink,
               lineHeight: 26,
               fontFamily: 'Nunito_800ExtraBold',
               letterSpacing: -0.3,
@@ -154,7 +154,7 @@ export function CriticalInsightBanner({ insights, pet }: Props) {
           {/* Corpo */}
           <Text style={{
             fontSize: 14,
-            color: colors.textSecondary,
+            color: T.ink2,
             lineHeight: 21,
           }}>
             {copy.body}
@@ -163,7 +163,7 @@ export function CriticalInsightBanner({ insights, pet }: Props) {
           {/* Próximo passo */}
           <Text style={{
             fontSize: 13,
-            color: colors.textPrimary,
+            color: T.ink,
             fontWeight: '600',
             lineHeight: 19,
             marginTop: 2,
@@ -180,7 +180,7 @@ export function CriticalInsightBanner({ insights, pet }: Props) {
               onPress={handleSchedule}
               style={{
                 flex: 1,
-                backgroundColor: colors.textPrimary,
+                backgroundColor: T.ink,
                 paddingVertical: 13,
                 borderRadius: 14,
                 alignItems: 'center',
@@ -189,9 +189,9 @@ export function CriticalInsightBanner({ insights, pet }: Props) {
                 gap: 8,
               }}
             >
-              <CalendarPlus size={16} color={colors.bgScreen} strokeWidth={2.4} />
+              <CalendarPlus size={16} color={T.bg} strokeWidth={2.4} />
               <Text style={{
-                color: colors.bgScreen,
+                color: T.bg,
                 fontWeight: '700',
                 fontSize: 14,
                 fontFamily: 'Nunito_700Bold',
@@ -209,15 +209,15 @@ export function CriticalInsightBanner({ insights, pet }: Props) {
                 paddingHorizontal: 14,
                 paddingVertical: 13,
                 borderRadius: 14,
-                backgroundColor: colors.bgInput,
+                backgroundColor: T.surfaceTint,
                 alignItems: 'center',
                 flexDirection: 'row',
                 gap: 6,
               }}
             >
-              <Clock size={14} color={colors.textSecondary} strokeWidth={2.2} />
+              <Clock size={14} color={T.ink2} strokeWidth={2.2} />
               <Text style={{
-                color: colors.textSecondary,
+                color: T.ink2,
                 fontWeight: '600',
                 fontSize: 13,
               }}>

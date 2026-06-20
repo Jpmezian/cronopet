@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text } from 'react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 
 interface StatusTheme {
   primary: string;
@@ -28,7 +28,7 @@ export function CalorieBadge({
   status,
   statusTheme,
 }: CalorieBadgeProps) {
-  const { colors } = useThemeColors();
+  const T = useTheme();
 
   return (
     <View>
@@ -38,14 +38,14 @@ export function CalorieBadge({
           emoji="🍖"
           label="Ingestão"
           value={`${intake.toLocaleString('pt-BR')} kcal`}
-          colors={colors}
+          colors={{ textPrimary: T.ink, textSecondary: T.ink2 }}
         />
         <View style={{ height: 8 }} />
         <MetricRow
           emoji="📊"
           label="Recomendado"
           value={`${recommended.toLocaleString('pt-BR')} kcal`}
-          colors={colors}
+          colors={{ textPrimary: T.ink, textSecondary: T.ink2 }}
         />
         {burned !== undefined && burned > 0 && (
           <>
@@ -54,7 +54,7 @@ export function CalorieBadge({
               emoji="🐾"
               label="Queimadas (passeio)"
               value={`${burned.toLocaleString('pt-BR')} kcal`}
-              colors={colors}
+              colors={{ textPrimary: T.ink, textSecondary: T.ink2 }}
             />
           </>
         )}

@@ -21,7 +21,8 @@
 import React from 'react';
 import { Image, View, Text } from 'react-native';
 import { Dog, Cat, PawPrint } from 'lucide-react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
+import { ACTIONS_V3 } from '@/constants/colors';
 import { resolvePhotoUri } from '@/lib/photoPath';
 import type { PetType } from '@/types/pet';
 
@@ -58,7 +59,7 @@ function isUsablePhoto(foto?: string | null): foto is string {
 export function PetPhoto({
   foto, tipo, nome, size, style, accessibilityLabel,
 }: PetPhotoProps) {
-  const { actionTheme, brand, isDark } = useThemeColors();
+  const T = useTheme();
 
   const radius = size / 2;
   const baseStyle = {
@@ -83,17 +84,13 @@ export function PetPhoto({
 
   // Fallback: círculo color-coded por tipo + ícone Lucide central.
   // Cores da marca em vez de cinza genérico — sempre "se sente CronoPet".
-  const fallbackBg = tipo === 'gato'
-    ? actionTheme.xixi.bg          // tom roxo suave pra gato
+  const action = tipo === 'gato'
+    ? ACTIONS_V3.xixi
     : tipo === 'outro'
-    ? actionTheme.banho.bg         // tom azul suave pra "outro"
-    : actionTheme.passeio.bg;      // tom verde suave pra cachorro
-
-  const fallbackFg = tipo === 'gato'
-    ? actionTheme.xixi.primary
-    : tipo === 'outro'
-    ? actionTheme.banho.primary
-    : actionTheme.passeio.primary;
+      ? ACTIONS_V3.banho
+      : ACTIONS_V3.passeio;
+  const fallbackBg = action.tintL;
+  const fallbackFg = action.primary;
 
   const FallbackIcon = tipo === 'gato' ? Cat : tipo === 'cachorro' ? Dog : PawPrint;
   const iconSize = Math.round(size * 0.42);
@@ -105,7 +102,7 @@ export function PetPhoto({
         {
           backgroundColor: fallbackBg,
           borderWidth:     2,
-          borderColor:     isDark ? brand.accent : fallbackFg,
+          borderColor:     T.isDark ? T.mint : fallbackFg,
           alignItems:      'center',
           justifyContent:  'center',
         },

@@ -10,7 +10,8 @@ import {
   Utensils, Droplet, Footprints, Droplets, Bath, Scissors, Check,
 } from 'lucide-react-native';
 import { PoopIcon } from '@/components/icons/PoopIcon';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
+import { ACTIONS_V3 } from '@/constants/colors';
 import type { ActionKey, PetType } from '@/types/pet';
 
 import { dailyGoalsFor } from '@/constants/dailyGoals';
@@ -39,7 +40,7 @@ interface DailyProgressProps {
 // ─── Componente ───────────────────────────────────────────────
 
 export function DailyProgress({ todayCounts, petTipo, onFirstComplete }: DailyProgressProps) {
-  const { colors, actionTheme } = useThemeColors();
+  const T = useTheme();
   const isReducedMotion = useReducedMotion();
 
   const goals     = dailyGoalsFor(petTipo);
@@ -89,7 +90,7 @@ export function DailyProgress({ todayCounts, petTipo, onFirstComplete }: DailyPr
       accessibilityRole="text"
       accessibilityLabel={`Metas de hoje. ${doneCount} de ${goals.length} concluídas.${allComplete ? ' Dia completo. Todas as metas atingidas.' : ''}`}
       style={[{
-        backgroundColor: colors.bgCard,
+        backgroundColor: T.card,
         borderRadius: 20,
         paddingHorizontal: 20,
         paddingVertical: 16,
@@ -102,19 +103,19 @@ export function DailyProgress({ todayCounts, petTipo, onFirstComplete }: DailyPr
 
       {/* Cabeçalho */}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Text style={{ color: colors.textPrimary, fontFamily: 'Nunito_700Bold', fontSize: 15 }}>
+        <Text style={{ color: T.ink, fontFamily: 'Nunito_700Bold', fontSize: 15 }}>
           Metas de hoje
         </Text>
         <View style={{
-          backgroundColor: allComplete ? actionTheme.passeio.bg : colors.bgInput,
+          backgroundColor: allComplete ? ACTIONS_V3.passeio.tintL : T.surfaceTint,
           borderRadius: 10, paddingHorizontal: 10, paddingVertical: 4,
         }}>
           {allComplete ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Check size={14} strokeWidth={2.6} color={actionTheme.passeio.primary} />
+              <Check size={14} strokeWidth={2.6} color={ACTIONS_V3.passeio.primary} />
               <Text style={{
                 fontWeight: '700', fontSize: 12,
-                color: actionTheme.passeio.primary,
+                color: ACTIONS_V3.passeio.primary,
                 textTransform: 'uppercase',
                 letterSpacing: 0.4,
               }}>
@@ -124,7 +125,7 @@ export function DailyProgress({ todayCounts, petTipo, onFirstComplete }: DailyPr
           ) : (
             <Text style={{
               fontWeight: '700', fontSize: 12,
-              color: colors.textTertiary,
+              color: T.ink3,
             }}>
               {doneCount} de {goals.length}
             </Text>
@@ -141,7 +142,7 @@ export function DailyProgress({ todayCounts, petTipo, onFirstComplete }: DailyPr
           const nextDone = nextKey ? (todayCounts[nextKey] ?? 0) > 0 : false;
           const lineColored = done && nextDone;
           const meta    = GOAL_META[key];
-          const theme   = actionTheme[key];
+          const theme   = ACTIONS_V3[key];
 
           return (
             <React.Fragment key={key}>
@@ -149,15 +150,15 @@ export function DailyProgress({ todayCounts, petTipo, onFirstComplete }: DailyPr
               <View style={{ alignItems: 'center', flex: 0 }}>
                 <View style={{
                   width: 44, height: 44, borderRadius: 22,
-                  backgroundColor: done ? theme.primary : colors.bgInput,
+                  backgroundColor: done ? theme.primary : T.surfaceTint,
                   borderWidth: 2,
-                  borderColor:    done ? theme.primary : colors.border,
+                  borderColor:    done ? theme.primary : T.rule,
                   alignItems: 'center', justifyContent: 'center',
                 }}>
                   <meta.Icon
                     size={20}
                     strokeWidth={2.2}
-                    color={done ? '#FFFEF8' : colors.textTertiary}
+                    color={done ? '#FFFEF8' : T.ink3}
                   />
                 </View>
               </View>
@@ -166,7 +167,7 @@ export function DailyProgress({ todayCounts, petTipo, onFirstComplete }: DailyPr
               {!isLast && (
                 <View style={{
                   flex: 1, height: 3,
-                  backgroundColor: lineColored ? actionTheme[goals[index + 1]!].border : colors.bgInput,
+                  backgroundColor: lineColored ? ACTIONS_V3[goals[index + 1]!].tintL : T.surfaceTint,
                   borderRadius: 2,
                 }} />
               )}
@@ -181,13 +182,13 @@ export function DailyProgress({ todayCounts, petTipo, onFirstComplete }: DailyPr
           const done  = (todayCounts[key] ?? 0) > 0;
           const isLast = index === goals.length - 1;
           const meta   = GOAL_META[key];
-          const theme  = actionTheme[key];
+          const theme  = ACTIONS_V3[key];
           return (
             <React.Fragment key={key + '_label'}>
               <View style={{ width: 44, alignItems: 'center' }}>
                 <Text style={{
                   fontSize: 11, fontWeight: '600',
-                  color: done ? theme.primary : colors.textTertiary,
+                  color: done ? theme.primary : T.ink3,
                   textAlign: 'center',
                 }}>
                   {meta.label}

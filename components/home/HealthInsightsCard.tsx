@@ -23,7 +23,7 @@ import * as Haptics from 'expo-haptics';
 import {
   AlertTriangle, Info, AlertCircle, X, HeartPulse,
 } from 'lucide-react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { useMotion } from '@/hooks/useMotion';
 import { semantic } from '@/constants/colors';
@@ -62,7 +62,7 @@ const SEV_LABEL: Record<InsightSeverity, string> = {
 };
 
 export function HealthInsightsCard({ insights, onDismiss, limit = 3 }: Props) {
-  const { colors, isDark } = useThemeColors();
+  const T = useTheme();
   const { entering } = useMotion();
 
   const visible = insights.slice(0, limit);
@@ -82,12 +82,12 @@ export function HealthInsightsCard({ insights, onDismiss, limit = 3 }: Props) {
         accessibilityRole="header"
         style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 4 }}
       >
-        <HeartPulse size={16} color={colors.textSecondary} strokeWidth={2.4} />
+        <HeartPulse size={16} color={T.ink2} strokeWidth={2.4} />
         <Text style={{
           fontSize: 11,
           fontWeight: '700',
           letterSpacing: 0.8,
-          color: colors.textSecondary,
+          color: T.ink2,
           textTransform: 'uppercase',
         }}>
           Sinais de saúde
@@ -98,7 +98,7 @@ export function HealthInsightsCard({ insights, onDismiss, limit = 3 }: Props) {
         <Animated.View key={ins.id} entering={entering(idx)}>
           <InsightItem
             insight={ins}
-            isDark={isDark}
+            isDark={T.isDark}
             onDismiss={() => handleDismiss(ins.id)}
           />
         </Animated.View>
@@ -110,7 +110,7 @@ export function HealthInsightsCard({ insights, onDismiss, limit = 3 }: Props) {
         accessibilityLabel="Aviso: estas observações não substituem avaliação veterinária"
         style={{
           fontSize: 11,
-          color: colors.textTertiary,
+          color: T.ink3,
           paddingHorizontal: 4,
           marginTop: 2,
           fontStyle: 'italic',
@@ -131,18 +131,18 @@ interface ItemProps {
 }
 
 function InsightItem({ insight, isDark, onDismiss }: ItemProps) {
-  const { colors } = useThemeColors();
+  const T = useTheme();
   const theme = SEV_THEME[insight.severity];
   const Icon  = SEV_ICON[insight.severity];
 
   // Dark mode: fundos pastéis viram tinted bg como o resto do app
-  const bg = isDark
+  const bg = T.isDark
     ? (insight.severity === 'alert'    ? 'rgba(185, 28, 28, 0.18)'
       : insight.severity === 'warning' ? 'rgba(180, 83,  9, 0.18)'
       : 'rgba(29, 78, 216, 0.18)')
     : theme.bg;
 
-  const border = isDark
+  const border = T.isDark
     ? (insight.severity === 'alert'    ? 'rgba(185, 28, 28, 0.40)'
       : insight.severity === 'warning' ? 'rgba(180, 83,  9, 0.40)'
       : 'rgba(29, 78, 216, 0.40)')
@@ -171,7 +171,7 @@ function InsightItem({ insight, isDark, onDismiss }: ItemProps) {
     >
       <View style={{
         width: 32, height: 32, borderRadius: 8,
-        backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#ffffff',
+        backgroundColor: T.isDark ? 'rgba(255,255,255,0.06)' : '#ffffff',
         alignItems: 'center', justifyContent: 'center',
         marginTop: 2,
       }}>
@@ -182,21 +182,21 @@ function InsightItem({ insight, isDark, onDismiss }: ItemProps) {
         <Text style={{
           fontSize: 15,
           fontWeight: '700',
-          color: isDark ? colors.textPrimary : theme.text,
+          color: T.isDark ? T.ink : theme.text,
         }}>
           {insight.title}
         </Text>
         <Text style={{
           fontSize: 13,
-          color: isDark ? colors.textSecondary : theme.text,
-          opacity: isDark ? 1 : 0.85,
+          color: T.isDark ? T.ink2 : theme.text,
+          opacity: T.isDark ? 1 : 0.85,
           lineHeight: 18,
         }}>
           {insight.message}
         </Text>
         <Text style={{
           fontSize: 12,
-          color: isDark ? colors.textSecondary : theme.text,
+          color: T.isDark ? T.ink2 : theme.text,
           opacity: 0.7,
           marginTop: 2,
         }}>
@@ -215,7 +215,7 @@ function InsightItem({ insight, isDark, onDismiss }: ItemProps) {
           marginTop: -2,
         }}
       >
-        <X size={16} color={colors.textTertiary} strokeWidth={2} />
+        <X size={16} color={T.ink3} strokeWidth={2} />
       </ScalePress>
     </View>
   );

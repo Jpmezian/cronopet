@@ -3,7 +3,7 @@ import { View, Text, AppState, Platform } from 'react-native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as Haptics from 'expo-haptics';
 import { Lock, Fingerprint } from 'lucide-react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { usePetStore } from '@/store/usePetStore';
 
@@ -31,7 +31,7 @@ interface BiometricLockProps {
 type LockState = 'locked' | 'authenticating' | 'unlocked' | 'unsupported';
 
 export function BiometricLock({ children }: BiometricLockProps) {
-  const { colors, isDark } = useThemeColors();
+  const T = useTheme();
   const biometricEnabled = usePetStore((s) => s.biometricLockEnabled);
 
   const [state, setState] = useState<LockState>(
@@ -93,7 +93,7 @@ export function BiometricLock({ children }: BiometricLockProps) {
 
   // Overlay bloqueando a UI
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bgScreen }}>
+    <View style={{ flex: 1, backgroundColor: T.bg }}>
       {children}
       <View
         accessible accessibilityRole="none"
@@ -101,7 +101,7 @@ export function BiometricLock({ children }: BiometricLockProps) {
         style={{
           position: 'absolute',
           top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: colors.bgScreen,
+          backgroundColor: T.bg,
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 9999,
@@ -110,19 +110,19 @@ export function BiometricLock({ children }: BiometricLockProps) {
       >
         <View style={{
           width: 96, height: 96, borderRadius: 28,
-          backgroundColor: colors.bgCard,
+          backgroundColor: T.card,
           alignItems: 'center', justifyContent: 'center',
           marginBottom: 24,
           ...(Platform.OS === 'android' ? { elevation: 4 } : {
             shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: isDark ? 0.3 : 0.08, shadowRadius: 12,
+            shadowOpacity: T.isDark ? 0.3 : 0.08, shadowRadius: 12,
           }),
         }}>
-          <Lock size={40} color={colors.textPrimary} strokeWidth={2} />
+          <Lock size={40} color={T.ink} strokeWidth={2} />
         </View>
 
         <Text style={{
-          color: colors.textPrimary,
+          color: T.ink,
           fontFamily: 'Nunito_800ExtraBold',
           fontSize: 22, fontWeight: '800',
           textAlign: 'center',
@@ -131,7 +131,7 @@ export function BiometricLock({ children }: BiometricLockProps) {
           CronoPet está bloqueado
         </Text>
         <Text style={{
-          color: colors.textSecondary,
+          color: T.ink2,
           fontSize: 14, textAlign: 'center', lineHeight: 20,
           marginBottom: 28,
         }}>
@@ -143,15 +143,15 @@ export function BiometricLock({ children }: BiometricLockProps) {
           accessible accessibilityRole="button"
           accessibilityLabel="Desbloquear app"
           style={{
-            backgroundColor: colors.textPrimary,
+            backgroundColor: T.ink,
             borderRadius: 16,
             paddingHorizontal: 32, paddingVertical: 14,
             flexDirection: 'row', alignItems: 'center',
           }}
         >
-          <Fingerprint size={18} color={colors.bgScreen} strokeWidth={2} style={{ marginRight: 8 }} />
+          <Fingerprint size={18} color={T.bg} strokeWidth={2} style={{ marginRight: 8 }} />
           <Text style={{
-            color: colors.bgScreen,
+            color: T.bg,
             fontFamily: 'Nunito_700Bold',
             fontSize: 15, fontWeight: '700',
           }}>

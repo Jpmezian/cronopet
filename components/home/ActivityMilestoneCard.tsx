@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, Platform } from 'react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
+import { ACTIONS_V3 } from '@/constants/colors';
 import { ActionIcon } from '@/components/icons/ActionIcon';
 import type { ActionLog, ActionKey } from '@/types/pet';
 
@@ -91,7 +92,7 @@ function findPendingMilestone(
 export function ActivityMilestoneCard({
   actionHistory, petNome, shownMilestones, onDismiss,
 }: ActivityMilestoneCardProps) {
-  const { colors, actionTheme, isDark } = useThemeColors();
+  const T = useTheme();
 
   const milestone = useMemo(
     () => findPendingMilestone(actionHistory, shownMilestones),
@@ -106,16 +107,16 @@ export function ActivityMilestoneCard({
       accessibilityRole="text"
       accessibilityLabel={`Marco atingido: ${milestone.count} ${milestone.label} com ${petNome}`}
       style={{
-        backgroundColor: actionTheme.comida.bg,
+        backgroundColor: ACTIONS_V3.comida.tintL,
         borderWidth: 1.5,
-        borderColor: actionTheme.comida.border,
+        borderColor: 'rgba(194,98,10,0.22)',
         borderRadius: 18,
         paddingHorizontal: 16, paddingVertical: 14,
         flexDirection: 'row',
         alignItems: 'center',
         ...(Platform.OS === 'android' ? { elevation: 2 } : {
           shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: isDark ? 0.25 : 0.05, shadowRadius: 6,
+          shadowOpacity: T.isDark ? 0.25 : 0.05, shadowRadius: 6,
         }),
       }}
     >
@@ -129,7 +130,7 @@ export function ActivityMilestoneCard({
       </View>
       <View style={{ flex: 1 }}>
         <Text style={{
-          color: actionTheme.coco.primary,
+          color: ACTIONS_V3.coco.primary,
           fontSize: 10, fontWeight: '800',
           letterSpacing: 1.2,
           marginBottom: 2,
@@ -139,7 +140,7 @@ export function ActivityMilestoneCard({
         <Text
           numberOfLines={2}
           style={{
-            color: actionTheme.coco.primary,
+            color: ACTIONS_V3.coco.primary,
             fontFamily: 'Nunito_800ExtraBold',
             fontSize: 14, fontWeight: '800',
             lineHeight: 18,
@@ -151,10 +152,10 @@ export function ActivityMilestoneCard({
           <ActionIcon
             action={milestone.action}
             size={12}
-            color={actionTheme.coco.primary}
+            color={ACTIONS_V3.coco.primary}
           />
           <Text style={{
-            color: actionTheme.coco.primary,
+            color: ACTIONS_V3.coco.primary,
             fontSize: 11,
           }}>
             Parabéns pela dedicação

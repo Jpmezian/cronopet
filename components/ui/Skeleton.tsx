@@ -4,7 +4,7 @@ import Animated, {
   useSharedValue, useAnimatedStyle, withRepeat,
   withSequence, withTiming, Easing, useReducedMotion,
 } from 'react-native-reanimated';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 
 interface SkeletonProps {
   width?: number | `${number}%`;
@@ -22,7 +22,7 @@ interface SkeletonProps {
  *   <Skeleton width={120} height={12} borderRadius={6} />
  */
 export function Skeleton({ width = '100%', height = 16, borderRadius = 8, style }: SkeletonProps) {
-  const { colors } = useThemeColors();
+  const T = useTheme();
   const reducedMotion = useReducedMotion();
   const opacity = useSharedValue(1);
 
@@ -47,7 +47,7 @@ export function Skeleton({ width = '100%', height = 16, borderRadius = 8, style 
           width,
           height,
           borderRadius,
-          backgroundColor: colors.bgMuted,
+          backgroundColor: T.sunken,
         },
         animStyle,
         style,
@@ -77,12 +77,12 @@ export function SkeletonMemberCard() {
  * Skeleton do dashboard Premium completo (enquanto carrega grupo/membros).
  */
 export function SkeletonPremiumDashboard() {
-  const { colors, isDark } = useThemeColors();
+  const T = useTheme();
 
   // Cartão dark intencional (PRO card)
-  const darkCardBg   = isDark ? colors.bgCard  : colors.textPrimary;
-  const darkLinePrimary = isDark ? colors.bgMuted : '#5C493D';   // stone-700 / bgMuted
-  const darkLineSecondary = isDark ? colors.bgInput : '#3A3833'; // stone-800 / bgInput
+  const darkCardBg   = T.isDark ? T.card  : T.ink;
+  const darkLinePrimary = T.isDark ? T.sunken : '#5C493D';   // stone-700 / bgMuted
+  const darkLineSecondary = T.isDark ? T.surfaceTint : '#3A3833'; // stone-800 / bgInput
 
   return (
     <View style={{ paddingHorizontal: 20, gap: 20, paddingTop: 4 }}>
@@ -96,7 +96,7 @@ export function SkeletonPremiumDashboard() {
 
       {/* Invite code card */}
       <View style={{
-        backgroundColor: colors.bgCard, borderRadius: 20, padding: 20, gap: 16,
+        backgroundColor: T.card, borderRadius: 20, padding: 20, gap: 16,
         ...(Platform.OS === 'android' ? { elevation: 2 } : {
           shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.06, shadowRadius: 8,
@@ -108,7 +108,7 @@ export function SkeletonPremiumDashboard() {
 
       {/* Members card */}
       <View style={{
-        backgroundColor: colors.bgCard, borderRadius: 20, padding: 20,
+        backgroundColor: T.card, borderRadius: 20, padding: 20,
         ...(Platform.OS === 'android' ? { elevation: 2 } : {
           shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
           shadowOpacity: 0.06, shadowRadius: 8,

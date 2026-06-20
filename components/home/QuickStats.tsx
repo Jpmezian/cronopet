@@ -1,6 +1,6 @@
 import React, { type ComponentType } from 'react';
 import { View, Text, Platform } from 'react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 
 interface StatIconProps {
   size?: number;
@@ -28,12 +28,12 @@ interface QuickStatsProps {
  * chip suave da marca acima do número grande Nunito 800. Sem emoji.
  */
 export function QuickStats({ stats }: QuickStatsProps) {
-  const { colors, brand, isDark } = useThemeColors();
+  const T = useTheme();
 
   return (
     <View style={{ flexDirection: 'row' }}>
       {stats.map((stat, i) => {
-        const tint = stat.accent ?? brand.primary;
+        const tint = stat.accent ?? T.primary;
         const Icon = stat.Icon;
         return (
           <React.Fragment key={i}>
@@ -44,20 +44,20 @@ export function QuickStats({ stats }: QuickStatsProps) {
               accessibilityLabel={`${stat.label}: ${stat.value}`}
               style={{
                 flex: 1,
-                backgroundColor: colors.bgCard,
+                backgroundColor: T.card,
                 borderRadius: 16,
                 paddingVertical: 14, paddingHorizontal: 12,
                 alignItems: 'center',
                 ...(Platform.OS === 'android' ? { elevation: 2 } : {
                   shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: isDark ? 0.22 : 0.05, shadowRadius: 6,
+                  shadowOpacity: T.isDark ? 0.22 : 0.05, shadowRadius: 6,
                 }),
               }}
             >
               {/* Chip do ícone — calor visual sem cair em emoji */}
               <View style={{
                 width: 32, height: 32, borderRadius: 10,
-                backgroundColor: isDark
+                backgroundColor: T.isDark
                   ? 'rgba(155, 228, 198, 0.18)'
                   : '#EAFAF1',
                 alignItems: 'center', justifyContent: 'center',
@@ -70,7 +70,7 @@ export function QuickStats({ stats }: QuickStatsProps) {
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 style={{
-                  color: colors.textPrimary,
+                  color: T.ink,
                   fontFamily: 'Nunito_800ExtraBold',
                   fontSize: 18, fontWeight: '800',
                   lineHeight: 22,
@@ -81,7 +81,7 @@ export function QuickStats({ stats }: QuickStatsProps) {
               <Text
                 numberOfLines={1}
                 style={{
-                  color: colors.textTertiary,
+                  color: T.ink3,
                   fontSize: 10, fontWeight: '600',
                   marginTop: 1,
                   textTransform: 'uppercase',

@@ -2,7 +2,8 @@ import React, { useMemo } from 'react';
 import { View, Text, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { Gift } from 'lucide-react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
+import { ACTIONS_V3 } from '@/constants/colors';
 import { ScalePress } from '@/components/ui/ScalePress';
 
 interface BirthdayCardProps {
@@ -46,7 +47,7 @@ function computeBirthday(nascimento: string): { daysUntil: number; isToday: bool
  * Retorna null fora dessa janela (não renderiza nada).
  */
 export function BirthdayCard({ petNome, nascimento, onPress }: BirthdayCardProps) {
-  const { colors, actionTheme, isDark } = useThemeColors();
+  const T = useTheme();
 
   const bday = useMemo(() => computeBirthday(nascimento), [nascimento]);
 
@@ -77,16 +78,16 @@ export function BirthdayCard({ petNome, nascimento, onPress }: BirthdayCardProps
       disabled={!onPress}
       scaleValue={0.98}
       style={{
-        backgroundColor: actionTheme.xixi.bg,
+        backgroundColor: ACTIONS_V3.xixi.tintL,
         borderWidth: 1.5,
-        borderColor: bday.isToday ? actionTheme.xixi.primary : actionTheme.xixi.border,
+        borderColor: bday.isToday ? ACTIONS_V3.xixi.primary : 'rgba(139,67,230,0.22)',
         borderRadius: 18,
         paddingHorizontal: 16, paddingVertical: 14,
         flexDirection: 'row',
         alignItems: 'center',
         ...(Platform.OS === 'android' ? { elevation: 2 } : {
           shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: isDark ? 0.25 : 0.05, shadowRadius: 6,
+          shadowOpacity: T.isDark ? 0.25 : 0.05, shadowRadius: 6,
         }),
       }}
     >
@@ -102,7 +103,7 @@ export function BirthdayCard({ petNome, nascimento, onPress }: BirthdayCardProps
         <Text
           numberOfLines={2}
           style={{
-            color: actionTheme.xixi.primary,
+            color: ACTIONS_V3.xixi.primary,
             fontFamily: 'Nunito_800ExtraBold',
             fontSize: 13, fontWeight: '800',
             lineHeight: 17,
@@ -111,7 +112,7 @@ export function BirthdayCard({ petNome, nascimento, onPress }: BirthdayCardProps
           {title}
         </Text>
         <Text style={{
-          color: actionTheme.xixi.primary,
+          color: ACTIONS_V3.xixi.primary,
           fontSize: 12,
           marginTop: 2,
         }}>
@@ -119,7 +120,7 @@ export function BirthdayCard({ petNome, nascimento, onPress }: BirthdayCardProps
         </Text>
       </View>
       {bday.isToday && (
-        <Gift size={20} color={actionTheme.xixi.primary} strokeWidth={2.2} />
+        <Gift size={20} color={ACTIONS_V3.xixi.primary} strokeWidth={2.2} />
       )}
     </ScalePress>
   );

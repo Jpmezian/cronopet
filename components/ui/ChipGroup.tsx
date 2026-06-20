@@ -1,7 +1,7 @@
 import React, { type ComponentType } from 'react';
 import { View, Text } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import { ScalePress } from '@/components/ui/ScalePress';
 
 interface ChipIconProps {
@@ -44,7 +44,7 @@ export function ChipGroup<T extends string>({
   compact = false,
   allowDeselect = true,
 }: ChipGroupProps<T>) {
-  const { colors } = useThemeColors();
+  const T = useTheme();
 
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
@@ -68,9 +68,9 @@ export function ChipGroup<T extends string>({
                 paddingVertical: compact ? 8 : 10,
                 flexDirection: 'row',
                 alignItems: 'center',
-                backgroundColor: active ? accentBg : colors.bgInput,
+                backgroundColor: active ? accentBg : T.surfaceTint,
                 borderWidth: 1.5,
-                borderColor:  active ? accentBorder : colors.border,
+                borderColor:  active ? accentBorder : T.rule,
               }}
             >
               {opt.Icon ? (
@@ -78,7 +78,7 @@ export function ChipGroup<T extends string>({
                   <opt.Icon
                     size={compact ? 14 : 16}
                     strokeWidth={2.2}
-                    color={active ? accentColor : colors.textSecondary}
+                    color={active ? accentColor : T.ink2}
                   />
                 </View>
               ) : opt.emoji ? (
@@ -90,7 +90,7 @@ export function ChipGroup<T extends string>({
                 <Text style={{
                   fontSize: compact ? 12 : 13,
                   fontWeight: active ? '700' : '500',
-                  color: active ? accentColor : colors.textSecondary,
+                  color: active ? accentColor : T.ink2,
                 }}>
                   {opt.label}
                 </Text>
@@ -98,7 +98,7 @@ export function ChipGroup<T extends string>({
                   <Text style={{
                     fontSize: compact ? 9 : 10,
                     fontWeight: '500',
-                    color: active ? accentColor : colors.textTertiary,
+                    color: active ? accentColor : T.ink3,
                     opacity: active ? 0.85 : 1,
                     marginTop: 1,
                   }}>
@@ -135,7 +135,7 @@ export function QuickAmount({
   accentColor, accentBg, accentBorder,
   currentValue,
 }: QuickAmountProps) {
-  const { colors } = useThemeColors();
+  const T = useTheme();
 
   return (
     <View style={{ flexDirection: 'row', marginBottom: 8 }}>
@@ -156,15 +156,15 @@ export function QuickAmount({
                 borderRadius: 12,
                 paddingVertical: 10,
                 alignItems: 'center',
-                backgroundColor: active ? accentBg : colors.bgInput,
+                backgroundColor: active ? accentBg : T.surfaceTint,
                 borderWidth: 1.5,
-                borderColor:  active ? accentBorder : colors.border,
+                borderColor:  active ? accentBorder : T.rule,
               }}
             >
               <Text style={{
                 fontFamily: 'Nunito_700Bold',
                 fontSize: 13, fontWeight: '700',
-                color: active ? accentColor : colors.textSecondary,
+                color: active ? accentColor : T.ink2,
               }}>
                 {val}{unit}
               </Text>
