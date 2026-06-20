@@ -743,7 +743,7 @@ export default function PetDashboard() {
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.bgScreen }}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24, gap: 16 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 110, gap: 16 }}
         showsVerticalScrollIndicator={false}
       >
         {/* Header — Bold v3 (Fase 1a) */}

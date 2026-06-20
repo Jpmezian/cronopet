@@ -49,15 +49,18 @@ export function TopBar({ petName, alertCount = 0, onPressPet }: TopBarProps) {
   const router = useRouter();
   const hasAlert = alertCount > 0;
 
+  // Settings agora é tab (Fase 8). Usa router.navigate pra fazer SWAP
+  // entre tabs em vez de PUSH na stack — evita acumular pilha quando
+  // user toca o gear/bell repetidamente.
   const onSettings = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/settings');
+    router.navigate('/settings');
   };
 
   const onBell = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    // Sem rota dedicada — abre Settings por enquanto (área de notificações)
-    router.push('/settings');
+    // Sem rota dedicada — abre Settings (área de notificações)
+    router.navigate('/settings');
   };
 
   const onPet = () => {

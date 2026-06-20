@@ -1,184 +1,100 @@
 import React, { useEffect } from 'react';
-import {
-  View, Text, Modal, Platform, Pressable,
-} from 'react-native';
-import Animated, {
-  FadeIn, FadeOut, SlideInDown, SlideOutDown,
-  useReducedMotion,
-} from 'react-native-reanimated';
-import { Bell, X } from 'lucide-react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Bell } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import { ModalShell } from '@/components/chrome/ModalShell';
+import { Button } from '@/components/ui/Button';
 import { ScalePress } from './ScalePress';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
+import { ACTIONS_V3 } from '@/constants/colors';
 import { requestPermissionsAsync } from '@/services/NotificationService';
 
-// ─── Props ────────────────────────────────────────────────────
-
 interface NotificationAskSheetProps {
-  visible: boolean;
-  petNome: string;
-  /** Chamado após o sistema responder. `granted` é o status real (não assumido). */
+  visible:   boolean;
+  petNome:   string;
+  /** Chamado após o sistema responder. `granted` é o status real. */
   onConfirm: (granted: boolean) => void;
   onDismiss: () => void;
 }
 
 /**
- * "Soft Ask" de permissão de notificações.
+ * "Soft Ask" de permissão de notificações — migrado pra ModalShell
+ * Bold v3 (Fase 8, prova de uso F8-Q3).
  *
- * Aparece ANTES do dialog nativo do iOS/Android, contextualizando o valor
- * da permissão (Princípio de Neurodesign: valor percebido antes da fricção).
+ * Aparece ANTES do dialog nativo iOS/Android, contextualizando o valor
+ * da permissão (Neurodesign: valor percebido antes da fricção). Gatilho
+ * ideal: logo após primeira meta diária completa.
  *
- * Gatilho ideal: logo após o usuário completar a primeira meta diária
- * (DailyProgress onFirstComplete callback).
+ * Visual migrado:
+ *   • Backdrop + sheet + alça + close X agora vem do ModalShell
+ *   • Ícone Bell box sobre T.surfaceTint
+ *   • Título via prop title (Bricolage 26 — antes Nunito 22)
+ *   • CTA via Button primitivo variant=primary
+ *   • Ghost dismiss preservado
  */
 export function NotificationAskSheet({
-  visible,
-  petNome,
-  onConfirm,
-  onDismiss,
+  visible, petNome, onConfirm, onDismiss,
 }: NotificationAskSheetProps) {
-  const { colors, actionTheme, isDark } = useThemeColors();
-  const isReducedMotion = useReducedMotion();
+  const T = useTheme();
 
   useEffect(() => {
-    if (visible) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
+    if (visible) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }, [visible]);
 
   const handleConfirm = async () => {
-    // Antes: chamava onConfirm() incondicionalmente, assumindo granted.
-    // Caller fazia setNotifStatus('granted') sem saber se a permissão foi
-    // de fato concedida — daí scheduleDailyReminder rodava em pet sem
-    // permissão e podia throw, crashando o app. Agora propagamos o
-    // status real. requestPermissionsAsync já é try/catch-safe.
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    } catch {
-      // Haptics pode falhar em dispositivos antigos — não bloqueia o fluxo
-    }
+    try { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); } catch { /* haptics opcional */ }
     const granted = await requestPermissionsAsync();
     onConfirm(granted);
   };
 
-  const overlayColor = isDark ? 'rgba(0,0,0,0.6)' : 'rgba(28,25,23,0.4)';
-
-  const sheetEnter = isReducedMotion
-    ? FadeIn.duration(200)
-    : SlideInDown.springify().damping(20).stiffness(280);
-
-  const sheetExit = isReducedMotion
-    ? FadeOut.duration(150)
-    : SlideOutDown.duration(200);
-
   return (
-    <Modal
+    <ModalShell
       visible={visible}
-      transparent
-      animationType="none"
-      statusBarTranslucent
-      onRequestClose={onDismiss}
+      onClose={onDismiss}
+      title={`Não deixe ${petNome || 'seu pet'} com fome`}
+      kicker="Lembretes"
     >
-      <Pressable
-        style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: overlayColor }}
-        onPress={onDismiss}
-      >
-        {/* Sheet — Pressable interno para não fechar ao tocar dentro */}
-        <Pressable onPress={() => {}}>
-          <Animated.View
-            entering={sheetEnter}
-            exiting={sheetExit}
-            style={{
-              backgroundColor: colors.bgCard,
-              borderTopLeftRadius: 28,
-              borderTopRightRadius: 28,
-              paddingHorizontal: 24,
-              paddingTop: 20,
-              paddingBottom: Platform.OS === 'ios' ? 40 : 28,
-            }}
-          >
-            {/* Alça */}
-            <View style={{
-              width: 40, height: 4, borderRadius: 2,
-              backgroundColor: colors.border,
-              alignSelf: 'center', marginBottom: 24,
-            }} />
+      <View style={s.body}>
+        <View
+          style={[
+            s.iconBox,
+            { backgroundColor: T.isDark ? 'rgba(3,105,161,0.18)' : ACTIONS_V3.agua.tintL },
+          ]}
+        >
+          <Bell size={28} strokeWidth={2.2} color={ACTIONS_V3.agua.primary} />
+        </View>
 
-            {/* Ícone */}
-            <View style={{
-              width: 64, height: 64, borderRadius: 20,
-              backgroundColor: actionTheme.agua.bg,
-              alignItems: 'center', justifyContent: 'center',
-              marginBottom: 16, alignSelf: 'center',
-            }}>
-              <Bell size={28} strokeWidth={2} color={actionTheme.agua.primary} />
-            </View>
+        <Text style={[s.sub, { color: T.ink2 }]}>
+          Podemos te enviar lembretes suaves quando estiver na hora das refeições e
+          passeios.
+        </Text>
 
-            {/* Título */}
-            <Text style={{
-              fontFamily: 'Nunito_800ExtraBold',
-              fontSize: 22,
-              color: colors.textPrimary,
-              textAlign: 'center',
-              marginBottom: 10,
-            }}>
-              {`Não deixe ${petNome || 'seu pet'} com fome!`}
-            </Text>
+        <Button
+          label="Ativar lembretes"
+          onPress={handleConfirm}
+          variant="primary"
+          fullWidth
+          accessibilityHint="Abre a solicitação de permissão de notificações do sistema"
+        />
 
-            {/* Subtítulo */}
-            <Text style={{
-              fontSize: 15,
-              color: colors.textSecondary,
-              textAlign: 'center',
-              lineHeight: 22,
-              marginBottom: 28,
-            }}>
-              {'Podemos te enviar lembretes suaves quando estiver na hora das refeições e passeios.'}
-            </Text>
-
-            {/* CTA principal */}
-            <ScalePress
-              onPress={handleConfirm}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel="Ativar lembretes"
-              accessibilityHint="Abre a solicitação de permissão de notificações do sistema"
-              style={{
-                backgroundColor: actionTheme.agua.primary,
-                borderRadius: 16,
-                paddingVertical: 16,
-                alignItems: 'center',
-                marginBottom: 12,
-              }}
-            >
-              <Text style={{
-                fontFamily: 'Nunito_700Bold',
-                fontSize: 16,
-                color: '#ffffff',
-              }}>
-                Ativar Lembretes
-              </Text>
-            </ScalePress>
-
-            {/* Botão fantasma */}
-            <ScalePress
-              onPress={onDismiss}
-              accessible={true}
-              accessibilityRole="button"
-              accessibilityLabel="Talvez mais tarde"
-              style={{ paddingVertical: 12, alignItems: 'center' }}
-            >
-              <Text style={{
-                fontSize: 14,
-                color: colors.textTertiary,
-                fontWeight: '500',
-              }}>
-                Talvez mais tarde
-              </Text>
-            </ScalePress>
-          </Animated.View>
-        </Pressable>
-      </Pressable>
-    </Modal>
+        <ScalePress
+          onPress={onDismiss}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel="Talvez mais tarde"
+          style={s.ghost}
+        >
+          <Text style={[s.ghostLabel, { color: T.ink3 }]}>Talvez mais tarde</Text>
+        </ScalePress>
+      </View>
+    </ModalShell>
   );
 }
+
+const s = StyleSheet.create({
+  body:       { alignItems: 'center', gap: 18 },
+  iconBox:    { width: 64, height: 64, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  sub:        { fontFamily: 'HankenGrotesk_500Medium', fontSize: 14, fontWeight: '500', lineHeight: 20, textAlign: 'center', marginBottom: 2 },
+  ghost:      { paddingVertical: 10 },
+  ghostLabel: { fontFamily: 'HankenGrotesk_700Bold', fontSize: 13, fontWeight: '700' },
+});

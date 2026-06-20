@@ -1,99 +1,78 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Platform } from 'react-native';
+import { View, Text } from 'react-native';
 import Animated, {
   FadeIn, FadeOut, SlideInDown, SlideOutUp, useReducedMotion,
 } from 'react-native-reanimated';
-import {
-  CheckCircle, AlertCircle, AlertTriangle, Info, X,
-} from 'lucide-react-native';
+import { Check, AlertCircle, AlertTriangle, Info, X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
+import { ACTIONS_V3 } from '@/constants/colors';
 import { useToastStore } from '@/store/useToastStore';
 import type { ToastItem } from '@/store/useToastStore';
 import { ScalePress } from './ScalePress';
 
-// ─── Componente Toast ─────────────────────────────────────────
+/**
+ * Toast Bold v3 (Fase 8 Globais).
+ *
+ * Migrado de useThemeColors → useTheme + Bold v3 visual. API do
+ * useToastStore (78 call-sites) NÃO mudou — `showToast(type, message,
+ * duration?)`. Internamente troca paleta antiga (actionTheme.bg /
+ * border / primary) por tokens semânticos + ACTIONS_V3.
+ *
+ * Variantes:
+ *   • success → bg T.primary verdigris + texto T.onPrimary + Check
+ *   • error   → bg ACTIONS_V3.comida.primary laranja + texto onPrimary + AlertCircle
+ *   • warning → bg ACTIONS_V3.coco.primary amber-900 + texto onPrimary + AlertTriangle
+ *   • info    → bg T.blk preto profundo + texto T.onBlk + Info
+ *
+ * Auto-dismiss + haptic + swipe close mantidos. Animação respeita
+ * useReducedMotion.
+ */
 
 interface ToastProps {
   toast: ToastItem;
 }
 
 export function Toast({ toast }: ToastProps) {
-  const { colors, actionTheme, isDark } = useThemeColors();
+  const T = useTheme();
   const dismissToast = useToastStore((s) => s.dismissToast);
-  const isReducedMotion = useReducedMotion();
+  const reduced = useReducedMotion();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // ── Cores por tipo ────────────────────────────────────────
-  const toastColors = (() => {
+  const variant = (() => {
     switch (toast.type) {
-      case 'success': return {
-        icon:   actionTheme.passeio.primary,
-        bg:     actionTheme.passeio.bg,
-        border: actionTheme.passeio.border,
-      };
-      case 'error': return {
-        icon:   '#dc2626',
-        bg:     isDark ? 'rgba(220,38,38,0.12)' : '#fff1f2',
-        border: isDark ? 'rgba(220,38,38,0.22)' : '#fecdd3',
-      };
-      case 'warning': return {
-        icon:   actionTheme.comida.primary,
-        bg:     actionTheme.comida.bg,
-        border: actionTheme.comida.border,
-      };
-      case 'info': return {
-        icon:   actionTheme.agua.primary,
-        bg:     actionTheme.agua.bg,
-        border: actionTheme.agua.border,
-      };
+      case 'success': return { bg: T.primary,                fg: T.onPrimary, Icon: Check };
+      case 'error':   return { bg: ACTIONS_V3.comida.primary, fg: '#FFFFFF',  Icon: AlertCircle };
+      case 'warning': return { bg: ACTIONS_V3.coco.primary,   fg: '#FFFFFF',  Icon: AlertTriangle };
+      case 'info':    return { bg: T.blk,                    fg: T.onBlk,    Icon: Info };
     }
   })();
 
-  // ── Ícone por tipo ────────────────────────────────────────
-  const IconComponent = {
-    success: CheckCircle,
-    error:   AlertCircle,
-    warning: AlertTriangle,
-    info:    Info,
-  }[toast.type];
-
-  // ── Haptic + auto-dismiss na montagem ─────────────────────
   useEffect(() => {
     switch (toast.type) {
       case 'success':
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        break;
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); break;
       case 'error':
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        break;
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error); break;
       case 'warning':
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        break;
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); break;
       case 'info':
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        break;
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); break;
     }
-
-    timerRef.current = setTimeout(() => {
-      dismissToast(toast.id);
-    }, toast.duration);
-
+    timerRef.current = setTimeout(() => dismissToast(toast.id), toast.duration);
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // ── Animações ─────────────────────────────────────────────
-  const enterAnim = isReducedMotion
+  const enterAnim = reduced
     ? FadeIn.duration(200)
     : SlideInDown.springify().damping(20).stiffness(300);
-
-  const exitAnim = isReducedMotion
+  const exitAnim = reduced
     ? FadeOut.duration(150)
     : SlideOutUp.duration(200);
 
-  // ── Rótulo de acessibilidade ──────────────────────────────
   const typeLabel = {
     success: 'Sucesso',
     error:   'Erro',
@@ -108,37 +87,32 @@ export function Toast({ toast }: ToastProps) {
       accessibilityRole="alert"
       accessibilityLabel={`${typeLabel}: ${toast.message}`}
       style={{
-        backgroundColor: toastColors.bg,
-        borderRadius: 16,
-        borderWidth: 1,
-        borderColor: toastColors.border,
+        backgroundColor: variant.bg,
+        borderRadius:    14,
         paddingHorizontal: 16,
         paddingVertical: 12,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
-        ...(Platform.OS === 'android'
-          ? { elevation: 4 }
-          : {
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.12,
-              shadowRadius: 12,
-            }),
+        flexDirection:   'row',
+        alignItems:      'center',
+        gap:             12,
+        shadowColor:     `rgb(${T.shadow})`,
+        shadowOffset:    { width: 0, height: 6 },
+        shadowOpacity:   T.isDark ? 0.34 : 0.18,
+        shadowRadius:    14,
+        elevation:       6,
       }}
     >
-      {/* Ícone — decorativo, não lido individualmente (label no pai cobre tudo) */}
       <View accessible={false}>
-        <IconComponent size={22} strokeWidth={2} color={toastColors.icon} />
+        <variant.Icon size={20} strokeWidth={2.4} color={variant.fg} />
       </View>
 
       <Text
         style={{
-          flex: 1,
-          color: colors.textPrimary,
-          fontSize: 14,
-          fontWeight: '500',
-          lineHeight: 20,
+          flex:       1,
+          color:      variant.fg,
+          fontFamily: 'HankenGrotesk_700Bold' as const,
+          fontSize:   14,
+          fontWeight: '700',
+          lineHeight: 19,
         }}
         importantForAccessibility="no"
       >
@@ -147,13 +121,14 @@ export function Toast({ toast }: ToastProps) {
 
       <ScalePress
         onPress={() => dismissToast(toast.id)}
-        accessible={true}
+        accessible
         accessibilityRole="button"
         accessibilityLabel="Fechar notificação"
         accessibilityHint="Remove esta notificação"
-        style={{ padding: 4 }}
+        hitSlop={6}
+        style={{ padding: 2 }}
       >
-        <X size={18} strokeWidth={2} color={colors.textTertiary} />
+        <X size={16} strokeWidth={2.4} color={variant.fg} />
       </ScalePress>
     </Animated.View>
   );

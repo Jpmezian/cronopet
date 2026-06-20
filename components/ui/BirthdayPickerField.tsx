@@ -10,13 +10,18 @@
 // Limites:
 //   - max: hoje (pet não pode ter nascido no futuro)
 //   - min: 30 anos atrás (cobre qualquer pet vivo razoável)
+//
+// Fase 8: migrado pra ModalShell Bold v3 (iOS modal). Android continua
+// nativo (dialog do OS, sem wrapper). useThemeColors → useTheme.
 
 import React, { useState, useCallback } from 'react';
-import { View, Text, Platform, Modal, Pressable } from 'react-native';
+import { View, Text, Platform, StyleSheet } from 'react-native';
 import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { Calendar, X } from 'lucide-react-native';
+import { ModalShell } from '@/components/chrome/ModalShell';
+import { Button } from '@/components/ui/Button';
 import { ScalePress } from './ScalePress';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 
 interface BirthdayPickerFieldProps {
   /** ISO date 'YYYY-MM-DD' ou string vazia */
@@ -31,7 +36,7 @@ const MIN_DATE = (() => {
   return d;
 })();
 
-const MAX_DATE = new Date(); // hoje
+const MAX_DATE = new Date();
 
 function isoToDate(iso: string): Date {
   if (!iso) return new Date();
@@ -58,11 +63,8 @@ export function BirthdayPickerField({
   onChange,
   label = 'Data de nascimento (opcional)',
 }: BirthdayPickerFieldProps) {
-  const { colors, isDark } = useThemeColors();
+  const T = useTheme();
   const [showPicker, setShowPicker] = useState(false);
-  // No iOS, o picker é renderizado inline dentro de um modal customizado
-  // (precisamos do "Confirmar" pra commitar). No Android, é um dialog
-  // nativo que já tem botões — basta listenar o onChange.
   const [tempDate, setTempDate] = useState<Date>(() => isoToDate(value));
 
   const display = formatDisplay(value);
@@ -75,13 +77,10 @@ export function BirthdayPickerField({
 
   const handleAndroidChange = useCallback((event: DateTimePickerEvent, date?: Date) => {
     setShowPicker(false);
-    // event.type === 'dismissed' → user cancelou
-    if (event.type === 'set' && date) {
-      onChange(dateToIso(date));
-    }
+    if (event.type === 'set' && date) onChange(dateToIso(date));
   }, [onChange]);
 
-  const handleIosChange = useCallback((_event: DateTimePickerEvent, date?: Date) => {
+  const handleIosChange = useCallback((_e: DateTimePickerEvent, date?: Date) => {
     if (date) setTempDate(date);
   }, []);
 
@@ -97,30 +96,25 @@ export function BirthdayPickerField({
 
   return (
     <>
-      <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500', marginBottom: 6 }}>
-        {label}
-      </Text>
+      <Text style={[s.label, { color: T.ink2 }]}>{label}</Text>
       <ScalePress
         onPress={openPicker}
+        accessible
         accessibilityRole="button"
-        accessibilityLabel={hasValue ? `Data de nascimento: ${display}. Tocar para alterar.` : 'Escolher data de nascimento'}
-        style={{
-          backgroundColor: colors.bgInput,
-          borderRadius: 12,
-          paddingHorizontal: 14,
-          paddingVertical: 14,
-          marginBottom: 12,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: 10,
-        }}
+        accessibilityLabel={
+          hasValue
+            ? `Data de nascimento: ${display}. Tocar para alterar.`
+            : 'Escolher data de nascimento'
+        }
+        style={[s.field, { backgroundColor: T.surfaceTint }]}
       >
-        <Calendar size={18} color={colors.textSecondary} strokeWidth={2} />
-        <Text style={{
-          color: hasValue ? colors.textPrimary : colors.textTertiary,
-          fontSize: 15,
-          flex: 1,
-        }}>
+        <Calendar size={18} color={T.ink2} strokeWidth={2} />
+        <Text
+          style={[
+            s.fieldText,
+            { color: hasValue ? T.ink : T.ink3 },
+          ]}
+        >
           {hasValue ? display : 'Toque para escolher'}
         </Text>
         {hasValue && (
@@ -134,12 +128,12 @@ export function BirthdayPickerField({
             accessibilityLabel="Limpar data de nascimento"
             style={{ padding: 4 }}
           >
-            <X size={16} color={colors.textTertiary} strokeWidth={2} />
+            <X size={16} color={T.ink3} strokeWidth={2} />
           </ScalePress>
         )}
       </ScalePress>
 
-      {/* Android: dialog nativo */}
+      {/* Android: dialog nativo do OS, sem wrapper */}
       {Platform.OS === 'android' && showPicker && (
         <DateTimePicker
           value={tempDate}
@@ -151,89 +145,60 @@ export function BirthdayPickerField({
         />
       )}
 
-      {/* iOS: modal customizado com wheel inline + botão Confirmar */}
+      {/* iOS: ModalShell Bold v3 envolve wheel inline + buttons */}
       {Platform.OS === 'ios' && (
-        <Modal
+        <ModalShell
           visible={showPicker}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setShowPicker(false)}
+          onClose={() => setShowPicker(false)}
+          title="Data de nascimento"
         >
-          <Pressable
-            style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.45)' }}
-            onPress={() => setShowPicker(false)}
-            accessibilityLabel="Fechar seletor de data"
+          <DateTimePicker
+            value={tempDate}
+            mode="date"
+            display="spinner"
+            minimumDate={MIN_DATE}
+            maximumDate={MAX_DATE}
+            onChange={handleIosChange}
+            themeVariant={T.isDark ? 'dark' : 'light'}
+            locale="pt-BR"
           />
-          <View style={{
-            backgroundColor: colors.bgCard,
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-            paddingHorizontal: 20,
-            paddingTop: 12,
-            paddingBottom: 40,
-          }}>
-            {/* Alça */}
-            <View style={{ alignItems: 'center', paddingVertical: 8 }}>
-              <View style={{ width: 40, height: 4, backgroundColor: colors.border, borderRadius: 2 }} />
-            </View>
-
-            <Text style={{
-              fontFamily: 'Nunito_700Bold', fontSize: 17,
-              color: colors.textPrimary, marginBottom: 8, textAlign: 'center',
-            }}>
-              Data de nascimento
-            </Text>
-
-            <DateTimePicker
-              value={tempDate}
-              mode="date"
-              display="spinner"
-              minimumDate={MIN_DATE}
-              maximumDate={MAX_DATE}
-              onChange={handleIosChange}
-              themeVariant={isDark ? 'dark' : 'light'}
-              locale="pt-BR"
-            />
-
-            <View style={{ flexDirection: 'row', gap: 10, marginTop: 12 }}>
-              {hasValue && (
-                <ScalePress
-                  onPress={clearValue}
-                  accessibilityRole="button"
-                  accessibilityLabel="Limpar data"
-                  style={{
-                    flex: 1, padding: 14,
-                    borderRadius: 14,
-                    backgroundColor: colors.bgInput,
-                    alignItems: 'center',
-                  }}
-                >
-                  <Text style={{ color: colors.textSecondary, fontWeight: '700', fontSize: 14, fontFamily: 'Nunito_700Bold' }}>
-                    Limpar
-                  </Text>
-                </ScalePress>
-              )}
-              <ScalePress
-                onPress={confirmIos}
-                accessibilityRole="button"
-                accessibilityLabel="Confirmar data"
-                style={{
-                  flex: 2, padding: 14,
-                  borderRadius: 14,
-                  backgroundColor: isDark ? colors.bgCard : colors.textPrimary,
-                  alignItems: 'center',
-                  borderWidth: 1.5,
-                  borderColor: isDark ? colors.bgCard : colors.textPrimary,
-                }}
-              >
-                <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 14, fontFamily: 'Nunito_700Bold' }}>
-                  Confirmar
-                </Text>
-              </ScalePress>
+          <View style={s.btnRow}>
+            {hasValue && (
+              <View style={{ flex: 1 }}>
+                <Button label="Limpar" onPress={clearValue} variant="mint" fullWidth />
+              </View>
+            )}
+            <View style={{ flex: 2 }}>
+              <Button label="Confirmar" onPress={confirmIos} variant="black" fullWidth />
             </View>
           </View>
-        </Modal>
+        </ModalShell>
       )}
     </>
   );
 }
+
+const s = StyleSheet.create({
+  label: {
+    fontFamily: 'HankenGrotesk_700Bold',
+    fontSize: 13,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  field: {
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  fieldText: {
+    fontFamily: 'HankenGrotesk_500Medium',
+    fontSize: 15,
+    fontWeight: '500',
+    flex: 1,
+  },
+  btnRow: { flexDirection: 'row', gap: 10, marginTop: 12 },
+});

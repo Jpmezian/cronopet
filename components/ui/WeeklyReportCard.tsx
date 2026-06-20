@@ -1,77 +1,49 @@
 import React, { forwardRef } from 'react';
-import type { ComponentType } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { SvgXml } from 'react-native-svg';
-import { Bath, Calendar, Drumstick, Droplet, Footprints, Pill } from 'lucide-react-native';
 import { resolvePhotoUri } from '@/lib/photoPath';
-import { brand, verdigrisDeep } from '@/constants/colors';
-import { STAMP_GLYPHS } from '@/constants/stampGlyphs';
+import { brand, verdigrisDeep, ACTIONS_V3 } from '@/constants/colors';
+import { STAMP_GLYPHS, type StampGlyph } from '@/constants/stampGlyphs';
 
-// SVG XMLs pré-montados — STAMP_GLYPHS retorna paths com placeholder
-// __FG__ que substituímos pela cor de cada local de uso. Pré-monta
-// fora do render pra evitar string concat em cada captureRef.
-const PASSEIO_XML_WHITE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#FFFFFF">${STAMP_GLYPHS.passeio.replace(/__FG__/g, '#FFFFFF')}</svg>`;
-const SPARKLE_XML_WHITE = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#FFFFFF">${STAMP_GLYPHS.sparkle.replace(/__FG__/g, '#FFFFFF')}</svg>`;
+/**
+ * WeeklyReportCard Bold v3 — Fase 8, port oficial do hotfix 19d380b.
+ * Card 360×640 Stories. Cores fixed (captureRef precisa render uniforme,
+ * sem depender de theme dark/light). Tipografia Bricolage + Hanken.
+ * Stamps SVG nas stats. R-hotfix-2/3 desfeitos: foto 168 + petName 36.
+ */
 
-// Lucide icon prop signature comum a todos os 6 stats.
-type StatIconProps = { size?: number; color?: string; strokeWidth?: number };
-
-// ─── Dimensões 9:16 (Stories) ─────────────────────────────────
-// Em iPhone @3x captureRef gera ~1080×1920 nativamente. Mantemos 360×640
-// no JS pra layout previsível, escala 3x na captura.
 const CARD_W = 360;
 const CARD_H = 640;
 
-// ─── Paleta do card ──────────────────────────────────────────
-// Exceção à regra de useThemeColors: este componente é renderizado
-// offscreen para captura via react-native-view-shot, então precisa
-// de cores fixas independentes do tema. Mas TODAS importadas de
-// constants/colors.ts — zero hex hardcoded (lei do CLAUDE.md).
-//
-// Histórico:
-//   • R2-2 (2026-05-23): refeito do zero, gradient SVG trocado por
-//     stack de cores (mais robusto pra captureRef em iOS).
-//   • R3-5 (2026-05-25): polish primeira semana, labels 3 letras
-//     no grid, streak hero posicionamento centralizado.
-//   • P2-B1/B2 (2026-05-30): semana Dom→Sáb, fix footer/streak/empty.
-//   • Refresh visual (2026-06-03): adoção do design Beige claro
-//     conforme HTML cronopet-semana-bidu. Mantém streak hero +
-//     7-day grid + delta + weekIsEmpty (decisões CTO).
-//     Stats expandem de 4 (refeições/água/passeios/peso) pra 6
-//     (refeições/água/passeios/banhos/medicamentos/dias-acompanhados).
+// Cores fixed pra captureRef estável (não troca com theme dark/light).
 const C = {
-  // Background brand beige (gradient stack 2 camadas)
-  bgTop:    brand.beige,     // #E9F1CF
-  bgBottom: '#F2F6DE',       // beige clareado p/ profundidade suave
-
-  // Accent / texto principal
-  accent:    brand.verdigris, // #04A29B
-  accentDim: brand.celadon,   // #9BE4C6
-
-  // Texto sobre fundo beige
-  textPrimary:   brand.graphite,  // #2C2B27 — H1/H2 e números
-  textSecondary: brand.ashBrown,  // #5C493D — subtítulos/labels
-
-  // Cards brancos sobre o beige (separação leve)
-  cardBg:     '#FFFFFF',
-  cardBorder: 'rgba(92,73,61,0.10)',  // ashBrown @ 10% — borda sutil
-
-  // Highlight ("destaque da semana") — fundo creme warm
-  highlightBg:     '#FFF6E5',
+  bgTop:         brand.beige,            // #E9F1CF
+  bgBottom:      '#F2F6DE',
+  accent:        brand.verdigris,        // #04A29B
+  accentDim:     brand.celadon,          // #9BE4C6
+  textPrimary:   brand.graphite,         // #2C2B27
+  textSecondary: brand.ashBrown,         // #5C493D
+  cardBg:        '#FFFFFF',
+  cardBorder:    'rgba(92,73,61,0.10)',
+  highlightBg:   '#FFF6E5',
   highlightBorder: 'rgba(92,73,61,0.10)',
-
-  // Hex auxiliares com alpha (impossível derivar de tokens sem RGBA helper)
-  whiteSoft:  'rgba(255,255,255,0.92)',
-
-  // Bg de ícone sobre card branco (celadon diluído)
-  iconBg: brand.beige,
+  ink4:          '#867C6A',
 } as const;
+
+// SVG XMLs pré-montados — substituição de __FG__ em module-level
+function xml(glyph: StampGlyph, color: string): string {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${color}">${STAMP_GLYPHS[glyph].replace(/__FG__/g, color)}</svg>`;
+}
+
+const PAW_VERDIGRIS_XML = xml('passeio', C.accent);
+const PAW_WHITE_XML     = xml('passeio', '#FFFFFF');
+const SPARKLE_WHITE_XML = xml('sparkle', '#FFFFFF');
 
 // ─── Tipos ────────────────────────────────────────────────────
 
 export interface DayData {
   dayLabel: string;
-  date:     string;      // DD/MM
+  date:     string;
   actions:  Record<string, boolean>;
   isComplete: boolean;
 }
@@ -82,29 +54,19 @@ interface WeeklyTotals {
   walks:        number;
   walkDuration: number;
   foodGrams:    number;
-  /** Adicionado no refresh visual 2026-06-03. Optional pra back-compat.
-   *  Counter de logs com key='banho' na semana. */
   banhos?:      number;
-  /** Adicionado no refresh visual 2026-06-03. Optional pra back-compat.
-   *  App não rastreia medicamento como ActionKey hoje (TODO P3 documentado
-   *  em docs/TODO.md). Caller pode derivar de medicalEvents/vaccines se
-   *  fizer sentido; default 0. */
-  medicamentos?: number;
+  medicamentos?:number;
 }
 
 interface WeeklyReportCardProps {
   petNome:   string;
   petFoto:   string;
-  petTipo?:  string;          // ex: "Golden Retriever · 3 anos" (formatado pelo caller)
-  weekLabel: string;          // ex: "28 mai – 03 jun"
-  dailyGrid: DayData[];       // 7 items — usado pra derivar daysAcompanhados
-  totals: WeeklyTotals;
-  streak:       number;
-  /** Texto livre do "destaque da semana" — se não fornecido, derivado
-   *  automaticamente do contexto (streak ou primeira semana). */
+  petTipo?:  string;
+  weekLabel: string;
+  dailyGrid: DayData[];
+  totals:    WeeklyTotals;
+  streak:    number;
   highlight?: string;
-  /** Counter de dias com pelo menos 1 log. Se não fornecido, deduzido
-   *  do dailyGrid. */
   daysAcompanhados?: number;
 }
 
@@ -126,41 +88,114 @@ function deriveHighlight(args: {
   return 'Semana acompanhada';
 }
 
-// ─── Sub-componente: StatCard 2×3 ─────────────────────────────
-//
-// Icon: Lucide SVG line outline. Verdigris #04A29B sobre fundo Celadon
-// claro #E9F1CF, stroke-width 1.6 (combinação testada no HTML
-// cronopet-semana-bidu, mantém leveza editorial). Override do
-// CLAUDE.md "emojis em ações do pet" foi decisão consciente do CTO
-// pro card de share — emojis seguem usados em ActionButton e outros
-// pontos do app.
+// ─── Sub-componentes ─────────────────────────────────────────
 
-function StatCard({
-  Icon,
-  value,
-  label,
-}: {
-  Icon: ComponentType<StatIconProps>;
-  value: string;
-  label: string;
-}) {
+function Header({ weekLabel }: { weekLabel: string }) {
   return (
-    <View style={styles.statCard}>
-      <View style={styles.statHeader}>
-        <View style={styles.statIconBox}>
-          <Icon size={20} color={C.accent} strokeWidth={1.6} />
+    <View style={s.header}>
+      <View style={s.brandRow}>
+        <View style={[s.brandLogo, { backgroundColor: C.accent }]}>
+          <SvgXml xml={PAW_WHITE_XML} width={16} height={16} />
+        </View>
+        <View>
+          <Text style={s.brandName}>CronoPet</Text>
+          <Text style={s.brandTagline}>A semana do seu pet</Text>
         </View>
       </View>
-      <Text
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        style={styles.statValue}
-      >
-        {value}
-      </Text>
-      <Text style={styles.statLabel} numberOfLines={1}>
-        {label}
-      </Text>
+      <View style={s.weekChip}>
+        <Text style={s.weekChipText}>{weekLabel}</Text>
+      </View>
+    </View>
+  );
+}
+
+interface HeroProps { petNome: string; petFoto?: string; petTipo?: string }
+
+function Hero({ petNome, petFoto, petTipo }: HeroProps) {
+  return (
+    <View style={s.hero}>
+      <View style={s.photoFrame}>
+        {petFoto && (
+          <Image
+            source={{ uri: resolvePhotoUri(petFoto) }}
+            style={s.photo}
+            resizeMode="cover"
+            accessible={false}
+          />
+        )}
+      </View>
+      <Text style={s.petName} numberOfLines={1}>{petNome}</Text>
+      {petTipo && <Text style={s.petSubtitle} numberOfLines={1}>{petTipo}</Text>}
+    </View>
+  );
+}
+
+interface StatProps {
+  glyph: StampGlyph;
+  bgColor: string;
+  value: string;
+  label: string;
+}
+
+function StatCard({ glyph, bgColor, value, label }: StatProps) {
+  return (
+    <View style={s.statCard}>
+      <View style={[s.statIconBox, { backgroundColor: bgColor }]}>
+        <SvgXml xml={xml(glyph, '#FFFFFF')} width={18} height={18} />
+      </View>
+      <Text style={s.statValue} numberOfLines={1} adjustsFontSizeToFit>{value}</Text>
+      <Text style={s.statLabel} numberOfLines={1}>{label}</Text>
+    </View>
+  );
+}
+
+interface StatsGridProps {
+  totals: WeeklyTotals;
+  diasContados: number;
+}
+
+function StatsGrid({ totals, diasContados }: StatsGridProps) {
+  return (
+    <View style={s.statsGrid}>
+      <View style={s.statsRow}>
+        <StatCard glyph="passeio" bgColor={ACTIONS_V3.passeio.primary} value={String(diasContados)} label="dias" />
+        <StatCard glyph="comida"  bgColor={ACTIONS_V3.comida.primary}  value={String(totals.meals)} label="refeições" />
+      </View>
+      <View style={s.statsRow}>
+        <StatCard glyph="agua"    bgColor={ACTIONS_V3.agua.primary}    value={String(totals.water)} label="hidratações" />
+        <StatCard glyph="passeio" bgColor={ACTIONS_V3.passeio.primary} value={String(totals.walks)} label="passeios" />
+      </View>
+      <View style={s.statsRow}>
+        <StatCard glyph="banho"   bgColor={ACTIONS_V3.banho.primary}   value={String(totals.banhos ?? 0)}       label="banho" />
+        <StatCard glyph="tosa"    bgColor={ACTIONS_V3.coco.primary}    value={String(totals.medicamentos ?? 0)} label="medic." />
+      </View>
+    </View>
+  );
+}
+
+function Highlight({ text }: { text: string }) {
+  return (
+    <View style={s.highlightCard}>
+      <View style={[s.highlightStar, { backgroundColor: C.accent }]}>
+        <SvgXml xml={SPARKLE_WHITE_XML} width={20} height={20} />
+      </View>
+      <View style={s.highlightTextBox}>
+        <Text style={s.highlightLabel}>DESTAQUE DA SEMANA</Text>
+        <Text style={s.highlightValue} numberOfLines={2}>{text}</Text>
+      </View>
+    </View>
+  );
+}
+
+function Footer() {
+  return (
+    <View style={[s.footer, { backgroundColor: C.bgBottom }]}>
+      <View style={s.footerBrand}>
+        <View style={[s.footerLogo, { backgroundColor: C.accent }]}>
+          <SvgXml xml={PAW_WHITE_XML} width={12} height={12} />
+        </View>
+        <Text style={s.footerDomain}>cronopet.com.br</Text>
+      </View>
     </View>
   );
 }
@@ -168,145 +203,45 @@ function StatCard({
 // ─── Componente principal ─────────────────────────────────────
 
 export const WeeklyReportCard = forwardRef<View, WeeklyReportCardProps>(
-  ({
-    petNome,
-    petFoto,
-    petTipo,
-    weekLabel,
-    dailyGrid,
-    totals,
-    streak,
-    highlight,
-    daysAcompanhados,
-  }, ref) => {
+  ({ petNome, petFoto, petTipo, weekLabel, dailyGrid, totals, streak, highlight, daysAcompanhados }, ref) => {
     const hasFoto = !!petFoto;
-
-    // "Primeira semana": tudo zerado.
     const weekIsEmpty =
-      totals.meals === 0 &&
-      totals.water === 0 &&
-      totals.walks === 0 &&
-      streak === 0;
+      totals.meals === 0 && totals.water === 0 && totals.walks === 0 && streak === 0;
 
-    // Stats novos derivados / fallback
-    const banhos = totals.banhos ?? 0;
-    const medicamentos = totals.medicamentos ?? 0;
     const diasContados = daysAcompanhados ?? deriveDaysAcompanhados(dailyGrid);
     const highlightText = highlight ?? deriveHighlight({
-      streak,
-      totalWalks: totals.walks,
-      weekIsEmpty,
+      streak, totalWalks: totals.walks, weekIsEmpty,
     });
 
     return (
-      <View
-        ref={ref}
-        collapsable={false}
-        style={styles.root}
-        accessible={false}
-      >
-        {/* ── BG: 2 camadas beige empilhadas (substitui linear-gradient) ──
-            Estável pra captureRef em iOS — sempre renderiza igual. */}
+      <View ref={ref} collapsable={false} style={s.root} accessible={false}>
         <View style={[StyleSheet.absoluteFill, { backgroundColor: C.bgTop }]} />
-        <View style={[StyleSheet.absoluteFill, {
-          top: CARD_H * 0.55,
-          backgroundColor: C.bgBottom,
-        }]} />
-
-        {/* ── HEADER: wordmark + chip data ── */}
-        <View style={styles.header}>
-          <View style={styles.brandRow}>
-            <View style={styles.brandLogo}>
-              <SvgXml xml={PASSEIO_XML_WHITE} width={16} height={16} />
-            </View>
-            <View>
-              <Text style={styles.brandName}>CronoPet</Text>
-              <Text style={styles.brandTagline}>A semana do seu pet</Text>
-            </View>
-          </View>
-          <View style={styles.weekChip}>
-            <Text style={styles.weekChipText}>{weekLabel}</Text>
-          </View>
+        <View style={[StyleSheet.absoluteFill, { top: CARD_H * 0.55, backgroundColor: C.bgBottom }]} />
+        {/* Watermark pata mint marca d'água — referência de marca silenciosa */}
+        <View style={s.watermark} pointerEvents="none">
+          <SvgXml xml={PAW_VERDIGRIS_XML} width={200} height={200} />
         </View>
 
-        {/* ── HERO: foto grande + nome ── */}
-        <View style={styles.hero}>
-          <View style={styles.photoFrame}>
-            {hasFoto && (
-              <Image
-                source={{ uri: resolvePhotoUri(petFoto) }}
-                style={styles.photo}
-                resizeMode="cover"
-                accessible={false}
-              />
-            )}
-          </View>
-          <Text style={styles.petName} numberOfLines={1}>
-            {petNome}
-          </Text>
-          {petTipo && (
-            <Text style={styles.petSubtitle} numberOfLines={1}>
-              {petTipo}
-            </Text>
-          )}
-        </View>
+        <Header weekLabel={weekLabel} />
+        <Hero petNome={petNome} petFoto={hasFoto ? petFoto : undefined} petTipo={petTipo} />
 
-        {/* ── BODY: condicional weekIsEmpty vs full ── */}
-        <View style={styles.body}>
+        <View style={s.body}>
           {weekIsEmpty ? (
-            <View style={styles.emptyBox}>
-              <Text style={styles.emptyTitle}>
-                Minha primeira semana{'\n'}com {petNome}
-              </Text>
-              <Text style={styles.emptySubtitle}>
+            <View style={s.emptyBox}>
+              <Text style={s.emptyTitle}>Minha primeira semana{'\n'}com {petNome}</Text>
+              <Text style={s.emptySubtitle}>
                 Os próximos dias começam a contar a partir daqui.
               </Text>
             </View>
           ) : (
             <>
-              {/* ── STATS 2×3 grid (Lucide outline Verdigris) ── */}
-              <View style={styles.statsGrid}>
-                <View style={styles.statsRow}>
-                  <StatCard Icon={Calendar}   value={String(diasContados)}   label="dias" />
-                  <StatCard Icon={Drumstick}  value={String(totals.meals)}   label="refeições" />
-                </View>
-                <View style={styles.statsRow}>
-                  <StatCard Icon={Droplet}    value={String(totals.water)}   label="hidratações" />
-                  <StatCard Icon={Footprints} value={String(totals.walks)}   label="passeios" />
-                </View>
-                <View style={styles.statsRow}>
-                  <StatCard Icon={Bath}       value={String(banhos)}         label="banho" />
-                  <StatCard Icon={Pill}       value={String(medicamentos)}   label="medic." />
-                </View>
-              </View>
-
-              {/* ── HIGHLIGHT card (destaque da semana) ── */}
-              <View style={styles.highlightCard}>
-                <View style={styles.highlightStar}>
-                  <SvgXml xml={SPARKLE_XML_WHITE} width={20} height={20} />
-                </View>
-                <View style={styles.highlightTextBox}>
-                  <Text style={styles.highlightLabel}>
-                    DESTAQUE DA SEMANA
-                  </Text>
-                  <Text style={styles.highlightValue} numberOfLines={2}>
-                    {highlightText}
-                  </Text>
-                </View>
-              </View>
+              <StatsGrid totals={totals} diasContados={diasContados} />
+              <Highlight text={highlightText} />
             </>
           )}
         </View>
 
-        {/* ── FOOTER: wordmark + domínio ── */}
-        <View style={styles.footer}>
-          <View style={styles.footerBrand}>
-            <View style={styles.footerLogo}>
-              <SvgXml xml={PASSEIO_XML_WHITE} width={12} height={12} />
-            </View>
-            <Text style={styles.footerDomain}>cronopet.com.br</Text>
-          </View>
-        </View>
+        <Footer />
       </View>
     );
   },
@@ -314,253 +249,51 @@ export const WeeklyReportCard = forwardRef<View, WeeklyReportCardProps>(
 
 WeeklyReportCard.displayName = 'WeeklyReportCard';
 
-// ─── StyleSheet ──────────────────────────────────────────────
-// Sem hex hardcoded — tudo via C.* derivado de constants/colors.ts.
-// Spacing múltiplo de 4 conforme CLAUDE.md.
+// ─── Styles ──────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  root: {
-    width: CARD_W,
-    height: CARD_H,
-    overflow: 'hidden',
-    backgroundColor: C.bgTop,
-  },
-
-  // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  brandLogo: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: C.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  brandName: {
-    fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 14,
-    fontWeight: '800',
-    color: C.textPrimary,
-    letterSpacing: -0.2,
-  },
-  brandTagline: {
-    fontSize: 9,
-    color: C.textSecondary,
-    marginTop: 1,
-  },
-  weekChip: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: C.cardBorder,
-  },
-  weekChipText: {
-    fontSize: 10,
-    color: C.textSecondary,
-    fontWeight: '600',
-  },
-
-  // Hero — encolhido em 2026-06-17 (hotfix overflow): photoFrame
-  // 168→140 + petName 36→30 economizam ~38px verticais. Era esse o
-  // gap que fazia o body invadir o footer absolute.
-  hero: {
-    alignItems: 'center',
-    marginTop: 12,
-  },
+const s = StyleSheet.create({
+  root: { width: CARD_W, height: CARD_H, overflow: 'hidden', backgroundColor: C.bgTop },
+  watermark: { position: 'absolute', right: -40, bottom: 80, opacity: 0.07, transform: [{ rotate: '12deg' }] },
+  // Header (h ~52)
+  header:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18 },
+  brandRow:      { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  brandLogo:     { width: 28, height: 28, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  brandName:     { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 15, fontWeight: '800', color: C.textPrimary, letterSpacing: -0.2 },
+  brandTagline:  { fontFamily: 'HankenGrotesk_500Medium', fontSize: 10, fontWeight: '500', color: C.textSecondary, marginTop: 1 },
+  weekChip:      { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: C.cardBorder },
+  weekChipText:  { fontFamily: 'HankenGrotesk_700Bold', fontSize: 10, fontWeight: '700', color: C.textSecondary, letterSpacing: 0.3 },
+  // Hero (h ~232)
+  hero:          { alignItems: 'center', marginTop: 14 },
   photoFrame: {
-    width: 140,
-    height: 140,
-    borderRadius: 70,
-    borderWidth: 4,
-    borderColor: C.accent,
-    overflow: 'hidden',
-    backgroundColor: C.accentDim,
-    shadowColor: C.accent,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 6,
+    width: 168, height: 168, borderRadius: 84, borderWidth: 4, borderColor: C.accent,
+    overflow: 'hidden', backgroundColor: C.accentDim,
+    shadowColor: C.accent, shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2, shadowRadius: 12, elevation: 6,
   },
-  photo: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  petName: {
-    fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 30,
-    fontWeight: '800',
-    color: C.textPrimary,
-    marginTop: 10,
-    lineHeight: 34,
-    letterSpacing: -0.6,
-  },
-  petSubtitle: {
-    fontSize: 12,
-    color: C.textSecondary,
-    marginTop: 2,
-  },
-
-  // Body — paddingBottom 56→68 dá folga extra entre highlight e footer
-  // pra evitar overlap quando highlight quebra em 2 linhas.
-  body: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 68,
-  },
-
-  // weekIsEmpty
-  emptyBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-  },
-  emptyTitle: {
-    fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 20,
-    fontWeight: '800',
-    color: C.textPrimary,
-    textAlign: 'center',
-    lineHeight: 26,
-  },
-  emptySubtitle: {
-    fontSize: 12,
-    color: C.textSecondary,
-    textAlign: 'center',
-    marginTop: 12,
-    lineHeight: 16,
-    paddingHorizontal: 12,
-  },
-
-  // Stats grid
-  statsGrid: {
-    marginBottom: 12,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 8,
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: C.cardBg,
-    borderWidth: 1,
-    borderColor: C.cardBorder,
-    borderRadius: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-  },
-  statHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  statIconBox: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: C.iconBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statValue: {
-    fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 24,
-    fontWeight: '800',
-    color: C.textPrimary,
-    lineHeight: 28,
-    letterSpacing: -0.4,
-  },
-  statLabel: {
-    fontSize: 10,
-    color: C.textSecondary,
-    fontWeight: '600',
-    marginTop: 1,
-  },
-
+  photo:         { ...StyleSheet.absoluteFillObject },
+  petName:       { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 36, fontWeight: '800', color: C.textPrimary, marginTop: 12, lineHeight: 40, letterSpacing: -0.8 },
+  petSubtitle:   { fontFamily: 'HankenGrotesk_500Medium', fontSize: 12, fontWeight: '500', color: C.textSecondary, marginTop: 2 },
+  // Body
+  body:          { flex: 1, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 66 },
+  emptyBox:      { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
+  emptyTitle:    { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 22, fontWeight: '800', color: C.textPrimary, textAlign: 'center', lineHeight: 28 },
+  emptySubtitle: { fontFamily: 'HankenGrotesk_500Medium', fontSize: 13, fontWeight: '500', color: C.textSecondary, textAlign: 'center', marginTop: 12, lineHeight: 18, paddingHorizontal: 12 },
+  // Stats
+  statsGrid:     { marginBottom: 10 },
+  statsRow:      { flexDirection: 'row', gap: 8, marginBottom: 8 },
+  statCard:      { flex: 1, backgroundColor: C.cardBg, borderWidth: 1, borderColor: C.cardBorder, borderRadius: 16, paddingVertical: 10, paddingHorizontal: 12 },
+  statIconBox:   { width: 30, height: 30, borderRadius: 9, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+  statValue:     { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 24, fontWeight: '800', color: C.textPrimary, lineHeight: 28, letterSpacing: -0.4 },
+  statLabel:     { fontFamily: 'HankenGrotesk_500Medium', fontSize: 10, fontWeight: '500', color: C.textSecondary, marginTop: 1 },
   // Highlight
-  highlightCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: C.highlightBg,
-    borderWidth: 1,
-    borderColor: C.highlightBorder,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  highlightStar: {
-    width: 36,
-    height: 36,
-    borderRadius: 999,
-    backgroundColor: C.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  highlightTextBox: {
-    flex: 1,
-  },
-  highlightLabel: {
-    fontSize: 9,
-    fontWeight: '800',
-    // verdigrisDeep #036E69 sobre #FFF6E5 = ~5.5:1 (WCAG AA pra texto
-    // pequeno). C.accent #04A29B sobre #FFF6E5 = ~4.0:1 — falha em 9px.
-    color: verdigrisDeep,
-    letterSpacing: 1.8,
-  },
-  highlightValue: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 13,
-    fontWeight: '700',
-    color: C.textPrimary,
-    marginTop: 2,
-    lineHeight: 16,
-  },
-
-  // Footer — position absolute pra ficar ancorado ao bottom sem
-  // depender do flex flow do body (que pode estourar com conteúdo
-  // dinâmico). Bug 1 corrigido em 2026-06-13.
-  footer: {
-    position: 'absolute',
-    bottom: 0, left: 0, right: 0,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    paddingTop: 8,
-    alignItems: 'center',
-    // Fundo beige inferior pra footer não vazar visual do gradient.
-    backgroundColor: C.bgBottom,
-  },
-  footerBrand: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  footerLogo: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
-    backgroundColor: C.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  footerDomain: {
-    fontSize: 11,
-    color: C.textSecondary,
-    fontWeight: '600',
-  },
+  highlightCard:    { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: C.highlightBg, borderWidth: 1, borderColor: C.highlightBorder, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12 },
+  highlightStar:    { width: 36, height: 36, borderRadius: 999, alignItems: 'center', justifyContent: 'center' },
+  highlightTextBox: { flex: 1 },
+  highlightLabel:   { fontFamily: 'HankenGrotesk_800ExtraBold', fontSize: 9, fontWeight: '800', color: verdigrisDeep, letterSpacing: 1.6 },
+  highlightValue:   { fontFamily: 'BricolageGrotesque_800ExtraBold', fontSize: 14, fontWeight: '800', color: C.textPrimary, marginTop: 3, lineHeight: 18 },
+  // Footer absolute
+  footer:        { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 20, paddingBottom: 16, paddingTop: 8, alignItems: 'center' },
+  footerBrand:   { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  footerLogo:    { width: 20, height: 20, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
+  footerDomain:  { fontFamily: 'HankenGrotesk_700Bold', fontSize: 11, fontWeight: '700', color: C.textSecondary },
 });
-

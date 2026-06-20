@@ -6,8 +6,6 @@ import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as SecureStore from 'expo-secure-store';
 import * as Sentry from '@sentry/react-native';
-import { ChevronLeft } from 'lucide-react-native';
-import { ScalePress } from '@/components/ui/ScalePress';
 import { AccountCard } from '@/components/settings/AccountCard';
 import { FamilyCard } from '@/components/settings/FamilyCard';
 import { PetsCard } from '@/components/settings/PetsCard';
@@ -27,7 +25,8 @@ import { useTheme } from '@/hooks/useTheme';
  * SettingsScreen — Bold v3 (Fase 7 — briefing 11).
  *
  * Composição:
- *   1. Header (back + título "Configurações")
+ *   1. Título "Configurações" (Fase 8: settings virou tab, header back
+ *      removido — não há pra onde voltar em tab raiz)
  *   2. AccountCard
  *   3. FamilyCard → /premium
  *   4. PetsCard (multi-pet DB-002)
@@ -84,22 +83,6 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: T.bg }}>
-      <View style={s.headerRow}>
-        <ScalePress
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.back();
-          }}
-          accessible
-          accessibilityRole="button"
-          accessibilityLabel="Voltar"
-          hitSlop={8}
-          style={[s.backBtn, { backgroundColor: T.surfaceTint }]}
-        >
-          <ChevronLeft size={22} color={T.ink} strokeWidth={2.4} />
-        </ScalePress>
-      </View>
-
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={s.scroll}
@@ -232,8 +215,6 @@ function useAccountActions(
 }
 
 const s = StyleSheet.create({
-  headerRow: { paddingHorizontal: 20, paddingTop: 8 },
-  backBtn:   { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  scroll:    { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 40 },
+  scroll:    { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 110 },
   h1:        { fontFamily: 'BricolageGrotesque_800ExtraBold', fontWeight: '800', fontSize: 32, letterSpacing: -1.2, marginTop: 6 },
 });

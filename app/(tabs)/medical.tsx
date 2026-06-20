@@ -184,6 +184,6 @@ export default function MedicalScreen() {
 }
 
 const s = StyleSheet.create({
-  scroll: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 32 },
+  scroll: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 110 },
   h1:     { fontFamily: 'BricolageGrotesque_800ExtraBold', fontWeight: '800', fontSize: 32, letterSpacing: -1.2, marginTop: 6 },
 });
