@@ -14,7 +14,8 @@ import Animated, {
   FadeInRight, FadeIn, runOnJS, useReducedMotion,
 } from 'react-native-reanimated';
 import { usePetStore } from '@/store/usePetStore';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
+import { ACTIONS_V3 } from '@/constants/colors';
 import { canonicalizeBreed, SRD } from '@/data/breeds';
 import { BreedPickerField } from '@/components/ui/BreedPickerField';
 import { track } from '@/services/analytics';
@@ -49,12 +50,12 @@ type Step = 0 | 1 | 2 | 3;
 export default function OnboardingScreen() {
   const router             = useRouter();
   const completeOnboarding = usePetStore((s) => s.completeOnboarding);
-  const { colors, actionTheme } = useThemeColors();
+  const T = useTheme();
   const { height }         = useWindowDimensions();
   const isReduced          = useReducedMotion();
 
   const [displayStep, setDisplayStep] = useState<Step>(0);
-  const [heroBg,      setHeroBg]      = useState<string>(actionTheme.agua.bg);
+  const [heroBg,      setHeroBg]      = useState<string>(ACTIONS_V3.agua.tintL);
 
   // Funnel entry: dispara 1× quando a tela monta. Só faz sentido na
   // primeira sessão (guard global redireciona pra (tabs) se já onboardou),
@@ -94,10 +95,10 @@ export default function OnboardingScreen() {
   const HERO_H = height * heroRatio;
 
   const HERO_COLORS = [
-    actionTheme.agua.bg,      // 0 Welcome
-    actionTheme.xixi.bg,      // 1 Auth (roxo suave, contraste com pet steps)
-    actionTheme.passeio.bg,   // 2 PetType
-    actionTheme.comida.bg,    // 3 PetProfile
+    ACTIONS_V3.agua.tintL,      // 0 Welcome
+    ACTIONS_V3.xixi.tintL,      // 1 Auth (roxo suave, contraste com pet steps)
+    ACTIONS_V3.passeio.tintL,   // 2 PetType
+    ACTIONS_V3.comida.tintL,    // 3 PetProfile
   ];
 
   const animateToStep = useCallback((nextStep: Step) => {
@@ -183,7 +184,7 @@ export default function OnboardingScreen() {
           {/* ── Content card ── */}
           <View style={{
             flex: 1,
-            backgroundColor: colors.bgScreen,
+            backgroundColor: T.bg,
             borderTopLeftRadius: 28,
             borderTopRightRadius: 28,
           }}>
@@ -236,9 +237,9 @@ export default function OnboardingScreen() {
 // ─── Step 0: Boas-vindas ──────────────────────────────────────
 
 function StepWelcome({ onNext }: { onNext: () => void }) {
-  const { colors, isDark } = useThemeColors();
+  const T = useTheme();
   const isReduced = useReducedMotion();
-  const darkCardBg = isDark ? colors.bgCard : colors.textPrimary;
+  const darkCardBg = T.isDark ? T.card : T.ink;
   const textEntering = isReduced ? FadeIn.duration(200) : FadeInRight.duration(280);
 
   // Bug fix 2026-05-22: sem ScrollView, iPhone com tela menor (SE 1ª/2ª
@@ -263,7 +264,7 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
           minúscula como ancoragem da marca no início do conteúdo. */}
       <Animated.View entering={textEntering} style={{ alignItems: 'center' }}>
         <Text style={{
-          color: colors.tabActive,
+          color: T.primary,
           fontFamily: 'Nunito_800ExtraBold',
           fontSize: 12, fontWeight: '800',
           letterSpacing: 2,
@@ -275,12 +276,12 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
       {/* Texto animado */}
       <Animated.View entering={textEntering}>
         <Text style={{
-          color: colors.textPrimary, fontFamily: 'Nunito_800ExtraBold',
+          color: T.ink, fontFamily: 'Nunito_800ExtraBold',
           fontSize: 26, fontWeight: '800', lineHeight: 32, marginBottom: 8,
         }}>
           O melhor amigo{'\n'}do seu pet.
         </Text>
-        <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20 }}>
+        <Text style={{ color: T.ink2, fontSize: 14, lineHeight: 20 }}>
           Cuidar de quem te ama nunca foi tão fácil e organizado.
         </Text>
       </Animated.View>
@@ -293,19 +294,19 @@ function StepWelcome({ onNext }: { onNext: () => void }) {
           { emoji: '🩺', title: 'Saúde centralizada', desc: 'Vacinas, sintomas e relatório PDF pro veterinário' },
         ].map((item) => (
           <View key={item.title} style={{
-            backgroundColor: colors.bgCard, borderRadius: 14,
+            backgroundColor: T.card, borderRadius: 14,
             paddingHorizontal: 14, paddingVertical: 12,
             flexDirection: 'row', alignItems: 'center', gap: 12,
           }}>
             <Text style={{ fontSize: 22 }}>{item.emoji}</Text>
             <View style={{ flex: 1 }}>
               <Text style={{
-                color: colors.textPrimary, fontWeight: '600',
+                color: T.ink, fontWeight: '600',
                 fontSize: 13, fontFamily: 'Nunito_700Bold',
               }}>
                 {item.title}
               </Text>
-              <Text style={{ color: colors.textTertiary, fontSize: 12, marginTop: 2 }}>
+              <Text style={{ color: T.ink3, fontSize: 12, marginTop: 2 }}>
                 {item.desc}
               </Text>
             </View>
@@ -353,9 +354,9 @@ function StepPetType({
   onSelect: (t: PetType) => void;
   onNext: () => void;
 }) {
-  const { colors, isDark } = useThemeColors();
+  const T = useTheme();
   const isReduced = useReducedMotion();
-  const darkCardBg = isDark ? colors.bgCard : colors.textPrimary;
+  const darkCardBg = T.isDark ? T.card : T.ink;
   const textEntering = isReduced ? FadeIn.duration(200) : FadeInRight.duration(280);
 
   // Bug fix 2026-05-22: idem StepWelcome — overflow em iPhone com tela
@@ -374,16 +375,16 @@ function StepPetType({
       showsVerticalScrollIndicator={false}
     >
       <Animated.View entering={textEntering}>
-        <Text style={{ color: colors.textTertiary, fontSize: 13, fontWeight: '500' }}>
+        <Text style={{ color: T.ink3, fontSize: 13, fontWeight: '500' }}>
           Passo 2 de 3
         </Text>
         <Text style={{
-          color: colors.textPrimary, fontFamily: 'Nunito_800ExtraBold',
+          color: T.ink, fontFamily: 'Nunito_800ExtraBold',
           fontSize: 26, fontWeight: '800', marginTop: 4, lineHeight: 32,
         }}>
           Qual é o seu{'\n'}animal? 🐾
         </Text>
-        <Text style={{ color: colors.textTertiary, fontSize: 13, marginTop: 6 }}>
+        <Text style={{ color: T.ink3, fontSize: 13, marginTop: 6 }}>
           Isso personaliza as ações e a lista de raças.
         </Text>
       </Animated.View>
@@ -405,15 +406,15 @@ function StepPetType({
               style={{
                 borderRadius: 18, padding: 18,
                 flexDirection: 'row', alignItems: 'center', gap: 16,
-                backgroundColor: selected ? darkCardBg : colors.bgCard,
+                backgroundColor: selected ? darkCardBg : T.card,
                 borderWidth: 2,
-                borderColor: selected ? darkCardBg : colors.border,
+                borderColor: selected ? darkCardBg : T.rule,
               }}
             >
               <Text style={{ fontSize: 36 }}>{opt.emoji}</Text>
               <Text style={{
                 fontSize: 18, fontWeight: '700', fontFamily: 'Nunito_700Bold',
-                color: selected ? '#ffffff' : colors.textPrimary, flex: 1,
+                color: selected ? '#ffffff' : T.ink, flex: 1,
               }}>
                 {opt.label}
               </Text>
@@ -463,20 +464,20 @@ function StepPetProfile({
   tipo, nome, raca, foto, nascimento,
   onChangeName, onChangeRaca, onChangeNascimento, onPickPhoto, onFinish,
 }: StepPetProfileProps) {
-  const { colors, isDark } = useThemeColors();
+  const T = useTheme();
   const isReduced  = useReducedMotion();
-  const darkCardBg = isDark ? colors.bgCard : colors.textPrimary;
+  const darkCardBg = T.isDark ? T.card : T.ink;
   const isValid    = nome.trim().length > 0;
   const tipoLabel  = tipo === 'cachorro' ? 'cachorro' : tipo === 'gato' ? 'gato' : 'pet';
   const textEntering = isReduced ? FadeIn.duration(200) : FadeInRight.duration(280);
 
   const inputStyle = {
-    backgroundColor: colors.bgInput,
+    backgroundColor: T.surfaceTint,
     borderRadius: 12,
     paddingHorizontal: 14 as const,
     paddingVertical: 12 as const,
     fontSize: 15 as const,
-    color: colors.textPrimary,
+    color: T.ink,
     marginBottom: 12 as const,
   };
 
@@ -488,11 +489,11 @@ function StepPetProfile({
       keyboardShouldPersistTaps="handled"
     >
       <Animated.View entering={textEntering}>
-        <Text style={{ color: colors.textTertiary, fontSize: 13, fontWeight: '500' }}>
+        <Text style={{ color: T.ink3, fontSize: 13, fontWeight: '500' }}>
           Passo 3 de 3
         </Text>
         <Text style={{
-          color: colors.textPrimary, fontFamily: 'Nunito_800ExtraBold',
+          color: T.ink, fontFamily: 'Nunito_800ExtraBold',
           fontSize: 24, fontWeight: '800', marginTop: 4, marginBottom: 20,
         }}>
           Perfil do {tipoLabel} 🐾
@@ -513,7 +514,7 @@ function StepPetProfile({
             position: 'absolute', bottom: 0, right: 0,
             backgroundColor: BRAND_PRIMARY, width: 32, height: 32,
             borderRadius: 16, alignItems: 'center', justifyContent: 'center',
-            borderWidth: 2, borderColor: colors.bgScreen,
+            borderWidth: 2, borderColor: T.bg,
           }}>
             <Camera size={16} color="#ffffff" strokeWidth={2} />
           </View>
@@ -521,14 +522,14 @@ function StepPetProfile({
       </View>
 
       {/* Nome */}
-      <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500', marginBottom: 6 }}>
+      <Text style={{ color: T.ink2, fontSize: 13, fontWeight: '500', marginBottom: 6 }}>
         Nome*
       </Text>
       <TextInput
         value={nome}
         onChangeText={onChangeName}
         placeholder={`Como se chama seu ${tipoLabel}?`}
-        placeholderTextColor={colors.textTertiary}
+        placeholderTextColor={T.ink3}
         style={inputStyle}
         autoCapitalize="words"
         returnKeyType="next"
@@ -567,14 +568,14 @@ function StepPetProfile({
         accessibilityLabel={`Conhecer o ${nome || tipoLabel}`}
         accessibilityState={{ disabled: !isValid }}
         style={{
-          backgroundColor: isValid ? darkCardBg : colors.bgInput,
+          backgroundColor: isValid ? darkCardBg : T.surfaceTint,
           borderRadius: 16, height: 56,
           alignItems: 'center', justifyContent: 'center',
           marginTop: 8,
         }}
       >
         <Text style={{
-          color: isValid ? '#ffffff' : colors.textDisabled,
+          color: isValid ? '#ffffff' : T.ink4,
           fontWeight: '700', fontSize: 16, fontFamily: 'Nunito_700Bold',
         }}>
           Conhecer o {nome || tipoLabel} →

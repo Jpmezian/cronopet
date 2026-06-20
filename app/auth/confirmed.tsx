@@ -26,12 +26,12 @@ import React, { useEffect } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getSupabase } from '@/services/supabase';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import { useToastStore } from '@/store/useToastStore';
 
 export default function AuthConfirmedScreen() {
   const router = useRouter();
-  const { colors } = useThemeColors();
+  const T = useTheme();
   const showToast = useToastStore((s) => s.showToast);
 
   useEffect(() => {
@@ -74,17 +74,17 @@ export default function AuthConfirmedScreen() {
     <View
       style={{
         flex: 1,
-        backgroundColor: colors.bgScreen,
+        backgroundColor: T.bg,
         alignItems: 'center',
         justifyContent: 'center',
         gap: 16,
         paddingHorizontal: 24,
       }}
     >
-      <ActivityIndicator size="large" color={colors.tabActive} />
+      <ActivityIndicator size="large" color={T.primary} />
       <Text
         style={{
-          color: colors.textPrimary,
+          color: T.ink,
           fontFamily: 'Nunito_700Bold',
           fontSize: 18,
           textAlign: 'center',
@@ -95,7 +95,7 @@ export default function AuthConfirmedScreen() {
       </Text>
       <Text
         style={{
-          color: colors.textSecondary,
+          color: T.ink2,
           fontSize: 13,
           textAlign: 'center',
           lineHeight: 18,

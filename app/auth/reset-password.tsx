@@ -20,7 +20,7 @@ import { View, Text, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { getSupabase } from '@/services/supabase';
 import { checkPasswordStrength } from '@/lib/security';
@@ -28,8 +28,8 @@ import { translateSupabaseError } from '@/lib/supabaseErrors';
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
-  const { colors, isDark } = useThemeColors();
-  const darkCardBg = isDark ? colors.bgCard : colors.textPrimary;
+  const T = useTheme();
+  const darkCardBg = T.isDark ? T.card : T.ink;
 
   const [pwd, setPwd] = useState('');
   const [pwd2, setPwd2] = useState('');
@@ -70,26 +70,26 @@ export default function ResetPasswordScreen() {
   }, [pwd, pwd2, router]);
 
   const inputStyle = {
-    backgroundColor: colors.bgInput,
+    backgroundColor: T.surfaceTint,
     borderRadius: 12,
     paddingHorizontal: 14 as const,
     paddingVertical: 12 as const,
     fontSize: 15 as const,
-    color: colors.textPrimary,
+    color: T.ink,
     marginBottom: 12 as const,
   };
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: colors.bgScreen }}>
+    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: T.bg }}>
       <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 28, gap: 16 }}>
         <View>
-          <Text style={{ color: colors.textTertiary, fontSize: 13, fontWeight: '500' }}>
+          <Text style={{ color: T.ink3, fontSize: 13, fontWeight: '500' }}>
             Recuperação de acesso
           </Text>
           <Text
             accessibilityRole="header"
             style={{
-              color: colors.textPrimary,
+              color: T.ink,
               fontFamily: 'Nunito_800ExtraBold',
               fontSize: 24,
               fontWeight: '800',
@@ -99,20 +99,20 @@ export default function ResetPasswordScreen() {
           >
             Defina uma nova senha
           </Text>
-          <Text style={{ color: colors.textTertiary, fontSize: 13, marginTop: 6, lineHeight: 18 }}>
+          <Text style={{ color: T.ink3, fontSize: 13, marginTop: 6, lineHeight: 18 }}>
             Quando confirmar, você entra com a nova senha imediatamente.
           </Text>
         </View>
 
         <View>
-          <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500', marginBottom: 6 }}>
+          <Text style={{ color: T.ink2, fontSize: 13, fontWeight: '500', marginBottom: 6 }}>
             Nova senha
           </Text>
           <TextInput
             value={pwd}
             onChangeText={setPwd}
             placeholder="Mín. 8 chars, 1 maiúscula, 1 número"
-            placeholderTextColor={colors.textTertiary}
+            placeholderTextColor={T.ink3}
             secureTextEntry
             autoCapitalize="none"
             autoCorrect={false}
@@ -122,14 +122,14 @@ export default function ResetPasswordScreen() {
             style={inputStyle}
           />
 
-          <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500', marginBottom: 6 }}>
+          <Text style={{ color: T.ink2, fontSize: 13, fontWeight: '500', marginBottom: 6 }}>
             Confirme a nova senha
           </Text>
           <TextInput
             value={pwd2}
             onChangeText={setPwd2}
             placeholder="Digite a mesma senha"
-            placeholderTextColor={colors.textTertiary}
+            placeholderTextColor={T.ink3}
             secureTextEntry
             autoCapitalize="none"
             autoCorrect={false}
@@ -149,7 +149,7 @@ export default function ResetPasswordScreen() {
           accessibilityLabel="Atualizar senha"
           accessibilityState={{ disabled: !isValid || loading, busy: loading }}
           style={{
-            backgroundColor: isValid && !loading ? darkCardBg : colors.bgInput,
+            backgroundColor: isValid && !loading ? darkCardBg : T.surfaceTint,
             borderRadius: 16,
             height: 56,
             alignItems: 'center',
@@ -158,11 +158,11 @@ export default function ResetPasswordScreen() {
           }}
         >
           {loading ? (
-            <ActivityIndicator color={isDark ? colors.textPrimary : '#ffffff'} />
+            <ActivityIndicator color={T.isDark ? T.ink : '#ffffff'} />
           ) : (
             <Text
               style={{
-                color: isValid ? '#ffffff' : colors.textDisabled,
+                color: isValid ? '#ffffff' : T.ink4,
                 fontWeight: '700',
                 fontSize: 16,
                 fontFamily: 'Nunito_700Bold',

@@ -23,7 +23,7 @@ import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { Camera, ChevronLeft, Check } from 'lucide-react-native';
 import { usePetStore } from '@/store/usePetStore';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 import { canonicalizeBreed, SRD } from '@/data/breeds';
 import { BreedPickerField } from '@/components/ui/BreedPickerField';
 import { ScalePress } from '@/components/ui/ScalePress';
@@ -42,7 +42,7 @@ const PET_TYPE_OPTIONS: { tipo: PetType; emoji: string; label: string }[] = [
 export default function AddPetScreen() {
   const router  = useRouter();
   const addPet  = usePetStore((s) => s.addPet);
-  const { colors, isDark } = useThemeColors();
+  const T = useTheme();
 
   const [tipo,        setTipo]        = useState<PetType>('cachorro');
   const [nome,        setNome]        = useState('');
@@ -51,7 +51,7 @@ export default function AddPetScreen() {
   const [foto,        setFoto]        = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const darkCardBg = isDark ? colors.bgCard : colors.textPrimary;
+  const darkCardBg = T.isDark ? T.card : T.ink;
   const tipoLabel  = tipo === 'cachorro' ? 'cachorro' : tipo === 'gato' ? 'gato' : 'pet';
   const isValid    = nome.trim().length > 0 && !saving;
 
@@ -87,22 +87,22 @@ export default function AddPetScreen() {
   }, [nome, tipo, raca, foto, nascimento, addPet, router, saving]);
 
   const inputStyle = {
-    backgroundColor: colors.bgInput,
+    backgroundColor: T.surfaceTint,
     borderRadius: 12,
     paddingHorizontal: 14 as const,
     paddingVertical: 12 as const,
     fontSize: 15 as const,
-    color: colors.textPrimary,
+    color: T.ink,
     marginBottom: 12 as const,
   };
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: colors.bgScreen }}>
+    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: T.bg }}>
       {/* Header */}
       <View style={{
         flexDirection: 'row', alignItems: 'center', gap: 12,
         paddingHorizontal: 20, paddingVertical: 12,
-        borderBottomWidth: 1, borderBottomColor: colors.border,
+        borderBottomWidth: 1, borderBottomColor: T.rule,
       }}>
         <ScalePress
           onPress={() => router.back()}
@@ -110,10 +110,10 @@ export default function AddPetScreen() {
           accessibilityLabel="Voltar"
           style={{ padding: 6 }}
         >
-          <ChevronLeft size={24} color={colors.textPrimary} strokeWidth={2} />
+          <ChevronLeft size={24} color={T.ink} strokeWidth={2} />
         </ScalePress>
         <Text style={{
-          fontFamily: 'Nunito_700Bold', fontSize: 18, color: colors.textPrimary,
+          fontFamily: 'Nunito_700Bold', fontSize: 18, color: T.ink,
         }}>
           Adicionar pet
         </Text>
@@ -141,7 +141,7 @@ export default function AddPetScreen() {
                 position: 'absolute', bottom: 0, right: 0,
                 backgroundColor: BRAND_PRIMARY, width: 32, height: 32,
                 borderRadius: 16, alignItems: 'center', justifyContent: 'center',
-                borderWidth: 2, borderColor: colors.bgScreen,
+                borderWidth: 2, borderColor: T.bg,
               }}>
                 <Camera size={16} color="#ffffff" strokeWidth={2} />
               </View>
@@ -149,7 +149,7 @@ export default function AddPetScreen() {
           </View>
 
           {/* Tipo */}
-          <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500', marginBottom: 6 }}>
+          <Text style={{ color: T.ink2, fontSize: 13, fontWeight: '500', marginBottom: 6 }}>
             Tipo*
           </Text>
           <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
@@ -165,16 +165,16 @@ export default function AddPetScreen() {
                   style={{
                     flex: 1, padding: 12, alignItems: 'center', gap: 4,
                     borderRadius: 14,
-                    backgroundColor: selected ? darkCardBg : colors.bgCard,
+                    backgroundColor: selected ? darkCardBg : T.card,
                     borderWidth: 1.5,
-                    borderColor: selected ? darkCardBg : colors.border,
+                    borderColor: selected ? darkCardBg : T.rule,
                   }}
                 >
                   <Text style={{ fontSize: 26 }}>{opt.emoji}</Text>
                   <Text style={{
                     fontSize: 12, fontWeight: '700',
                     fontFamily: 'Nunito_700Bold',
-                    color: selected ? '#ffffff' : colors.textPrimary,
+                    color: selected ? '#ffffff' : T.ink,
                   }}>
                     {opt.label}
                   </Text>
@@ -184,14 +184,14 @@ export default function AddPetScreen() {
           </View>
 
           {/* Nome */}
-          <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500', marginBottom: 6 }}>
+          <Text style={{ color: T.ink2, fontSize: 13, fontWeight: '500', marginBottom: 6 }}>
             Nome*
           </Text>
           <TextInput
             value={nome}
             onChangeText={setNome}
             placeholder={`Como se chama seu ${tipoLabel}?`}
-            placeholderTextColor={colors.textTertiary}
+            placeholderTextColor={T.ink3}
             style={inputStyle}
             autoCapitalize="words"
             returnKeyType="next"
@@ -225,16 +225,16 @@ export default function AddPetScreen() {
             accessibilityLabel="Salvar pet"
             accessibilityState={{ disabled: !isValid }}
             style={{
-              backgroundColor: isValid ? darkCardBg : colors.bgInput,
+              backgroundColor: isValid ? darkCardBg : T.surfaceTint,
               borderRadius: 16, height: 56,
               alignItems: 'center', justifyContent: 'center',
               marginTop: 20,
               flexDirection: 'row', gap: 8,
             }}
           >
-            <Check size={20} color={isValid ? '#ffffff' : colors.textDisabled} strokeWidth={2.5} />
+            <Check size={20} color={isValid ? '#ffffff' : T.ink4} strokeWidth={2.5} />
             <Text style={{
-              color: isValid ? '#ffffff' : colors.textDisabled,
+              color: isValid ? '#ffffff' : T.ink4,
               fontWeight: '700', fontSize: 16, fontFamily: 'Nunito_700Bold',
             }}>
               {saving ? 'Salvando...' : `Adicionar ${nome.trim() || tipoLabel}`}

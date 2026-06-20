@@ -8,7 +8,8 @@ import * as Sharing from 'expo-sharing';
 import * as FileSystem from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Copy, Share2, Gift } from 'lucide-react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
+import { ACTIONS_V3 } from '@/constants/colors';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { useToastStore } from '@/store/useToastStore';
 import { usePetStore } from '@/store/usePetStore';
@@ -16,7 +17,7 @@ import { generateSecureInviteCode } from '@/lib/security';
 
 export default function InviteScreen() {
   const router = useRouter();
-  const { colors, actionTheme, isDark } = useThemeColors();
+  const T = useTheme();
   const showToast = useToastStore((s) => s.showToast);
   const pet = usePetStore((s) => s.pet);
 
@@ -67,7 +68,7 @@ Use meu código *${inviteCode}* quando se cadastrar e a gente ganha 1 mês de Pr
   }, [inviteCode, showToast]);
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: colors.bgScreen }}>
+    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: T.bg }}>
       {/* Header */}
       <View style={{
         flexDirection: 'row', alignItems: 'center',
@@ -79,18 +80,18 @@ Use meu código *${inviteCode}* quando se cadastrar e a gente ganha 1 mês de Pr
           accessibilityLabel="Voltar"
           style={{
             width: 40, height: 40, borderRadius: 12,
-            backgroundColor: colors.bgCard,
+            backgroundColor: T.card,
             alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <ChevronLeft size={22} color={colors.textPrimary} strokeWidth={2.5} />
+          <ChevronLeft size={22} color={T.ink} strokeWidth={2.5} />
         </ScalePress>
         <View style={{ flex: 1, marginLeft: 12 }}>
-          <Text style={{ color: colors.textTertiary, fontSize: 11, fontWeight: '700', letterSpacing: 1.2 }}>
+          <Text style={{ color: T.ink3, fontSize: 11, fontWeight: '700', letterSpacing: 1.2 }}>
             REFERRAL
           </Text>
           <Text style={{
-            color: colors.textPrimary,
+            color: T.ink,
             fontFamily: 'Nunito_800ExtraBold',
             fontSize: 20, fontWeight: '800',
             marginTop: 1,
@@ -106,8 +107,8 @@ Use meu código *${inviteCode}* quando se cadastrar e a gente ganha 1 mês de Pr
       >
         {/* Hero */}
         <View style={{
-          backgroundColor: actionTheme.xixi.bg,
-          borderWidth: 1.5, borderColor: actionTheme.xixi.border,
+          backgroundColor: ACTIONS_V3.xixi.tintL,
+          borderWidth: 1.5, borderColor: ACTIONS_V3.xixi.tintD,
           borderRadius: 20,
           padding: 22,
           alignItems: 'center',
@@ -115,14 +116,14 @@ Use meu código *${inviteCode}* quando se cadastrar e a gente ganha 1 mês de Pr
         }}>
           <View style={{
             width: 64, height: 64, borderRadius: 20,
-            backgroundColor: actionTheme.xixi.primary,
+            backgroundColor: ACTIONS_V3.xixi.primary,
             alignItems: 'center', justifyContent: 'center',
             marginBottom: 14,
           }}>
             <Gift size={32} color="#ffffff" strokeWidth={2.2} />
           </View>
           <Text style={{
-            color: actionTheme.xixi.primary,
+            color: ACTIONS_V3.xixi.primary,
             fontFamily: 'Nunito_800ExtraBold',
             fontSize: 20, fontWeight: '800',
             textAlign: 'center',
@@ -131,7 +132,7 @@ Use meu código *${inviteCode}* quando se cadastrar e a gente ganha 1 mês de Pr
             Ganhe 1 mês grátis
           </Text>
           <Text style={{
-            color: actionTheme.xixi.primary,
+            color: ACTIONS_V3.xixi.primary,
             fontSize: 13, lineHeight: 19,
             textAlign: 'center',
           }}>
@@ -142,7 +143,7 @@ Use meu código *${inviteCode}* quando se cadastrar e a gente ganha 1 mês de Pr
 
         {/* Invite code */}
         <Text style={{
-          color: colors.textTertiary,
+          color: T.ink3,
           fontSize: 11, fontWeight: '700',
           letterSpacing: 1.2,
           marginBottom: 10, marginLeft: 4,
@@ -155,37 +156,37 @@ Use meu código *${inviteCode}* quando se cadastrar e a gente ganha 1 mês de Pr
           accessible accessibilityRole="button"
           accessibilityLabel={`Copiar código ${inviteCode}`}
           style={{
-            backgroundColor: colors.bgCard,
+            backgroundColor: T.card,
             borderRadius: 16,
             paddingHorizontal: 20, paddingVertical: 20,
             flexDirection: 'row', alignItems: 'center',
             marginBottom: 20,
-            borderWidth: 2, borderColor: colors.border,
+            borderWidth: 2, borderColor: T.rule,
             ...(Platform.OS === 'android' ? { elevation: 2 } : {
               shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
-              shadowOpacity: isDark ? 0.22 : 0.05, shadowRadius: 6,
+              shadowOpacity: T.isDark ? 0.22 : 0.05, shadowRadius: 6,
             }),
           }}
         >
           <View style={{ flex: 1 }}>
             <Text style={{
-              color: colors.textPrimary,
+              color: T.ink,
               fontFamily: 'Nunito_800ExtraBold',
               fontSize: 24, fontWeight: '800',
               letterSpacing: 2,
             }}>
               {inviteCode}
             </Text>
-            <Text style={{ color: colors.textTertiary, fontSize: 11, marginTop: 2 }}>
+            <Text style={{ color: T.ink3, fontSize: 11, marginTop: 2 }}>
               Toque para copiar
             </Text>
           </View>
           <View style={{
             width: 40, height: 40, borderRadius: 12,
-            backgroundColor: colors.bgInput,
+            backgroundColor: T.surfaceTint,
             alignItems: 'center', justifyContent: 'center',
           }}>
-            <Copy size={18} color={colors.textSecondary} strokeWidth={2} />
+            <Copy size={18} color={T.ink2} strokeWidth={2} />
           </View>
         </ScalePress>
 
@@ -195,7 +196,7 @@ Use meu código *${inviteCode}* quando se cadastrar e a gente ganha 1 mês de Pr
           accessible accessibilityRole="button"
           accessibilityLabel="Compartilhar convite"
           style={{
-            backgroundColor: actionTheme.xixi.primary,
+            backgroundColor: ACTIONS_V3.xixi.primary,
             borderRadius: 16,
             height: 56,
             flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
@@ -219,7 +220,7 @@ Use meu código *${inviteCode}* quando se cadastrar e a gente ganha 1 mês de Pr
 
         {/* Como funciona */}
         <Text style={{
-          color: colors.textTertiary,
+          color: T.ink3,
           fontSize: 11, fontWeight: '700',
           letterSpacing: 1.2,
           marginBottom: 10, marginLeft: 4,
@@ -234,7 +235,7 @@ Use meu código *${inviteCode}* quando se cadastrar e a gente ganha 1 mês de Pr
             { n: '3', t: 'Vocês dois ganham 1 mês',    d: 'Creditado automaticamente no Premium de cada um. Sem limite.' },
           ].map((s) => (
             <View key={s.n} style={{
-              backgroundColor: colors.bgCard,
+              backgroundColor: T.card,
               borderRadius: 14,
               padding: 14,
               flexDirection: 'row',
@@ -242,13 +243,13 @@ Use meu código *${inviteCode}* quando se cadastrar e a gente ganha 1 mês de Pr
             }}>
               <View style={{
                 width: 28, height: 28, borderRadius: 8,
-                backgroundColor: actionTheme.xixi.bg,
-                borderWidth: 1, borderColor: actionTheme.xixi.border,
+                backgroundColor: ACTIONS_V3.xixi.tintL,
+                borderWidth: 1, borderColor: ACTIONS_V3.xixi.tintD,
                 alignItems: 'center', justifyContent: 'center',
                 marginRight: 12, marginTop: 1,
               }}>
                 <Text style={{
-                  color: actionTheme.xixi.primary,
+                  color: ACTIONS_V3.xixi.primary,
                   fontFamily: 'Nunito_800ExtraBold',
                   fontSize: 13, fontWeight: '800',
                 }}>
@@ -257,7 +258,7 @@ Use meu código *${inviteCode}* quando se cadastrar e a gente ganha 1 mês de Pr
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={{
-                  color: colors.textPrimary,
+                  color: T.ink,
                   fontFamily: 'Nunito_700Bold',
                   fontSize: 14, fontWeight: '700',
                   marginBottom: 2,
@@ -265,7 +266,7 @@ Use meu código *${inviteCode}* quando se cadastrar e a gente ganha 1 mês de Pr
                   {s.t}
                 </Text>
                 <Text style={{
-                  color: colors.textSecondary,
+                  color: T.ink2,
                   fontSize: 12, lineHeight: 17,
                 }}>
                   {s.d}
@@ -275,7 +276,7 @@ Use meu código *${inviteCode}* quando se cadastrar e a gente ganha 1 mês de Pr
           ))}
         </View>
 
-        <Text style={{ color: colors.textTertiary, fontSize: 11, textAlign: 'center', lineHeight: 16 }}>
+        <Text style={{ color: T.ink3, fontSize: 11, textAlign: 'center', lineHeight: 16 }}>
           Programa válido para novos assinantes Premium.{'\n'}
           Consulte os termos completos em cronopet.app/termos.
         </Text>

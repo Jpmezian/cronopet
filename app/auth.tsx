@@ -15,20 +15,21 @@ import React from 'react';
 import { View, useWindowDimensions, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
+import { ACTIONS_V3 } from '@/constants/colors';
 import { StepAuth } from '@/components/onboarding/StepAuth';
 import { IllustrationWelcome } from '@/components/onboarding/IllustrationWelcome';
 
 export default function AuthScreen() {
   const router = useRouter();
-  const { colors, actionTheme } = useThemeColors();
+  const T = useTheme();
   const { height } = useWindowDimensions();
 
   // HERO_H reduzido de 0.30 → 0.20 (2026-06-02): no re-login standalone
   // o user precisa SÓ logar — hero é puro decorativo. Hero pequeno deixa
   // mais espaço pros campos quando o teclado abre.
   const HERO_H = height * 0.20;
-  const heroBg = actionTheme.xixi.bg;
+  const heroBg = ACTIONS_V3.xixi.tintL;
 
   return (
     <View style={{ flex: 1, backgroundColor: heroBg }}>
@@ -46,7 +47,7 @@ export default function AuthScreen() {
 
           <View style={{
             flex: 1,
-            backgroundColor: colors.bgScreen,
+            backgroundColor: T.bg,
             borderTopLeftRadius: 28,
             borderTopRightRadius: 28,
           }}>

@@ -8,7 +8,8 @@ import { ChevronLeft, Trash2, Check } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ScalePress } from '@/components/ui/ScalePress';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
+import { ACTIONS_V3 } from '@/constants/colors';
 import { resolvePhotoUri } from '@/lib/photoPath';
 import { ActionIcon } from '@/components/icons/ActionIcon';
 import { usePetStore } from '@/store/usePetStore';
@@ -81,7 +82,7 @@ function applyTimeString(ts: number, timeStr: string): number | null {
 export default function LogDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { colors, actionTheme } = useThemeColors();
+  const T = useTheme();
   const showToast = useToastStore((s) => s.showToast);
 
   const actionHistory    = usePetStore((s) => s.actionHistory);
@@ -94,7 +95,7 @@ export default function LogDetailScreen() {
   );
 
   const meta  = log ? ACTION_LABEL[log.key]  : null;
-  const theme = log ? actionTheme[log.key]  : null;
+  const theme = log ? ACTIONS_V3[log.key]  : null;
 
   const [note, setNote]               = useState(log?.note ?? '');
   const [timeStr, setTimeStr]         = useState(log ? tsToTimeString(log.timestamp) : '');
@@ -104,8 +105,8 @@ export default function LogDetailScreen() {
 
   if (!log || !meta || !theme) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgScreen, alignItems: 'center', justifyContent: 'center' }}>
-        <Text style={{ color: colors.textSecondary }}>Registro não encontrado.</Text>
+      <SafeAreaView style={{ flex: 1, backgroundColor: T.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: T.ink2 }}>Registro não encontrado.</Text>
       </SafeAreaView>
     );
   }
@@ -159,7 +160,7 @@ export default function LogDetailScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bgScreen }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: T.bg }}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -171,7 +172,7 @@ export default function LogDetailScreen() {
           paddingHorizontal: 20,
           paddingVertical: 12,
           borderBottomWidth: 1,
-          borderBottomColor: colors.border,
+          borderBottomColor: T.rule,
         }}>
           <ScalePress
             onPress={() => router.back()}
@@ -179,7 +180,7 @@ export default function LogDetailScreen() {
             accessibilityRole="button"
             accessibilityLabel="Voltar"
           >
-            <ChevronLeft size={22} strokeWidth={2} color={colors.textPrimary} />
+            <ChevronLeft size={22} strokeWidth={2} color={T.ink} />
           </ScalePress>
 
           <Text style={{
@@ -187,7 +188,7 @@ export default function LogDetailScreen() {
             textAlign: 'center',
             fontFamily: 'Nunito_700Bold',
             fontSize: 17,
-            color: colors.textPrimary,
+            color: T.ink,
           }}>
             Detalhe do Registro
           </Text>
@@ -208,10 +209,10 @@ export default function LogDetailScreen() {
         >
           {/* ── Card de identidade da ação ── */}
           <View style={{
-            backgroundColor: theme.bg,
+            backgroundColor: theme.tintL,
             borderRadius: 20,
             borderWidth: 1,
-            borderColor: theme.border,
+            borderColor: theme.tintD,
             padding: 20,
             flexDirection: 'row',
             alignItems: 'center',
@@ -219,7 +220,7 @@ export default function LogDetailScreen() {
           }}>
             <View style={{
               width: 56, height: 56, borderRadius: 16,
-              backgroundColor: colors.bgCard,
+              backgroundColor: T.card,
               alignItems: 'center', justifyContent: 'center',
             }}>
               <ActionIcon action={log.key} size={30} color={theme.primary} />
@@ -234,7 +235,7 @@ export default function LogDetailScreen() {
               </Text>
               <Text style={{
                 fontSize: 13,
-                color: colors.textSecondary,
+                color: T.ink2,
                 marginTop: 2,
                 textTransform: 'capitalize',
               }}>
@@ -268,7 +269,7 @@ export default function LogDetailScreen() {
             <Text style={{
               fontFamily: 'Nunito_700Bold',
               fontSize: 14,
-              color: colors.textSecondary,
+              color: T.ink2,
             }}>
               Horário
             </Text>
@@ -276,18 +277,18 @@ export default function LogDetailScreen() {
               value={timeStr}
               onChangeText={(v) => { setTimeStr(v); setDirty(true); }}
               placeholder="HH:MM"
-              placeholderTextColor={colors.textTertiary}
+              placeholderTextColor={T.ink3}
               keyboardType="numbers-and-punctuation"
               maxLength={5}
               style={{
-                backgroundColor: colors.bgCard,
+                backgroundColor: T.card,
                 borderRadius: 14,
                 borderWidth: 1,
-                borderColor: colors.border,
+                borderColor: T.rule,
                 paddingHorizontal: 16,
                 paddingVertical: 14,
                 fontSize: 16,
-                color: colors.textPrimary,
+                color: T.ink,
                 fontWeight: '600',
               }}
               accessible={true}
@@ -302,7 +303,7 @@ export default function LogDetailScreen() {
               <Text style={{
                 fontFamily: 'Nunito_700Bold',
                 fontSize: 14,
-                color: colors.textSecondary,
+                color: T.ink2,
               }}>
                 Quantidade (gramas)
               </Text>
@@ -310,17 +311,17 @@ export default function LogDetailScreen() {
                 value={editQuantity}
                 onChangeText={(v) => { setEditQuantity(v); setDirty(true); }}
                 placeholder="Ex: 150"
-                placeholderTextColor={colors.textTertiary}
+                placeholderTextColor={T.ink3}
                 keyboardType="numeric"
                 style={{
-                  backgroundColor: colors.bgCard,
+                  backgroundColor: T.card,
                   borderRadius: 14,
                   borderWidth: 1,
-                  borderColor: colors.border,
+                  borderColor: T.rule,
                   paddingHorizontal: 16,
                   paddingVertical: 14,
                   fontSize: 16,
-                  color: colors.textPrimary,
+                  color: T.ink,
                   fontWeight: '600',
                 }}
                 accessible={true}
@@ -336,7 +337,7 @@ export default function LogDetailScreen() {
               <Text style={{
                 fontFamily: 'Nunito_700Bold',
                 fontSize: 14,
-                color: colors.textSecondary,
+                color: T.ink2,
               }}>
                 Duração (minutos)
               </Text>
@@ -344,17 +345,17 @@ export default function LogDetailScreen() {
                 value={editDuration}
                 onChangeText={(v) => { setEditDuration(v); setDirty(true); }}
                 placeholder="Ex: 30"
-                placeholderTextColor={colors.textTertiary}
+                placeholderTextColor={T.ink3}
                 keyboardType="numeric"
                 style={{
-                  backgroundColor: colors.bgCard,
+                  backgroundColor: T.card,
                   borderRadius: 14,
                   borderWidth: 1,
-                  borderColor: colors.border,
+                  borderColor: T.rule,
                   paddingHorizontal: 16,
                   paddingVertical: 14,
                   fontSize: 16,
-                  color: colors.textPrimary,
+                  color: T.ink,
                   fontWeight: '600',
                 }}
                 accessible={true}
@@ -370,21 +371,21 @@ export default function LogDetailScreen() {
               <Text style={{
                 fontFamily: 'Nunito_700Bold',
                 fontSize: 14,
-                color: colors.textSecondary,
+                color: T.ink2,
               }}>
                 Volume
               </Text>
               <View style={{
-                backgroundColor: colors.bgCard,
+                backgroundColor: T.card,
                 borderRadius: 14,
                 borderWidth: 1,
-                borderColor: colors.border,
+                borderColor: T.rule,
                 paddingHorizontal: 16,
                 paddingVertical: 14,
               }}>
                 <Text style={{
                   fontSize: 16,
-                  color: colors.textPrimary,
+                  color: T.ink,
                   fontWeight: '600',
                 }}>
                   💧 {log.volumeMl} ml
@@ -399,23 +400,23 @@ export default function LogDetailScreen() {
               <Text style={{
                 fontFamily: 'Nunito_700Bold',
                 fontSize: 14,
-                color: colors.textSecondary,
+                color: T.ink2,
               }}>
                 Aceitação
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
                 <View style={{
-                  backgroundColor: actionTheme.comida.bg,
+                  backgroundColor: ACTIONS_V3.comida.tintL,
                   borderRadius: 12,
                   borderWidth: 1,
-                  borderColor: actionTheme.comida.border,
+                  borderColor: ACTIONS_V3.comida.tintD,
                   paddingHorizontal: 14,
                   paddingVertical: 10,
                 }}>
                   <Text style={{
                     fontSize: 14,
                     fontWeight: '600',
-                    color: actionTheme.comida.primary,
+                    color: ACTIONS_V3.comida.primary,
                   }}>
                     {acceptanceLabel(log.acceptance)}
                   </Text>
@@ -430,23 +431,23 @@ export default function LogDetailScreen() {
               <Text style={{
                 fontFamily: 'Nunito_700Bold',
                 fontSize: 14,
-                color: colors.textSecondary,
+                color: T.ink2,
               }}>
                 Consistência
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
                 <View style={{
-                  backgroundColor: actionTheme.coco.bg,
+                  backgroundColor: ACTIONS_V3.coco.tintL,
                   borderRadius: 12,
                   borderWidth: 1,
-                  borderColor: actionTheme.coco.border,
+                  borderColor: ACTIONS_V3.coco.tintD,
                   paddingHorizontal: 14,
                   paddingVertical: 10,
                 }}>
                   <Text style={{
                     fontSize: 14,
                     fontWeight: '600',
-                    color: actionTheme.coco.primary,
+                    color: ACTIONS_V3.coco.primary,
                   }}>
                     {consistencyLabel(log.consistency)}
                   </Text>
@@ -461,7 +462,7 @@ export default function LogDetailScreen() {
               <Text style={{
                 fontFamily: 'Nunito_700Bold',
                 fontSize: 14,
-                color: colors.textSecondary,
+                color: T.ink2,
               }}>
                 Aparência
               </Text>
@@ -492,22 +493,22 @@ export default function LogDetailScreen() {
               <Text style={{
                 fontFamily: 'Nunito_700Bold',
                 fontSize: 14,
-                color: colors.textSecondary,
+                color: T.ink2,
               }}>
                 Sub-ações
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                 {log.subActions.map((s) => {
                   const subLabel = ACTION_LABEL[s as ActionKey];
-                  const subTheme = actionTheme[s as ActionKey];
+                  const subTheme = ACTIONS_V3[s as ActionKey];
                   return (
                     <View
                       key={s}
                       style={{
-                        backgroundColor: subTheme?.bg ?? colors.bgInput,
+                        backgroundColor: subTheme?.tintL ?? T.surfaceTint,
                         borderRadius: 12,
                         borderWidth: 1,
-                        borderColor: subTheme?.border ?? colors.border,
+                        borderColor: subTheme?.tintD ?? T.rule,
                         paddingHorizontal: 12,
                         paddingVertical: 6,
                         flexDirection: 'row',
@@ -518,12 +519,12 @@ export default function LogDetailScreen() {
                       <ActionIcon
                         action={s as ActionKey}
                         size={14}
-                        color={subTheme?.primary ?? colors.textSecondary}
+                        color={subTheme?.primary ?? T.ink2}
                       />
                       <Text style={{
                         fontSize: 13,
                         fontWeight: '600',
-                        color: subTheme?.primary ?? colors.textSecondary,
+                        color: subTheme?.primary ?? T.ink2,
                       }}>
                         {subLabel ?? s}
                       </Text>
@@ -539,7 +540,7 @@ export default function LogDetailScreen() {
             <Text style={{
               fontFamily: 'Nunito_700Bold',
               fontSize: 14,
-              color: colors.textSecondary,
+              color: T.ink2,
             }}>
               Nota
             </Text>
@@ -547,19 +548,19 @@ export default function LogDetailScreen() {
               value={note}
               onChangeText={(v) => { setNote(v); setDirty(true); }}
               placeholder="Ex: comeu tudo, bebeu pouco..."
-              placeholderTextColor={colors.textTertiary}
+              placeholderTextColor={T.ink3}
               multiline
               numberOfLines={3}
               textAlignVertical="top"
               style={{
-                backgroundColor: colors.bgCard,
+                backgroundColor: T.card,
                 borderRadius: 14,
                 borderWidth: 1,
-                borderColor: colors.border,
+                borderColor: T.rule,
                 paddingHorizontal: 16,
                 paddingVertical: 14,
                 fontSize: 14,
-                color: colors.textPrimary,
+                color: T.ink,
                 minHeight: 80,
               }}
               accessible={true}

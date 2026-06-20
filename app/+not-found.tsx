@@ -2,14 +2,14 @@ import React from 'react';
 import { Link, Stack } from 'expo-router';
 import { View, Text } from 'react-native';
 import { PawPrint } from 'lucide-react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
 
 // R7-B: reescrito em StyleSheet inline pra remover NativeWind +
 // react-native-css-interop (~280kb que iam pro bundle só pra essa
 // tela). Layout idêntico, performance melhor, paleta do tema.
 
 export default function NotFoundScreen() {
-  const { colors, brand } = useThemeColors();
+  const T = useTheme();
 
   return (
     <>
@@ -19,15 +19,15 @@ export default function NotFoundScreen() {
           flex: 1,
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: colors.bgScreen,
+          backgroundColor: T.bg,
           padding: 20,
           gap: 12,
         }}
       >
-        <PawPrint size={56} color={brand.primary} strokeWidth={1.8} />
+        <PawPrint size={56} color={T.primary} strokeWidth={1.8} />
         <Text
           style={{
-            color: colors.textPrimary,
+            color: T.ink,
             fontFamily: 'Nunito_700Bold',
             fontSize: 20,
             fontWeight: '700',
@@ -38,7 +38,7 @@ export default function NotFoundScreen() {
         <Link href="/" style={{ marginTop: 4 }}>
           <Text
             style={{
-              color: brand.primary,
+              color: T.primary,
               fontFamily: 'Nunito_700Bold',
               fontSize: 15,
               fontWeight: '700',

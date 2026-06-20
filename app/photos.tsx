@@ -7,7 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, X } from 'lucide-react-native';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { useTheme } from '@/hooks/useTheme';
+import { ACTIONS_V3 } from '@/constants/colors';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { resolvePhotoUri } from '@/lib/photoPath';
@@ -49,7 +50,7 @@ function fmtDateLong(ts: number): string {
 
 export default function PhotosScreen() {
   const router = useRouter();
-  const { colors, actionTheme } = useThemeColors();
+  const T = useTheme();
   const pet = usePetStore((s) => s.pet);
   const actionHistory = usePetStore((s) => s.actionHistory);
   const medicalEvents = usePetStore((s) => s.medicalEvents);
@@ -117,7 +118,7 @@ export default function PhotosScreen() {
   const thumbSize = (screenW - paddingH * 2 - gap * (cols - 1)) / cols;
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: colors.bgScreen }}>
+    <SafeAreaView edges={['top', 'bottom']} style={{ flex: 1, backgroundColor: T.bg }}>
       {/* Header */}
       <View style={{
         flexDirection: 'row',
@@ -131,20 +132,20 @@ export default function PhotosScreen() {
           accessibilityLabel="Voltar"
           style={{
             width: 40, height: 40, borderRadius: 12,
-            backgroundColor: colors.bgCard,
+            backgroundColor: T.card,
             alignItems: 'center', justifyContent: 'center',
           }}
         >
-          <ChevronLeft size={22} color={colors.textPrimary} strokeWidth={2.5} />
+          <ChevronLeft size={22} color={T.ink} strokeWidth={2.5} />
         </ScalePress>
         <View style={{ flex: 1, marginLeft: 12 }}>
-          <Text style={{ color: colors.textTertiary, fontSize: 11, fontWeight: '700', letterSpacing: 1.2 }}>
+          <Text style={{ color: T.ink3, fontSize: 11, fontWeight: '700', letterSpacing: 1.2 }}>
             GALERIA
           </Text>
           <Text
             numberOfLines={1}
             style={{
-              color: colors.textPrimary,
+              color: T.ink,
               fontFamily: 'Nunito_800ExtraBold',
               fontSize: 20, fontWeight: '800',
               marginTop: 1,
@@ -154,7 +155,7 @@ export default function PhotosScreen() {
           </Text>
         </View>
         <Text style={{
-          color: colors.textSecondary,
+          color: T.ink2,
           fontSize: 12,
           fontWeight: '600',
         }}>
@@ -178,7 +179,7 @@ export default function PhotosScreen() {
           {grouped.map(([date, items]) => (
             <View key={date} style={{ marginTop: 16 }}>
               <Text style={{
-                color: colors.textTertiary,
+                color: T.ink3,
                 fontSize: 11, fontWeight: '700',
                 letterSpacing: 1, marginBottom: 8,
               }}>
@@ -208,7 +209,7 @@ export default function PhotosScreen() {
                       marginBottom: gap,
                       borderRadius: 10,
                       overflow: 'hidden',
-                      backgroundColor: colors.bgCard,
+                      backgroundColor: T.card,
                     }}
                   >
                     <Image

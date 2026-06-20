@@ -11,7 +11,7 @@ import { WeekGoalsCard } from '@/components/history/WeekGoalsCard';
 import { TrendsCard } from '@/components/history/TrendsCard';
 import { ReportCard } from '@/components/history/ReportCard';
 import { useTheme } from '@/hooks/useTheme';
-import { useThemeColors } from '@/hooks/useThemeColors';
+import { ACTIONS_V3 } from '@/constants/colors';
 import { useMotion } from '@/hooks/useMotion';
 import { useHistoryData } from '@/hooks/useHistoryData';
 import { usePetStore } from '@/store/usePetStore';
@@ -37,7 +37,6 @@ import { usePetStore } from '@/store/usePetStore';
  */
 export default function HistoryScreen() {
   const T = useTheme();
-  const { colors, actionTheme } = useThemeColors();
   const { entering, sectionEntering } = useMotion();
 
   const pet           = usePetStore((s) => s.pet);
@@ -93,8 +92,8 @@ export default function HistoryScreen() {
               Icon={BarChart3}
               title="Sem dados ainda"
               subtitle="Registre as ações do seu pet no início da tela. As tendências aparecem aqui depois de 1-2 dias de uso."
-              accentColor={actionTheme.passeio.primary}
-              accentBg={actionTheme.passeio.bg}
+              accentColor={ACTIONS_V3.passeio.primary}
+              accentBg={ACTIONS_V3.passeio.tintL}
             />
           </View>
         ) : (
