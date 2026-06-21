@@ -432,8 +432,13 @@ interface PetStore extends PetState {
    * é ignorado (paleta já força light/dark). Default 'cronopet' preserva
    * a experiência atual pra quem não tocar no setting.
    */
+  /**
+   * Fase 9e: setter removido (zero callers UI). Field preservado pra
+   * `useThemeColors` legacy (7 telas R-pós-sprint-redesign) + Q3 migration
+   * que mapeia legacy values pra 'cronopet'. Tipo união preservado pra
+   * compat com storage de usuários inativos não migrados ainda.
+   */
   paletteMode: 'cronopet' | 'light-neutral' | 'dark-neutral';
-  setPaletteMode: (mode: 'cronopet' | 'light-neutral' | 'dark-neutral') => void;
 
   /**
    * Tom visual (Redesign Bold v3 — Fase 0a, 2026-06-14). Substitui
@@ -546,7 +551,6 @@ export const usePetStore = create<PetStore>()(
       _cloudHydrated: false,
 
       setThemeMode: (mode) => set({ themeMode: mode }),
-      setPaletteMode: (mode) => set({ paletteMode: mode }),
       setTone: (tone) => set({ tone }),
       setHasCompletedTour: (v) => set({ hasCompletedTour: v }),
       setReengagementEnabled: (v) => set({ reengagementEnabled: v }),
