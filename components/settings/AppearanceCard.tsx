@@ -16,7 +16,10 @@ const MODES = [
 ];
 
 const TONES: { key: Tone; label: string }[] = [
-  { key: 'mint',     label: 'Menta'   },
+  // Polish 2026-06-23: label 'Menta' renomeado pra 'Papel' — bg do tone
+  // virou warm-neutro off-white em vez de verde-mint. Tag 'mint' no
+  // código preservada pra evitar migração de storage.
+  { key: 'mint',     label: 'Papel'   },
   { key: 'pastel',   label: 'Pastel'  },
   { key: 'terroso',  label: 'Terroso' },
   { key: 'solido',   label: 'Sólido'  },

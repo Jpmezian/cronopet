@@ -83,7 +83,7 @@ export function ScalePress({
   style,
   children,
   disabled = false,
-  scaleValue = 0.96,
+  scaleValue = 0.97,
   hitSlop,
   accessible,
   accessibilityRole,
@@ -107,7 +107,7 @@ export function ScalePress({
     if (reducedMotion) {
       opacity.value = withTiming(0.6, { duration: 100 });
     } else {
-      scale.value = withSpring(scaleValue, { damping: 15, stiffness: 300 });
+      scale.value = withSpring(scaleValue, { damping: 20, stiffness: 280 });
     }
   };
 
@@ -115,7 +115,7 @@ export function ScalePress({
     if (reducedMotion) {
       opacity.value = withTiming(1, { duration: 150 });
     } else {
-      scale.value = withSpring(1, { damping: 15, stiffness: 300 });
+      scale.value = withSpring(1, { damping: 20, stiffness: 280 });
     }
   };
 

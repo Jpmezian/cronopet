@@ -443,7 +443,9 @@ interface PetStore extends PetState {
   /**
    * Tom visual (Redesign Bold v3 — Fase 0a, 2026-06-14). Substitui
    * conceito de "paleta neutra" pelos 4 tons sobre `cronopet`:
-   *   - 'mint'    (padrão) — bg #E7F4EC + surfaceTint #D8EFE2
+   *   - 'mint'    (padrão) — bg #F5F2EC + surfaceTint #EBE7DD
+   *     (label visível "Papel" — neutralizado em 2026-06-23 pra
+   *     verdigris brilhar como acento sobre warm-neutro)
    *   - 'pastel'           — bg #F2F1E9 + surfaceTint #E7F2E9
    *   - 'terroso'          — bg #EFEAD8 + surfaceTint #E7E2CB
    *   - 'solido'           — bg #F4F3EC + surfaceTint #EBEFDB

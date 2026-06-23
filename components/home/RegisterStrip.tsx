@@ -83,12 +83,12 @@ function StampButton({ actionKey, count, onRegister }: StampButtonProps) {
   const handleTap = () => {
     if (!reducedMotion) {
       scale.value = withSequence(
-        withSpring(1.16, { damping: 10, stiffness: 200 }),
-        withSpring(1,    { damping: 14, stiffness: 200 }),
+        withSpring(1.06, { damping: 18, stiffness: 220 }),
+        withSpring(1,    { damping: 20, stiffness: 220 }),
       );
       rotate.value = withSequence(
-        withSpring(-5, { damping: 10, stiffness: 200 }),
-        withSpring(0,  { damping: 14, stiffness: 200 }),
+        withSpring(-2, { damping: 18, stiffness: 220 }),
+        withSpring(0,  { damping: 20, stiffness: 220 }),
       );
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

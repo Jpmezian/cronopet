@@ -9,7 +9,6 @@ import * as FileSystem from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import { ChevronLeft, Copy, Share2, Gift } from 'lucide-react-native';
 import { useTheme } from '@/hooks/useTheme';
-import { ACTIONS_V3 } from '@/constants/colors';
 import { ScalePress } from '@/components/ui/ScalePress';
 import { useToastStore } from '@/store/useToastStore';
 import { usePetStore } from '@/store/usePetStore';
@@ -105,10 +104,11 @@ Use meu código *${inviteCode}* quando se cadastrar e a gente ganha 1 mês de Pr
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Hero */}
+        {/* Hero — Polish: token xixi desacoplado (era acidental). Usa cor
+            da marca CronoPet (mint+verdigris) coerente com identidade. */}
         <View style={{
-          backgroundColor: ACTIONS_V3.xixi.tintL,
-          borderWidth: 1.5, borderColor: ACTIONS_V3.xixi.tintD,
+          backgroundColor: T.mintSoft,
+          borderWidth: 1.5, borderColor: T.mint,
           borderRadius: 20,
           padding: 22,
           alignItems: 'center',
@@ -116,14 +116,14 @@ Use meu código *${inviteCode}* quando se cadastrar e a gente ganha 1 mês de Pr
         }}>
           <View style={{
             width: 64, height: 64, borderRadius: 20,
-            backgroundColor: ACTIONS_V3.xixi.primary,
+            backgroundColor: T.primary,
             alignItems: 'center', justifyContent: 'center',
             marginBottom: 14,
           }}>
-            <Gift size={32} color="#ffffff" strokeWidth={2.2} />
+            <Gift size={32} color={T.onPrimary} strokeWidth={2.2} />
           </View>
           <Text style={{
-            color: ACTIONS_V3.xixi.primary,
+            color: T.primaryDeep,
             fontFamily: 'Nunito_800ExtraBold',
             fontSize: 20, fontWeight: '800',
             textAlign: 'center',
@@ -132,7 +132,7 @@ Use meu código *${inviteCode}* quando se cadastrar e a gente ganha 1 mês de Pr
             Ganhe 1 mês grátis
           </Text>
           <Text style={{
-            color: ACTIONS_V3.xixi.primary,
+            color: T.primaryDeep,
             fontSize: 13, lineHeight: 19,
             textAlign: 'center',
           }}>
@@ -196,7 +196,7 @@ Use meu código *${inviteCode}* quando se cadastrar e a gente ganha 1 mês de Pr
           accessible accessibilityRole="button"
           accessibilityLabel="Compartilhar convite"
           style={{
-            backgroundColor: ACTIONS_V3.xixi.primary,
+            backgroundColor: T.primary,
             borderRadius: 16,
             height: 56,
             flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
@@ -207,9 +207,9 @@ Use meu código *${inviteCode}* quando se cadastrar e a gente ganha 1 mês de Pr
             }),
           }}
         >
-          <Share2 size={18} color="#ffffff" strokeWidth={2.5} />
+          <Share2 size={18} color={T.onPrimary} strokeWidth={2.5} />
           <Text style={{
-            color: '#ffffff',
+            color: T.onPrimary,
             fontFamily: 'Nunito_800ExtraBold',
             fontSize: 15, fontWeight: '800',
             marginLeft: 8,
@@ -243,13 +243,13 @@ Use meu código *${inviteCode}* quando se cadastrar e a gente ganha 1 mês de Pr
             }}>
               <View style={{
                 width: 28, height: 28, borderRadius: 8,
-                backgroundColor: ACTIONS_V3.xixi.tintL,
-                borderWidth: 1, borderColor: ACTIONS_V3.xixi.tintD,
+                backgroundColor: T.mintSoft,
+                borderWidth: 1, borderColor: T.mint,
                 alignItems: 'center', justifyContent: 'center',
                 marginRight: 12, marginTop: 1,
               }}>
                 <Text style={{
-                  color: ACTIONS_V3.xixi.primary,
+                  color: T.primaryDeep,
                   fontFamily: 'Nunito_800ExtraBold',
                   fontSize: 13, fontWeight: '800',
                 }}>

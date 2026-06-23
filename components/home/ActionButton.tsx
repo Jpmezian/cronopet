@@ -63,7 +63,7 @@ export function ActionButton({ action, count, isUrgent, onPress, progressLabel, 
       } else {
         // Pulso suave: 0.85 → 0.2 → 0.85 → ...
         ringOpacity.value = withRepeat(
-          withTiming(0.85, { duration: 900 }),
+          withTiming(0.85, { duration: 1400 }),
           -1,
           true, // reverse: cria efeito de pulsação sem saltos
         );

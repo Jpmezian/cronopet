@@ -113,7 +113,8 @@ export const cardDarkStandard = '#1E293B';
 
 // ─── Ações do pet — light mode (auditadas WCAG) ────────────────
 // Manter inalterado: é identidade visual funcional de cada ação.
-// Tutor aprende: comida=âmbar, água=azul, passeio=verde, xixi=violeta.
+// Tutor aprende: comida=âmbar, água=azul, passeio=verde, xixi=goldenrod (era
+// violeta, trocado 2026-06-23 pra desambiguar do azul-água).
 
 export const actions = {
   comida: {
@@ -132,9 +133,12 @@ export const actions = {
     border:  '#bbf7d0',
   },
   xixi: {
-    primary: '#7c3aed',   // violet-600 — 5.34:1 sobre #faf5ff ✅
-    bg:      '#faf5ff',
-    border:  '#e9d5ff',
+    // Polish 2026-06-23 (CTO): violeta → goldenrod pra desambiguar de água
+    // (ambos azulados antes). #B58100 sobre tintL #FCE89C = 3.36:1 ⚠️
+    // large text only — uso real é Stamp/label grande, não texto miúdo.
+    primary: '#B58100',
+    bg:      '#FCE89C',
+    border:  '#F5D77A',
   },
   coco: {
     primary: '#92400e',   // amber-900 — 6.38:1 sobre #fef3c7 ✅
@@ -220,7 +224,12 @@ import type { ActionKey } from '@/types/pet';
 export type Tone = 'mint' | 'pastel' | 'terroso' | 'solido';
 
 const TONE_BG_LIGHT: Record<Tone, { bg: string; surfaceTint: string }> = {
-  mint:    { bg: '#E7F4EC', surfaceTint: '#D8EFE2' },
+  // Polish 2026-06-23 (CTO): tone='mint' default ganhou fundos warm-neutro
+  // (linho off-white) em vez de verde-pastel. Verdigris #04A29B agora brilha
+  // como acento sobre fundo neutro em vez de afogar em mais verde. Tag
+  // 'mint' preservada no código pra evitar migração de storage; label
+  // visível em AppearanceCard foi renomeado pra "Papel".
+  mint:    { bg: '#F5F2EC', surfaceTint: '#EBE7DD' },
   pastel:  { bg: '#F2F1E9', surfaceTint: '#E7F2E9' },
   terroso: { bg: '#EFEAD8', surfaceTint: '#E7E2CB' },
   solido:  { bg: '#F4F3EC', surfaceTint: '#EBEFDB' },
@@ -240,7 +249,7 @@ export const ACTIONS_V3 = {
   comida:  { primary: '#C2620A', tintL: '#FBEAD2', tintD: 'rgba(194,98,10,0.22)'  },
   agua:    { primary: '#0B7BB5', tintL: '#D7ECF8', tintD: 'rgba(11,123,181,0.22)' },
   passeio: { primary: '#0E8C5A', tintL: '#D3F0DF', tintD: 'rgba(14,140,90,0.22)'  },
-  xixi:    { primary: '#8B43E6', tintL: '#EBDFFB', tintD: 'rgba(139,67,230,0.22)' },
+  xixi:    { primary: '#B58100', tintL: '#FCE89C', tintD: 'rgba(181,129,0,0.24)' },
   coco:    { primary: '#9A4D14', tintL: '#F0E2CC', tintD: 'rgba(154,77,20,0.24)'  },
   banho:   { primary: '#0E91A8', tintL: '#D2EEF1', tintD: 'rgba(14,145,168,0.22)' },
   tosa:    { primary: '#D11E73', tintL: '#FAD9E8', tintD: 'rgba(209,30,115,0.22)' },
@@ -306,12 +315,16 @@ export function makeTheme(dark: boolean, tone: Tone): Theme {
       ink4:        '#6B6354',
       rule:        '#39362F',
       ruleSoft:    '#332F29',
-      primary:     '#22C3B6',
-      primaryDeep: '#9BE4C6',
+      // Polish 2026-06-23 (CTO): dark primary dessaturado pra tirar o
+      // "teal-neon SaaS". Antes #22C3B6 (S=82%). Agora #4FA098 (S~50%),
+      // hue verdigris ~178° mantido — lê como "cobre oxidado autêntico"
+      // sem perder identidade de marca. WCAG 5.70:1 sobre bg dark ✅.
+      primary:     '#4FA098',
+      primaryDeep: '#8BC8C2',
       onPrimary:   '#0F2420',
-      mint:        '#9BE4C6',
-      mintSoft:    'rgba(155,228,198,0.14)',
-      mintDeep:    '#22C3B6',
+      mint:        '#8BC8C2',
+      mintSoft:    'rgba(139,200,194,0.14)',
+      mintDeep:    '#4FA098',
       beige:       '#39362F',
       blk:         '#0F0E0C',
       onBlk:       '#F3EFE2',

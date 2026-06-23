@@ -80,7 +80,7 @@ export function BirthdayCard({ petNome, nascimento, onPress }: BirthdayCardProps
       style={{
         backgroundColor: ACTIONS_V3.xixi.tintL,
         borderWidth: 1.5,
-        borderColor: bday.isToday ? ACTIONS_V3.xixi.primary : 'rgba(139,67,230,0.22)',
+        borderColor: bday.isToday ? ACTIONS_V3.xixi.primary : 'rgba(181,129,0,0.24)',
         borderRadius: 18,
         paddingHorizontal: 16, paddingVertical: 14,
         flexDirection: 'row',
@@ -103,7 +103,7 @@ export function BirthdayCard({ petNome, nascimento, onPress }: BirthdayCardProps
         <Text
           numberOfLines={2}
           style={{
-            color: ACTIONS_V3.xixi.primary,
+            color: T.ink,
             fontFamily: 'Nunito_800ExtraBold',
             fontSize: 13, fontWeight: '800',
             lineHeight: 17,
@@ -112,7 +112,7 @@ export function BirthdayCard({ petNome, nascimento, onPress }: BirthdayCardProps
           {title}
         </Text>
         <Text style={{
-          color: ACTIONS_V3.xixi.primary,
+          color: T.ink2,
           fontSize: 12,
           marginTop: 2,
         }}>

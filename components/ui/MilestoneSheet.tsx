@@ -95,8 +95,8 @@ export function MilestoneSheet({ milestone, petNome, petFoto, streak, onClose }:
         badgeScale.value = withTiming(1, { duration: 250 });
       } else {
         badgeScale.value = withSequence(
-          withSpring(1.28, { damping: 7, stiffness: 260 }),
-          withSpring(1,    { damping: 14, stiffness: 360 }),
+          withSpring(1.12, { damping: 16, stiffness: 220 }),
+          withSpring(1,    { damping: 20, stiffness: 280 }),
         );
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

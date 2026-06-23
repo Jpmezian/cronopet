@@ -16,7 +16,6 @@ import { View, useWindowDimensions, KeyboardAvoidingView, Platform } from 'react
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useTheme } from '@/hooks/useTheme';
-import { ACTIONS_V3 } from '@/constants/colors';
 import { StepAuth } from '@/components/onboarding/StepAuth';
 import { IllustrationWelcome } from '@/components/onboarding/IllustrationWelcome';
 
@@ -29,7 +28,9 @@ export default function AuthScreen() {
   // o user precisa SÓ logar — hero é puro decorativo. Hero pequeno deixa
   // mais espaço pros campos quando o teclado abre.
   const HERO_H = height * 0.20;
-  const heroBg = ACTIONS_V3.xixi.tintL;
+  // Polish: heroBg desacoplado do token xixi (era acidental). Usa T.mint
+  // como cor temática "boas-vindas" coerente com a marca CronoPet.
+  const heroBg = T.mintSoft;
 
   return (
     <View style={{ flex: 1, backgroundColor: heroBg }}>

@@ -76,7 +76,7 @@ Importar de `@/constants/colors` — NUNCA hardcodar.
 | comida | `#b45309` amber-700 | `#fffbeb` | `#fde68a` | 4.82:1 ✅ |
 | agua | `#0369a1` sky-700 | `#f0f9ff` | `#bae6fd` | 5.76:1 ✅ |
 | passeio | `#047857` emerald-700 | `#f0fdf4` | `#bbf7d0` | 5.27:1 ✅ |
-| xixi | `#7c3aed` violet-600 | `#faf5ff` | `#e9d5ff` | 5.34:1 ✅ |
+| xixi | `#B58100` goldenrod | `#FCE89C` | `#F5D77A` | 3.36:1 ⚠️ large/ícone |
 | coco | `#92400e` amber-900 | `#fef3c7` | `#fde68a` | 6.38:1 ✅ |
 | banho | `#0369a1` sky-700 | `#f0f9ff` | `#bae6fd` | 5.76:1 ✅ |
 

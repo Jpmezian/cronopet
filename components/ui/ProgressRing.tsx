@@ -85,8 +85,8 @@ export const ProgressRing = React.memo(function ProgressRing({
     }
     // Mount → withSpring; mudanças subsequentes → withTiming (mais previsível)
     offset.value = withTiming(finalOffset, {
-      duration: 600,
-      easing: Easing.out(Easing.cubic),
+      duration: 320,
+      easing: Easing.out(Easing.quad),
     });
   }, [target, animated, reducedMotion, circumference, offset]);
 
