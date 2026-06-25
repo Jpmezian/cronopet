@@ -19,6 +19,8 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSFaceIDUsageDescription": "Use Face ID para proteger o acesso aos dados do seu pet, garantindo que apenas você visualize o histórico de saúde e a rotina.",
+        "NSCameraUsageDescription": "O CronoPet usa a câmera pra você fotografar momentos do seu pet — banho, refeição, passeio — e anexar às anotações da rotina.",
+        "NSPhotoLibraryUsageDescription": "O CronoPet acessa suas fotos pra você escolher a imagem do seu pet ou anexar um registro.",
         "NSPhotoLibraryAddUsageDescription": "Salvar o card visual semanal do CronoPet na sua galeria antes de compartilhar nas redes sociais."
       }
     },

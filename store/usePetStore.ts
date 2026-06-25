@@ -18,6 +18,7 @@ import {
 import {
   autoSyncPet, autoSyncActionLog, autoSyncDeleteActionLog,
   autoSyncVaccine, autoSyncAppointment, autoSyncWeightEntry,
+  autoSyncDeleteVaccine, autoSyncDeleteAppointment, autoSyncDeleteWeightEntry,
 } from '@/services/SyncService';
 import type {
   ActionKey, ActionLog, PetState, PetType, PetProfile,
@@ -881,7 +882,7 @@ export const usePetStore = create<PetStore>()(
       },
       removeVaccine: (id) => {
         set((s) => ({ vaccines: s.vaccines.filter((v) => v.id !== id) }));
-        // TODO: autoSyncDeleteVaccine — sem isso, delete fica só local
+        autoSyncDeleteVaccine(id);
       },
 
       // ── Consultas ──────────────────────────────────────────
@@ -913,6 +914,7 @@ export const usePetStore = create<PetStore>()(
             });
         }
         set((s) => ({ appointments: s.appointments.filter((a) => a.id !== id) }));
+        autoSyncDeleteAppointment(id);
       },
 
       // ── Multi-pet (DB-002) ────────────────────────────────────
@@ -1235,6 +1237,7 @@ export const usePetStore = create<PetStore>()(
       },
       removeWeightEntry: (id) => {
         set((s) => ({ weightHistory: s.weightHistory.filter((w) => w.id !== id) }));
+        autoSyncDeleteWeightEntry(id);
       },
     }),
     {

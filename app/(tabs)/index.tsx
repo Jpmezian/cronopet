@@ -506,7 +506,7 @@ export default function PetDashboard() {
       d.setDate(weekStart.getDate() + i);
       const ds = tsToLocalYMD(d.getTime());
       const dayLogs = actionHistory.filter(
-        (l) => new Date(l.timestamp).toISOString().slice(0, 10) === ds,
+        (l) => tsToLocalYMD(l.timestamp) === ds,
       );
       const acts: Record<string, boolean> = {};
       (['comida', 'agua', 'passeio', 'xixi', 'coco', 'banho'] as const).forEach((k) => {
@@ -537,7 +537,7 @@ export default function PetDashboard() {
       d.setDate(prevStart.getDate() + i);
       const ds = tsToLocalYMD(d.getTime());
       const dayLogs = actionHistory.filter(
-        (l) => new Date(l.timestamp).toISOString().slice(0, 10) === ds,
+        (l) => tsToLocalYMD(l.timestamp) === ds,
       );
       previousTotals.meals  += dayLogs.filter((l) => l.key === 'comida').length;
       previousTotals.water  += dayLogs.filter((l) => l.key === 'agua').length;

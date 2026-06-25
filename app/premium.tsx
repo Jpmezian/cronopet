@@ -48,6 +48,7 @@ export default function PremiumScreen() {
   const weightHistory  = usePetStore((s) => s.weightHistory);
   const user           = usePetStore((s) => s.user);
   const familyGroupId  = usePetStore((s) => s.familyGroupId);
+  const isPremium      = usePetStore((s) => s.isPremium);
   const syncStatus     = usePetStore((s) => s.syncStatus);
   const setUser        = usePetStore((s) => s.setUser);
   const setFamilyGroupId = usePetStore((s) => s.setFamilyGroupId);
@@ -111,8 +112,15 @@ export default function PremiumScreen() {
         if (g) {
           setFamilyGroupId(g.id);
           await loadDashboard(g.id, session.id);
-        } else {
+        } else if (isPremium) {
+          // Pro user sem grupo: mostra setup pra criar/entrar em família.
           setView('setup');
+        } else {
+          // Free user sem grupo: NÃO mostra ViewSetup (propaganda honesta
+          // — família é feature Pro). Cai no pitch/paywall. Backend
+          // (Edge Function check-premium-grant + RLS premium_grants)
+          // já bloquearia create_family_group; aqui só evita UI confusa.
+          setView('pitch');
         }
       }
     })();

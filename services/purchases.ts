@@ -282,7 +282,44 @@ export async function purchasePackage(plan: PremiumPlan): Promise<{ success: boo
         props: { plan, reason: e?.code ?? e?.message ?? 'unknown' },
       });
     }
-    return { success: false, cancelled, error: cancelled ? undefined : (e?.message ?? 'unknown') };
+    return {
+      success: false,
+      cancelled,
+      error: cancelled ? undefined : friendlyPurchaseError(e?.code, e?.message),
+    };
+  }
+}
+
+/**
+ * Mapeia error codes do RevenueCat SDK pra mensagens humanas em pt-BR.
+ * Mantém genérico quando código não é reconhecido — Sentry captura
+ * o original pra triagem. Strings curtas, direto ao ponto.
+ *
+ * Os codes vêm da enum PURCHASES_ERROR_CODE de react-native-purchases.
+ */
+function friendlyPurchaseError(code: string | undefined, fallback: string | undefined): string {
+  switch (code) {
+    case PURCHASES_ERROR_CODE.PURCHASE_NOT_ALLOWED_ERROR:
+      return 'Compras estão desativadas no seu dispositivo. Veja em Ajustes > Tempo de Uso > Restrições.';
+    case PURCHASES_ERROR_CODE.PURCHASE_INVALID_ERROR:
+      return 'O pagamento não foi aprovado. Confere o método de pagamento e tenta de novo.';
+    case PURCHASES_ERROR_CODE.PAYMENT_PENDING_ERROR:
+      return 'Pagamento aguardando aprovação. Pode levar alguns minutos.';
+    case PURCHASES_ERROR_CODE.PRODUCT_ALREADY_PURCHASED_ERROR:
+      return 'Você já tem o Pro. Toca em "Restaurar compras" pra ativar nesta conta.';
+    case PURCHASES_ERROR_CODE.RECEIPT_ALREADY_IN_USE_ERROR:
+      return 'Essa assinatura já está em outra conta. Faz login com a conta original.';
+    case PURCHASES_ERROR_CODE.INVALID_RECEIPT_ERROR:
+    case PURCHASES_ERROR_CODE.MISSING_RECEIPT_FILE_ERROR:
+      return 'Não foi possível confirmar a compra. Toca em "Restaurar compras" pra tentar de novo.';
+    case PURCHASES_ERROR_CODE.PRODUCT_NOT_AVAILABLE_FOR_PURCHASE_ERROR:
+      return 'Esse plano não está disponível no momento.';
+    case PURCHASES_ERROR_CODE.NETWORK_ERROR:
+      return 'Sem conexão. Verifica a internet e tenta de novo.';
+    case PURCHASES_ERROR_CODE.STORE_PROBLEM_ERROR:
+      return 'A loja está com instabilidade. Tenta em alguns minutos.';
+    default:
+      return fallback?.trim() ? `Não rolou: ${fallback}` : 'Não rolou. Tenta de novo em alguns segundos.';
   }
 }
 

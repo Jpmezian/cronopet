@@ -65,7 +65,7 @@ export function ViewPitchBoldV3({
       }
       if (!result.cancelled) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        showToast('error', 'Não rolou. Tenta de novo em alguns segundos.');
+        showToast('error', result.error ?? 'Não rolou. Tenta de novo em alguns segundos.');
       }
       // Cancelado pelo user: silencioso, mantém modal
     } finally {

@@ -487,6 +487,72 @@ export function autoSyncDeleteActionLog(logId: string): void {
   }).catch((err) => reportUnhandled('autoSyncDeleteActionLog', err, { log_id: logId }));
 }
 
+/**
+ * Auto-sync DELETE de vacina/consulta/peso. Espelha pattern do
+ * autoSyncDeleteActionLog — hard delete direto via Supabase. Sem
+ * tombstone (segue o padrão existente do app). RLS garante que
+ * só dono do group pode deletar. Fire-and-forget.
+ *
+ * Pré-launch: sem isso, delete fica só local — item ressuscita
+ * em hydrateFromCloud (cloud ainda tinha o row).
+ */
+export function autoSyncDeleteVaccine(vaccineId: string): void {
+  getSessionUser().then(async (ctx) => {
+    if (!ctx.ok) {
+      reportSkip('autoSyncDeleteVaccine', ctx.reason, { vaccine_id: vaccineId });
+      return;
+    }
+    const supabase = await client();
+    supabase.from('vaccines').delete().eq('id', vaccineId).then(({ error }) => {
+      if (error) {
+        incrementFailure('rls_denied');
+        Sentry.captureException(new Error(error.message), {
+          tags:  { op: 'autoSyncDeleteVaccine', failure_path: 'rls_denied' },
+          extra: { vaccine_id: vaccineId, attempt_count: 1 },
+        });
+      }
+    });
+  }).catch((err) => reportUnhandled('autoSyncDeleteVaccine', err, { vaccine_id: vaccineId }));
+}
+
+export function autoSyncDeleteAppointment(appointmentId: string): void {
+  getSessionUser().then(async (ctx) => {
+    if (!ctx.ok) {
+      reportSkip('autoSyncDeleteAppointment', ctx.reason, { appointment_id: appointmentId });
+      return;
+    }
+    const supabase = await client();
+    supabase.from('appointments').delete().eq('id', appointmentId).then(({ error }) => {
+      if (error) {
+        incrementFailure('rls_denied');
+        Sentry.captureException(new Error(error.message), {
+          tags:  { op: 'autoSyncDeleteAppointment', failure_path: 'rls_denied' },
+          extra: { appointment_id: appointmentId, attempt_count: 1 },
+        });
+      }
+    });
+  }).catch((err) => reportUnhandled('autoSyncDeleteAppointment', err, { appointment_id: appointmentId }));
+}
+
+export function autoSyncDeleteWeightEntry(entryId: string): void {
+  getSessionUser().then(async (ctx) => {
+    if (!ctx.ok) {
+      reportSkip('autoSyncDeleteWeightEntry', ctx.reason, { entry_id: entryId });
+      return;
+    }
+    const supabase = await client();
+    supabase.from('weight_entries').delete().eq('id', entryId).then(({ error }) => {
+      if (error) {
+        incrementFailure('rls_denied');
+        Sentry.captureException(new Error(error.message), {
+          tags:  { op: 'autoSyncDeleteWeightEntry', failure_path: 'rls_denied' },
+          extra: { entry_id: entryId, attempt_count: 1 },
+        });
+      }
+    });
+  }).catch((err) => reportUnhandled('autoSyncDeleteWeightEntry', err, { entry_id: entryId }));
+}
+
 /** Auto-sync vacina (insert/update via upsert). */
 export function autoSyncVaccine(v: Vaccine): void {
   getSessionUser().then((ctx) => {
