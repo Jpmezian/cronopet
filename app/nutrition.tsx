@@ -106,6 +106,7 @@ export default function NutritionScreen() {
               ratio={data.ratio}
               remainingKcal={data.remainingKcal}
               hasWeight={data.hasWeight}
+              mealsWithoutQuantity={data.mealsWithoutQuantity}
               onAdjustPlan={goPlan}
               onRegisterWeight={goPlan}
             />

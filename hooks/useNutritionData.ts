@@ -71,6 +71,8 @@ export interface NutritionData {
   remainingKcal:number;
   /** Refeições do dia, ordenadas por horário crescente. */
   meals:        Meal[];
+  /** Nº de refeições registradas sem quantidade (grams=0). */
+  mealsWithoutQuantity: number;
   /** Distribuição agregada por slot (sempre 4 entries). */
   distribution: SlotShare[];
   /** Tem peso pra fazer estimativa de target? */
@@ -156,6 +158,13 @@ export function useNutritionData(
 
     const intakeKcal = meals.reduce((sum, m) => sum + m.kcal, 0);
 
+    // Refeições registradas SEM quantidade (tap rápido, sem gramas).
+    // Pré-launch: distinguir "não comeu" (0 refeições) de "comeu mas
+    // não informou quanto" (refeições com grams=0). O CalorieHero usa
+    // isso pra não mostrar "0 kcal" enganoso quando na verdade faltou
+    // o dado de quantidade.
+    const mealsWithoutQuantity = meals.filter((m) => m.grams === 0).length;
+
     // ── Distribuição por slot ──────────────────────────────
     const totals: Record<MealSlot, { kcal: number; count: number }> = {
       manha:  { kcal: 0, count: 0 },
@@ -190,6 +199,7 @@ export function useNutritionData(
       ratio,
       remainingKcal,
       meals,
+      mealsWithoutQuantity,
       distribution,
       hasWeight,
     };

@@ -60,6 +60,7 @@ import { generateStoryImage } from '@/services/socialCardCapture';
 import * as Sharing from 'expo-sharing';
 import { Share2 } from 'lucide-react-native';
 import { useToastStore } from '@/store/useToastStore';
+import { useLogDetailStore } from '@/store/useLogDetailStore';
 import { SupportSection } from '@/components/support/SupportSection';
 import type { ActionKey, PetType, Acceptance, Consistency, Appearance } from '@/types/pet';
 
@@ -253,6 +254,7 @@ export default function PetDashboard() {
   const snoozedInsights     = usePetStore((s) => s.snoozedInsights);
   const disabledInsightCategories = usePetStore((s) => s.disabledInsightCategories);
   const showToast           = useToastStore((s) => s.showToast);
+  const openLogDetail       = useLogDetailStore((s) => s.open);
 
   // ── Health Insights (heurística + raça-aware) ─────────────
   // Snooze ativo conta como dismiss temporário pra a lista do dashboard.
@@ -851,7 +853,20 @@ export default function PetDashboard() {
             todayCounts={todayCounts}
             petTipo={pet.tipo}
             onRegister={(key) => addActionLog(key)}
+            onSpecify={openLogDetail}
           />
+          <Text
+            style={{
+              marginHorizontal: 20,
+              marginTop: 10,
+              fontSize: 12,
+              color: colors.textTertiary,
+              textAlign: 'center',
+            }}
+            importantForAccessibility="no"
+          >
+            Segure um ícone pra informar quantidade (gramas, ml, minutos)
+          </Text>
         </View>
 
         {/* Weather — feedback TestFlight R2-3: antes ficava entre nutrição

@@ -14,6 +14,10 @@ interface CalorieHeroProps {
   ratio:         number;
   remainingKcal: number;
   hasWeight:     boolean;
+  /** Refeições registradas sem quantidade (grams=0). Usado pra distinguir
+   *  "não comeu" de "comeu mas não informou quanto" — evita "0 kcal"
+   *  enganoso no relatório/hero. */
+  mealsWithoutQuantity: number;
   onAdjustPlan:  () => void;
   onRegisterWeight: () => void;
 }
@@ -32,7 +36,7 @@ interface CalorieHeroProps {
  * pra empty visual — não temos glyph "peso" em STAMP_GLYPHS).
  */
 export const CalorieHero = React.memo(function CalorieHero({
-  targetKcal, intakeKcal, ratio, remainingKcal, hasWeight,
+  targetKcal, intakeKcal, ratio, remainingKcal, hasWeight, mealsWithoutQuantity,
   onAdjustPlan, onRegisterWeight,
 }: CalorieHeroProps) {
   const T = useTheme();
@@ -64,13 +68,22 @@ export const CalorieHero = React.memo(function CalorieHero({
     );
   }
 
+  // "Comeu mas não informou quanto": intake zero PORQUE as refeições
+  // não têm gramas — não porque o pet não comeu. Não mentir "0 kcal /
+  // restam tudo" — mostrar estado honesto de dado ausente.
+  const noQty = intakeKcal === 0 && mealsWithoutQuantity > 0;
+
   const excedeu = remainingKcal < 0;
-  const footerColor = excedeu
-    ? ACTIONS_V3.comida.primary  // laranja queimado
-    : T.mint;
-  const footerCopy = excedeu
-    ? `Excedeu ${Math.abs(remainingKcal).toLocaleString('pt-BR')} kcal`
-    : `Restam ${remainingKcal.toLocaleString('pt-BR')} kcal`;
+  const footerColor = noQty
+    ? T.mint
+    : excedeu
+      ? ACTIONS_V3.comida.primary  // laranja queimado
+      : T.mint;
+  const footerCopy = noQty
+    ? 'Sem quantidade informada'
+    : excedeu
+      ? `Excedeu ${Math.abs(remainingKcal).toLocaleString('pt-BR')} kcal`
+      : `Restam ${remainingKcal.toLocaleString('pt-BR')} kcal`;
 
   return (
     <InkPanel padding={22}>
@@ -87,9 +100,11 @@ export const CalorieHero = React.memo(function CalorieHero({
         <View style={s.heroAbsolute} pointerEvents="none">
           <Text
             style={[s.bigNumber, { color: T.onBlk }]}
-            accessibilityLabel={`${intakeKcal} calorias consumidas`}
+            accessibilityLabel={noQty
+              ? 'Quantidade das refeições não informada'
+              : `${intakeKcal} calorias consumidas`}
           >
-            {intakeKcal.toLocaleString('pt-BR')}
+            {noQty ? '—' : intakeKcal.toLocaleString('pt-BR')}
           </Text>
           <Text style={[s.ofLabel, { color: 'rgba(246,244,234,0.5)' }]}>
             de {targetKcal.toLocaleString('pt-BR')}
@@ -105,11 +120,13 @@ export const CalorieHero = React.memo(function CalorieHero({
           {footerCopy}
         </Text>
         <Text style={[s.footerHint, { color: 'rgba(246,244,234,0.5)' }]}>
-          {intakeKcal === 0
-            ? 'Registre a primeira refeição do dia.'
-            : excedeu
-              ? 'Tutor pode reduzir a próxima porção.'
-              : 'Distribua o restante nas próximas refeições.'}
+          {noQty
+            ? 'Segure a comida na tela inicial pra informar a quantidade.'
+            : intakeKcal === 0
+              ? 'Registre a primeira refeição do dia.'
+              : excedeu
+                ? 'Tutor pode reduzir a próxima porção.'
+                : 'Distribua o restante nas próximas refeições.'}
         </Text>
       </View>
 

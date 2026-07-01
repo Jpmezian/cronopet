@@ -18,6 +18,8 @@ import type { ActionKey, PetType } from '@/types/pet';
 interface QuickLogSheetProps {
   visible: boolean;
   onClose: () => void;
+  /** Long-press num Stamp abre o sheet de especificar quantidade/detalhes. */
+  onSpecify?: (key: ActionKey) => void;
 }
 
 const ACTIONS_DOG: ActionKey[]   = ['comida', 'agua', 'passeio', 'xixi', 'coco', 'banho', 'tosa'];
@@ -48,7 +50,7 @@ function actionsFor(tipo: PetType | undefined): ActionKey[] {
  *
  * Gato esconde "passeio" (consistência com RegisterStrip da Home).
  */
-export function QuickLogSheet({ visible, onClose }: QuickLogSheetProps) {
+export function QuickLogSheet({ visible, onClose, onSpecify }: QuickLogSheetProps) {
   const T = useTheme();
   const reduced = useReducedMotion();
   const insets = useSafeAreaInsets();
@@ -99,10 +101,17 @@ export function QuickLogSheet({ visible, onClose }: QuickLogSheetProps) {
             <ScalePress
               key={key}
               onPress={() => handleTap(key)}
+              onLongPress={onSpecify ? () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                onSpecify(key);
+              } : undefined}
+              delayLongPress={280}
               accessible
               accessibilityRole="button"
               accessibilityLabel={`Registrar ${LABEL[key]}`}
-              accessibilityHint={`Registra uma ${LABEL[key].toLowerCase()} e fecha o painel`}
+              accessibilityHint={onSpecify
+                ? `Toque pra registrar ${LABEL[key].toLowerCase()}. Segure pra informar quantidade.`
+                : `Registra uma ${LABEL[key].toLowerCase()} e fecha o painel`}
               style={s.cell}
               scaleValue={0.94}
             >

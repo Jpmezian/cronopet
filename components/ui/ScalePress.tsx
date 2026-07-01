@@ -11,6 +11,8 @@ import Animated, {
 interface ScalePressProps {
   onPress?: (e: GestureResponderEvent) => void;
   onLongPress?: (e: GestureResponderEvent) => void;
+  /** ms até disparar onLongPress. Default nativo 500ms. */
+  delayLongPress?: number;
   style?: StyleProp<ViewStyle>;
   children: React.ReactNode;
   disabled?: boolean;
@@ -80,6 +82,7 @@ function splitStyle(style: StyleProp<ViewStyle>): {
 export function ScalePress({
   onPress,
   onLongPress,
+  delayLongPress,
   style,
   children,
   disabled = false,
@@ -125,6 +128,7 @@ export function ScalePress({
       onPressOut={handlePressOut}
       onPress={disabled ? undefined : onPress}
       onLongPress={disabled ? undefined : onLongPress}
+      delayLongPress={delayLongPress}
       disabled={disabled}
       hitSlop={hitSlop}
       style={[layout, { opacity: disabled ? 0.5 : 1 }]}

@@ -18,6 +18,8 @@ interface RegisterStripProps {
   petTipo:     PetType | undefined;
   /** Caller injeta o `addActionLog` do store. */
   onRegister:  (key: ActionKey) => void | Promise<void>;
+  /** Long-press abre o sheet de especificar quantidade/detalhes. */
+  onSpecify?:  (key: ActionKey) => void;
 }
 
 // Ordem das 7 ações no scroll (briefing 05 § 3.5)
@@ -33,7 +35,7 @@ const STRIP_ACTIONS: ActionKey[] = ['comida', 'agua', 'passeio', 'xixi', 'coco',
  * registrar caso o tutor queira (decisão: não filtra como ActionButton
  * antigo fazia; Strip horizontal cabe todas).
  */
-export function RegisterStrip({ todayCounts, petTipo, onRegister }: RegisterStripProps) {
+export function RegisterStrip({ todayCounts, petTipo, onRegister, onSpecify }: RegisterStripProps) {
   // Eslint warn: petTipo não usado — mantido na assinatura pra compat
   // futura caso queiramos esconder ações específicas. No-op pra agora.
   void petTipo;
@@ -53,6 +55,7 @@ export function RegisterStrip({ todayCounts, petTipo, onRegister }: RegisterStri
             actionKey={key}
             count={todayCounts[key] ?? 0}
             onRegister={onRegister}
+            onSpecify={onSpecify}
           />
         ))}
       </ScrollView>
@@ -66,9 +69,10 @@ interface StampButtonProps {
   actionKey:  ActionKey;
   count:      number;
   onRegister: (key: ActionKey) => void | Promise<void>;
+  onSpecify?: (key: ActionKey) => void;
 }
 
-function StampButton({ actionKey, count, onRegister }: StampButtonProps) {
+function StampButton({ actionKey, count, onRegister, onSpecify }: StampButtonProps) {
   const T = useTheme();
   const showToast = useToastStore((s) => s.showToast);
   const reducedMotion = useReducedMotion();
@@ -100,14 +104,26 @@ function StampButton({ actionKey, count, onRegister }: StampButtonProps) {
     showToast('success', `${ACTION_LABEL[actionKey]} registrada`);
   };
 
+  const handleLongPress = () => {
+    if (!onSpecify) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onSpecify(actionKey);
+  };
+
   return (
     <Pressable
       onPress={handleTap}
+      onLongPress={onSpecify ? handleLongPress : undefined}
+      delayLongPress={280}
       hitSlop={8}
       accessible
       accessibilityRole="button"
       accessibilityLabel={`Registrar ${ACTION_LABEL[actionKey]}`}
-      accessibilityHint={count > 0 ? `Já registrado ${count} vezes hoje` : 'Não registrado hoje'}
+      accessibilityHint={onSpecify
+        ? (count > 0
+            ? `Já registrado ${count} vezes hoje. Toque pra registrar, segure pra informar quantidade.`
+            : 'Toque pra registrar. Segure pra informar quantidade.')
+        : (count > 0 ? `Já registrado ${count} vezes hoje` : 'Não registrado hoje')}
       style={styles.button}
     >
       <Animated.View style={animStyle}>

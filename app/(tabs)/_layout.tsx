@@ -4,6 +4,8 @@ import { Tabs, useSegments } from 'expo-router';
 import { FloatingTabBar } from '@/components/chrome/FloatingTabBar';
 import { FAB } from '@/components/chrome/FAB';
 import { QuickLogSheet } from '@/components/chrome/QuickLogSheet';
+import { LogDetailSheet } from '@/components/home/LogDetailSheet';
+import { useLogDetailStore } from '@/store/useLogDetailStore';
 
 /**
  * Tabs layout Bold v3 (Fase 8 — briefing 12).
@@ -22,6 +24,15 @@ import { QuickLogSheet } from '@/components/chrome/QuickLogSheet';
 export default function TabsLayout() {
   const segments = useSegments();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const openLogDetail = useLogDetailStore((s) => s.open);
+
+  // Long-press no QuickLogSheet → fecha ele + abre o sheet de detalhes
+  // (mesmo gesto do RegisterStrip). Consistência entre os 2 pontos
+  // de registro rápido.
+  const handleSpecify = (key: Parameters<typeof openLogDetail>[0]) => {
+    setSheetOpen(false);
+    openLogDetail(key);
+  };
 
   // Última segmento dentro de (tabs): index | history | medical | settings
   // segments retorna ["(tabs)"] no Home (index), ["(tabs)","history"], etc.
@@ -50,7 +61,13 @@ export default function TabsLayout() {
       <QuickLogSheet
         visible={sheetOpen}
         onClose={() => setSheetOpen(false)}
+        onSpecify={handleSpecify}
       />
+
+      {/* Sheet de registro detalhado (quantidade/detalhes) — chrome
+          global, aberto por long-press no RegisterStrip ou QuickLogSheet
+          via useLogDetailStore. */}
+      <LogDetailSheet />
     </View>
   );
 }
